@@ -1,6 +1,6 @@
-# Copilot instructions — Idle Skiller
+# Copilot instructions — XP Waste
 
-Idle Skiller is a native **SwiftUI** idle/clicker game for iOS, inspired by the skilling
+XP Waste is a native **SwiftUI** idle/clicker game for iOS, inspired by the skilling
 system of Old School RuneScape (OSRS). The player trains all 23 OSRS skills to level 99 by
 tapping thematic training objects, banking Energy for Supercharge bursts, and using Double XP
 coupons.
@@ -75,7 +75,7 @@ Generate the project after editing `project.yml`, then build for the simulator:
 ```sh
 export PATH="/opt/homebrew/bin:$PATH"
 xcodegen generate
-xcodebuild -project IdleSkiller.xcodeproj -scheme IdleSkiller \
+xcodebuild -project XPWaste.xcodeproj -scheme XPWaste \
   -sdk iphonesimulator -configuration Debug \
   -destination 'platform=iOS Simulator,name=iPhone 17' \
   -derivedDataPath build CODE_SIGNING_ALLOWED=NO build

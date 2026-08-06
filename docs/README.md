@@ -1,4 +1,4 @@
-# Idle Skiller — documentation
+# XP Waste — documentation
 
 Project documentation lives here. The [root `README.md`](../README.md) is reserved for
 **players** (what the game is and how to play). Everything about design, engineering, setup, and

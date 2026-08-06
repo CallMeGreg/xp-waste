@@ -54,7 +54,7 @@ final class GameState: ObservableObject {
     private var lastFreeCouponDay: String?
     private var autosaveAccumulator: TimeInterval = 0
 
-    private static let saveKey = "idleSkiller.save.v1"
+    private static let saveKey = "xpWaste.save.v1"
 
     init() {
         load()

@@ -38,7 +38,7 @@ struct HomeView: View {
                 .frame(maxWidth: .infinity)
             }
             .background(GameBackground())
-            .navigationTitle("Idle Skiller")
+            .navigationTitle("XP Waste")
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: SkillID.self) { skill in
                 SkillTrainingView(skill: skill)

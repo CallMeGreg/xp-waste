@@ -13,7 +13,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "com.callmegreg.idleskiller.coupons.small",
+      "productID" : "com.callmegreg.xpwaste.coupons.small",
       "referenceName" : "Pouch of Coupons",
       "type" : "Consumable"
     },
@@ -28,7 +28,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "com.callmegreg.idleskiller.coupons.medium",
+      "productID" : "com.callmegreg.xpwaste.coupons.medium",
       "referenceName" : "Sack of Coupons",
       "type" : "Consumable"
     },
@@ -43,7 +43,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "com.callmegreg.idleskiller.coupons.large",
+      "productID" : "com.callmegreg.xpwaste.coupons.large",
       "referenceName" : "Chest of Coupons",
       "type" : "Consumable"
     }

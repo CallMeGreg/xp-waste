@@ -21,9 +21,9 @@ struct CouponPack: Identifiable, Equatable {
 @MainActor
 final class Store: ObservableObject {
 
-    static let smallID = "com.callmegreg.idleskiller.coupons.small"
-    static let mediumID = "com.callmegreg.idleskiller.coupons.medium"
-    static let largeID = "com.callmegreg.idleskiller.coupons.large"
+    static let smallID = "com.callmegreg.xpwaste.coupons.small"
+    static let mediumID = "com.callmegreg.xpwaste.coupons.medium"
+    static let largeID = "com.callmegreg.xpwaste.coupons.large"
     static let productIDs = [smallID, mediumID, largeID]
 
     /// Coupons granted per product id. Keep in sync with `Config/Products.storekit`.

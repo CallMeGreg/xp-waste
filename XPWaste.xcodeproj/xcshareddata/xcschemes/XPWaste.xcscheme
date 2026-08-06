@@ -15,10 +15,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "123B2AAE83B475013A23F686"
-               BuildableName = "IdleSkiller.app"
-               BlueprintName = "IdleSkiller"
-               ReferencedContainer = "container:IdleSkiller.xcodeproj">
+               BlueprintIdentifier = "383521D9F9E21BE8F9FBD30E"
+               BuildableName = "XPWaste.app"
+               BlueprintName = "XPWaste"
+               ReferencedContainer = "container:XPWaste.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -32,10 +32,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "123B2AAE83B475013A23F686"
-            BuildableName = "IdleSkiller.app"
-            BlueprintName = "IdleSkiller"
-            ReferencedContainer = "container:IdleSkiller.xcodeproj">
+            BlueprintIdentifier = "383521D9F9E21BE8F9FBD30E"
+            BuildableName = "XPWaste.app"
+            BlueprintName = "XPWaste"
+            ReferencedContainer = "container:XPWaste.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <Testables>
@@ -57,10 +57,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "123B2AAE83B475013A23F686"
-            BuildableName = "IdleSkiller.app"
-            BlueprintName = "IdleSkiller"
-            ReferencedContainer = "container:IdleSkiller.xcodeproj">
+            BlueprintIdentifier = "383521D9F9E21BE8F9FBD30E"
+            BuildableName = "XPWaste.app"
+            BlueprintName = "XPWaste"
+            ReferencedContainer = "container:XPWaste.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
@@ -79,10 +79,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "123B2AAE83B475013A23F686"
-            BuildableName = "IdleSkiller.app"
-            BlueprintName = "IdleSkiller"
-            ReferencedContainer = "container:IdleSkiller.xcodeproj">
+            BlueprintIdentifier = "383521D9F9E21BE8F9FBD30E"
+            BuildableName = "XPWaste.app"
+            BlueprintName = "XPWaste"
+            ReferencedContainer = "container:XPWaste.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>

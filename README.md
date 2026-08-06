@@ -1,6 +1,6 @@
-# Idle Skiller ⚔️ 🎣 ⛏️
+# XP Waste ⚔️ 🎣 ⛏️
 
-**Level every skill to 99 — one tap at a time.** Idle Skiller is a cozy skilling game inspired by
+**Level every skill to 99 — one tap at a time.** XP Waste is a cozy skilling game inspired by
 Old School RuneScape. Tap to train, unlock passive training, bank up energy while you're away, and
 chase the max cape across **all 23 skills**.
 
@@ -53,7 +53,7 @@ taps wide. It's your account.
 
 ---
 
-*Idle Skiller is an unofficial fan project inspired by Old School RuneScape. It is not affiliated
+*XP Waste is an unofficial fan project inspired by Old School RuneScape. It is not affiliated
 with, endorsed by, or associated with Jagex Ltd. "RuneScape" and "Old School RuneScape" are
 trademarks of Jagex Ltd.*
 

@@ -1,4 +1,4 @@
-# Idle Skiller — Game Design Document
+# XP Waste — Game Design Document
 
 An OSRS-inspired **idle / clicker skilling game** for iOS. Train all **23 Old School RuneScape
 skills** from level 1 to 99 through a blend of active tapping and idle Energy-banking,

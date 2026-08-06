@@ -1,6 +1,6 @@
 # Development
 
-Engineering setup, build, and project logistics for **Idle Skiller**. Player-facing docs live
+Engineering setup, build, and project logistics for **XP Waste**. Player-facing docs live
 in the [root README](../README.md); the full design write-up is in
 [GAME_DESIGN.md](GAME_DESIGN.md); agent guidance is in
 [`.github/copilot-instructions.md`](../.github/copilot-instructions.md).
@@ -23,16 +23,16 @@ export PATH="/opt/homebrew/bin:$PATH"
 xcodegen generate
 
 # 2a. Open in Xcode and run on a simulator or device
-open IdleSkiller.xcodeproj
+open XPWaste.xcodeproj
 
 # 2b. …or build from the command line
-xcodebuild -project IdleSkiller.xcodeproj -scheme IdleSkiller \
+xcodebuild -project XPWaste.xcodeproj -scheme XPWaste \
   -sdk iphonesimulator -configuration Debug \
   -destination 'platform=iOS Simulator,name=iPhone 17' \
   -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
 ```
 
-Idle Skiller is a **universal app** (`TARGETED_DEVICE_FAMILY = "1,2"`). iPhone runs portrait;
+XP Waste is a **universal app** (`TARGETED_DEVICE_FAMILY = "1,2"`). iPhone runs portrait;
 iPad supports all four orientations and multitasking. Layouts are responsive (adaptive grids,
 size-class-aware panes, width-capped/centered content), so **verify UI changes on both an
 iPhone and an iPad simulator** (e.g. build/run against an iPad Pro destination too).
@@ -41,7 +41,7 @@ iPhone and an iPad simulator** (e.g. build/run against an iPad Pro destination t
 
 ```
 Sources/
-  App/      IdleSkillerApp.swift        # @main, scene-phase persistence
+  App/      XPWasteApp.swift        # @main, scene-phase persistence
   Models/   SkillID.swift               # the 23 skills, 4 categories + theming
             TrainingMethod.swift        # per-skill 6-tier thematic training methods
             XPTable.swift               # OSRS XP curve
@@ -77,9 +77,9 @@ game is a one-file change.
 ## Testing in-app purchases
 
 `Config/Products.storekit` defines the consumable coupon packs and is wired into the
-`IdleSkiller` scheme's Run action, so purchases work locally in the simulator when you run from
+`XPWaste` scheme's Run action, so purchases work locally in the simulator when you run from
 **Xcode** (no App Store Connect needed). In production these map to real App Store Connect
-product IDs (`com.callmegreg.idleskiller.coupons.*`).
+product IDs (`com.callmegreg.xpwaste.coupons.*`).
 
 > `simctl launch` from the CLI does **not** apply the scheme's StoreKit config, so
 > `Product.products` is empty there. `Store.swift` has a `#if DEBUG` mock catalog fallback so the

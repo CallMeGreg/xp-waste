@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct IdleSkillerApp: App {
+struct XPWasteApp: App {
     @StateObject private var game = GameState()
     @StateObject private var store = Store()
     @Environment(\.scenePhase) private var scenePhase
