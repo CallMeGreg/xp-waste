@@ -5,6 +5,23 @@ system of Old School RuneScape (OSRS). The player trains all 23 OSRS skills to l
 tapping thematic training objects, banking Energy for Supercharge bursts, and using Double XP
 coupons.
 
+## Documentation layout (strict)
+
+**The root `README.md` is strictly player-facing** — it describes what the game is and how to
+play, nothing else. **Never add build, setup, architecture, tooling, or design content to the
+root README.**
+
+- All design, development, setup, and app-logistics documentation lives under **`docs/`** (or its
+  own dedicated folder), each topic in its own file — never inlined into the root README.
+  - `docs/GAME_DESIGN.md` — full game design document.
+  - `docs/DEVELOPMENT.md` — engineering setup: requirements, build & run, project layout,
+    architecture, tuning, StoreKit/IAP testing, debug hooks.
+  - `docs/README.md` — index of the docs folder.
+- When you write new design/dev/setup/logistics docs, add a file under `docs/` and link it from
+  `docs/README.md`. Do **not** grow the root README.
+- This `.github/copilot-instructions.md` file is agent guidance; human-facing engineering docs
+  belong in `docs/DEVELOPMENT.md`. Keep the two in sync when workflows change.
+
 ## Universal app: iPhone AND iPad are both first-class
 
 **This app must look and work great on both iPhone and iPad. Treat universal support as a hard
@@ -65,6 +82,8 @@ xcodebuild -project IdleSkiller.xcodeproj -scheme IdleSkiller \
 ```
 
 Also build/verify against an iPad destination (e.g. an iPad Pro simulator) for universal support.
+
+Full human-facing setup lives in [`docs/DEVELOPMENT.md`](../docs/DEVELOPMENT.md).
 
 - The Xcode project is **generated** by XcodeGen from `project.yml` — edit `project.yml`, not the
   `.xcodeproj`. `build/` is git-ignored.

@@ -1,96 +1,60 @@
-# Idle Skiller ⚔️🌳⛏️
+# Idle Skiller ⚔️ 🎣 ⛏️
 
-An **OSRS-inspired idle / clicker skilling game** for iOS, built in SwiftUI. Train all **23
-Old School RuneScape skills** from level 1 to 99 using the exact OSRS experience curve — by
-tapping, setting up passive training, and banking **Energy** while you're away for bonus-XP
-**Supercharge** bursts. Universal: designed for **both iPhone and iPad**.
-
-See **[GAME_DESIGN.md](GAME_DESIGN.md)** for the full design, balance table, and critique.
-
-## Features
-
-- **All 23 skills** across four categories — **Combat** (Attack, Strength, Defence, Hitpoints,
-  Ranged, Prayer, Magic), **Gathering** (Woodcutting, Fishing, Mining, Farming, Hunter),
-  **Artisan** (Cooking, Firemaking, Crafting, Smithing, Fletching, Herblore, Runecraft,
-  Construction) and **Support** (Agility, Thieving, Slayer) — each on the real OSRS XP curve
-  (L99 = 13,034,431 XP).
-- **Thematic, tiered training methods** — every skill has **6 methods** that evolve with your
-  level (e.g. Woodcutting: normal → oak → willow → maple → yew → magic tree). Higher tiers award
-  more XP per tap (1 / 3 / 6 / 12 / 25 / 50) and visibly upgrade the tappable object.
-- **Tap to train** a full-screen thematic object with floating feedback and haptics.
-- **Training slots** for passive XP (1 → 2 → 3 slots as your total level grows).
-- **Energy & Supercharge** — bank up to 30s of Supercharge while the app is open *or closed*,
-  then spend it for a **×2 / ×5 / ×10 / ×20** XP-per-tap burst (multiplier scales with total level).
-- **Double XP coupons** — activate a coupon for **10 minutes of 2× XP on every skill** (stacks
-  with Supercharge). One **free coupon daily**, plus **in-app purchase** packs (StoreKit 2).
-- **Universal, responsive UI** — adaptive skill grid and a size-class-aware training screen
-  (two-pane on iPad / regular width, single column on iPhone). Looks great in portrait and, on
-  iPad, in every orientation.
-- **Home hub, Stats/Milestones, Settings**, and first-launch onboarding.
-- Full **offline-Energy** crediting and `UserDefaults` persistence.
-
-## Requirements
-
-- Xcode 16+ (developed with Xcode 26.6 / iOS 26.5 SDK)
-- iOS 17.0+ deployment target
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) to (re)generate the project:
-  `brew install xcodegen`
-
-## Build & run
-
-The Xcode project is generated from `project.yml` by XcodeGen.
-
-```bash
-# 1. Generate the Xcode project
-xcodegen generate
-
-# 2a. Open in Xcode and run on a simulator or device
-open IdleSkiller.xcodeproj
-
-# 2b. …or build & launch from the command line
-xcodebuild -project IdleSkiller.xcodeproj -scheme IdleSkiller \
-  -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 17' build
-```
-
-## Project layout
-
-```
-Sources/
-  App/      IdleSkillerApp.swift        # @main, scene-phase persistence
-  Models/   SkillID.swift               # the 23 skills, 4 categories + theming
-            TrainingMethod.swift        # per-skill 6-tier thematic training methods
-            XPTable.swift               # OSRS XP curve
-            Balance.swift               # ALL tunable constants (tiers, slots, supercharge…)
-            GameState.swift             # source of truth: XP, slots, energy, supercharge, coupons
-            Store.swift                 # StoreKit 2 in-app purchases (coupon packs)
-  Views/    RootView / Onboarding / Home / SkillTile
-            SkillTrainingView / StatsView / SettingsView / Components
-            DoubleXPView                # activate boost + coupon store
-  Assets.xcassets                       # app icon + accent color
-Config/     Products.storekit           # local StoreKit config for testing IAP
-project.yml                             # XcodeGen project definition (universal: iPhone + iPad)
-```
-
-## Universal (iPhone + iPad)
-
-Idle Skiller is a universal app (`TARGETED_DEVICE_FAMILY = "1,2"`). iPhone runs portrait; iPad
-supports all four orientations and multitasking. Layouts are responsive (adaptive grids,
-size-class-aware panes, width-capped/centered content), so verify UI changes on **both** an
-iPhone and an iPad simulator. See `.github/copilot-instructions.md` for the full guidance.
-
-## Testing in-app purchases
-
-`Config/Products.storekit` defines the consumable coupon packs and is wired into the
-`IdleSkiller` scheme's Run action, so purchases work locally in the simulator when you
-run from **Xcode** (no App Store Connect needed). In production these map to real
-App Store Connect product IDs (`com.callmegreg.idleskiller.coupons.*`).
-
-## Tuning
-
-All balance lives in `Sources/Models/Balance.swift` — passive rate, Energy cap, slot
-thresholds, and Supercharge tiers. Re-balancing the game is a one-file change.
+**Level every skill to 99 — one tap at a time.** Idle Skiller is a cozy skilling game inspired by
+Old School RuneScape. Tap to train, unlock passive training, bank up energy while you're away, and
+chase the max cape across **all 23 skills**.
 
 ---
 
-*Inspired by Old School RuneScape. Not affiliated with or endorsed by Jagex. Emoji glyphs are
-placeholder art for v1.*
+## The skills
+
+Twenty-three skills across four categories — each with its own thematic training:
+
+- **⚔️ Combat** — Attack, Strength, Defence, Hitpoints, Ranged, Magic, Prayer
+- **🌳 Gathering** — Woodcutting, Fishing, Mining, Farming, Hunter
+- **🔨 Artisan** — Cooking, Smithing, Crafting, Fletching, Herblore, Runecraft, Construction, Firemaking
+- **✨ Support** — Agility, Thieving, Slayer
+
+Every skill uses the **authentic OSRS experience curve** — level 99 is a hard-earned
+13,034,431 XP, and maxing every skill means a **total level of 2277**.
+
+## How to play
+
+### 👆 Tap to train
+Open any skill and tap the big training object to earn experience. Each tap is one action —
+chop a tree, cast a line, throw a punch. Simple, satisfying, and always available.
+
+### 🔁 Methods evolve as you level
+Training isn't static. As a skill grows, its training **method upgrades to something new and
+more powerful** — and each tap is worth more XP. Woodcutting starts you on a normal tree and
+works its way up to mighty redwoods; every skill has six tiers of thematic progression to unlock.
+
+### 🎰 Training slots (passive XP)
+Slot a skill into a **training slot** and it earns experience passively while the app is open —
+so you can tap one skill while another trains itself. You start with a single slot and unlock
+more as your **total level** climbs. Juggle your slots to grow the skills you care about.
+
+### ⚡ Energy & Supercharge
+Every skill quietly charges **Energy** — while you play *and* while the app is closed. Spend a
+skill's full Energy bar to **Supercharge** it: a burst of multiplied XP per tap (×2, and up to
+×20 at high total levels) for a short window. The more you're away, the bigger the payoff when
+you come back.
+
+### ✨ Double XP
+Once a day you can activate a **Double XP** boost that doubles all experience for 10 minutes —
+stack it with a Supercharge for an enormous burst. Want more? Double XP coupons are available as
+an optional in-app purchase.
+
+## Your goal 🏆
+
+Push every one of the 23 skills to **level 99**, reach the **2277 total level**, and earn your
+place among the maxed. Pick your path — grind combat, master the gathering skills, or spread your
+taps wide. It's your account.
+
+---
+
+*Idle Skiller is an unofficial fan project inspired by Old School RuneScape. It is not affiliated
+with, endorsed by, or associated with Jagex Ltd. "RuneScape" and "Old School RuneScape" are
+trademarks of Jagex Ltd.*
+
+*Developers: build instructions, design docs, and contributor guidance live in [`docs/`](docs/README.md).*
