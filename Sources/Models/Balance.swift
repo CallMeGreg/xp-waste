@@ -97,16 +97,14 @@ enum Balance {
     /// A skill must reach this level before it can be assigned to a training slot.
     static let slotEligibilityLevel: Int = 10
 
-    /// Total-level thresholds that unlock the 2nd and 3rd training slots.
-    /// Tuned for the full 23-skill roster (max total level 2277).
-    static let slot2TotalLevel: Int = 100
-    static let slot3TotalLevel: Int = 300
+    /// Total-level thresholds that unlock the 2nd, 3rd, 4th, and 5th training slots
+    /// (element `i` unlocks slot `i + 2`). Ascending. Tuned for the full 23-skill roster
+    /// (max total level 2277).
+    static let slotUnlockTotalLevels: [Int] = [100, 300, 500, 1000]
 
-    /// Number of training slots unlocked for a given total level.
+    /// Number of training slots unlocked for a given total level (1 base + each threshold met).
     static func maxSlots(forTotalLevel total: Int) -> Int {
-        if total >= slot3TotalLevel { return 3 }
-        if total >= slot2TotalLevel { return 2 }
-        return 1
+        1 + slotUnlockTotalLevels.filter { total >= $0 }.count
     }
 
     /// The active Supercharge multiplier for a given total level.
@@ -184,10 +182,10 @@ enum Balance {
         .fletching:    BuffScaling(at1: 0.0,   at99: 8.0),    // extra ammo: +flat XP per tap
         .herblore:     BuffScaling(at1: 0.0,   at99: 300.0),  // alchemist: +seconds to Double XP duration
         .runecraft:    BuffScaling(at1: 0.0,   at99: 3.0),    // runic automaton: auto-taps per second
-        .construction: BuffScaling(at1: 0.0,   at99: 2.0),    // architect: extra slots (see constructionSlotLevels)
+        .construction: BuffScaling(at1: 1.0,   at99: 2.0),    // workshop: × idle (slot) XP — smooth, neutral ×1 at L1
         // Support — tempo & meta
         .agility:      BuffScaling(at1: 1.0,   at99: 1.6),    // momentum: tap-streak combo ceiling ×
-        .thieving:     BuffScaling(at1: Double(dailyFreeCoupons), at99: 3.0),    // pickpocket: free daily coupons
+        .thieving:     BuffScaling(at1: 0.0,   at99: 0.5),    // pickpocket: chance to refund a spent coupon / Supercharge
         .slayer:       BuffScaling(at1: 0.0,   at99: 0.15)    // assassinate: crit chance
     ]
 
@@ -200,7 +198,4 @@ enum Balance {
     /// Max seconds between taps to keep an Agility combo chaining, and taps needed to reach the ceiling.
     static let agilityComboWindow: TimeInterval = 1.2
     static let agilityComboTapsToMax: Int = 20
-
-    /// Construction levels that each grant one extra training slot (stacks with total-level unlocks).
-    static let constructionSlotLevels: [Int] = [40, 80]
 }

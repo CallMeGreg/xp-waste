@@ -85,10 +85,10 @@ struct StatsView: View {
                          done: SkillID.skills(in: .artisan).allSatisfy { game.isMaxed($0) })
             milestoneRow("All support skills 99",
                          done: SkillID.skills(in: .support).allSatisfy { game.isMaxed($0) })
-            milestoneRow("Unlock 2nd training slot (total \(Balance.slot2TotalLevel))",
-                         done: game.totalLevel >= Balance.slot2TotalLevel)
-            milestoneRow("Unlock 3rd training slot (total \(Balance.slot3TotalLevel))",
-                         done: game.totalLevel >= Balance.slot3TotalLevel)
+            ForEach(Array(Balance.slotUnlockTotalLevels.enumerated()), id: \.offset) { i, threshold in
+                milestoneRow("Unlock \(slotOrdinal(i + 2)) training slot (total \(threshold))",
+                             done: game.totalLevel >= threshold)
+            }
             ForEach(Balance.superchargeTiers.dropFirst(), id: \.totalLevel) { tier in
                 milestoneRow("Supercharge ×\(tier.multiplier) (total \(tier.totalLevel))",
                              done: game.totalLevel >= tier.totalLevel)
@@ -110,6 +110,14 @@ struct StatsView: View {
             Image(systemName: done ? "checkmark.circle.fill" : "circle")
                 .foregroundStyle(done ? .green : .secondary)
             Text(text).foregroundStyle(done ? .primary : .secondary)
+        }
+    }
+
+    private func slotOrdinal(_ n: Int) -> String {
+        switch n {
+        case 2: return "2nd"
+        case 3: return "3rd"
+        default: return "\(n)th"
         }
     }
 }

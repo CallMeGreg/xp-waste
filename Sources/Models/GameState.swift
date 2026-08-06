@@ -128,7 +128,7 @@ final class GameState: ObservableObject {
     var totalLevel: Int { SkillID.allCases.reduce(0) { $0 + level(for: $1) } }
     var totalXP: Int { SkillID.allCases.reduce(0) { $0 + xp(for: $1) } }
     var maxTotalLevel: Int { SkillID.allCases.count * XPTable.maxLevel }
-    var maxSlots: Int { Balance.maxSlots(forTotalLevel: totalLevel) + extraTrainingSlots }
+    var maxSlots: Int { Balance.maxSlots(forTotalLevel: totalLevel) }
     var superchargeMultiplier: Int { Balance.superchargeMultiplier(forTotalLevel: totalLevel) }
     /// The Supercharge multiplier actually applied to taps, including Prayer's flat bonus.
     var effectiveSuperchargeMultiplier: Int { superchargeMultiplier + superchargeBonus }
@@ -217,13 +217,13 @@ final class GameState: ObservableObject {
     var flatTapBonus: Double { buffRaw(.fletching) }
     var doubleXPBonusDuration: TimeInterval { buffRaw(.herblore) }
     var autoTapsPerSecond: Double { buffRaw(.runecraft) }
-    var extraTrainingSlots: Int {
-        Balance.constructionSlotLevels.filter { level(for: .construction) >= $0 }.count
-    }
+    /// Construction "Workshop": a smooth ×multiplier on passive (slot) XP, neutral ×1 at level 1.
+    var passiveWorkshopMultiplier: Double { buffRaw(.construction) }
 
     // Support — tempo & meta
     var comboCeiling: Double { buffRaw(.agility) }
-    var dailyCoupons: Int { max(1, Int(buffRaw(.thieving).rounded())) }
+    /// Thieving "Pickpocket": chance (0…1) to refund a spent coupon or Supercharge.
+    var refundChance: Double { buffRaw(.thieving) }
     var critChance: Double { buffRaw(.slayer) }
 
     /// Current Agility combo multiplier from the recent tap streak (decays once you stop tapping).
@@ -348,11 +348,9 @@ final class GameState: ObservableObject {
         case .flatTap:             return String(format: "+%.1f XP per tap", v)
         case .doubleXPDuration:    return String(format: "+%.0fs Double XP", v)
         case .autoTap:             return String(format: "%.1f taps/sec", v)
-        case .extraSlots:
-            let n = Balance.constructionSlotLevels.filter { lvl >= $0 }.count
-            return "+\(n) training slot\(n == 1 ? "" : "s")"
+        case .passiveMultiplier:   return String(format: "×%.2f idle XP", v)
         case .combo:               return String(format: "up to ×%.2f combo", v)
-        case .dailyCoupons:        return "\(max(1, Int(v.rounded())))/day coupons"
+        case .refund:              return String(format: "%.1f%% refund chance", v * 100)
         case .critChance:          return String(format: "%.0f%% crit chance", v * 100)
         }
     }
@@ -370,8 +368,9 @@ final class GameState: ObservableObject {
 
     /// The next training-slot unlock as (slot number, required total level), or nil if all unlocked.
     var nextSlotUnlock: (slot: Int, totalLevel: Int)? {
-        if maxSlots < 2 { return (2, Balance.slot2TotalLevel) }
-        if maxSlots < 3 { return (3, Balance.slot3TotalLevel) }
+        for (i, threshold) in Balance.slotUnlockTotalLevels.enumerated() where totalLevel < threshold {
+            return (i + 2, threshold)
+        }
         return nil
     }
 
@@ -406,7 +405,11 @@ final class GameState: ObservableObject {
         let banked = energy(for: skill)
         guard banked >= Balance.minEnergyToSupercharge else { return false }
         superchargeBySkill[skill] = banked * superchargeDurationMultiplier   // Firemaking extends the burst
-        energyBySkill[skill] = 0
+        if refundChance > 0, Double.random(in: 0..<1) < refundChance {       // Thieving "Pickpocket": keep the banked Energy
+            notice = "🥷 Pickpocket! Energy refunded."
+        } else {
+            energyBySkill[skill] = 0
+        }
         save()
         return true
     }
@@ -422,6 +425,10 @@ final class GameState: ObservableObject {
         let duration = Balance.doubleXPDurationSeconds + doubleXPBonusDuration
         doubleXPActiveDuration = duration
         doubleXPExpiry = Date().addingTimeInterval(duration)
+        if refundChance > 0, Double.random(in: 0..<1) < refundChance {       // Thieving "Pickpocket": nick the coupon back
+            doubleXPCoupons += 1
+            notice = "🥷 Pickpocket! Coupon refunded."
+        }
         save()
         return true
     }
@@ -465,7 +472,7 @@ final class GameState: ObservableObject {
         let today = Self.dayKey()
         guard lastFreeCouponDay != today else { return false }
         lastFreeCouponDay = today
-        let granted = dailyCoupons   // Thieving raises the free daily haul
+        let granted = Balance.dailyFreeCoupons
         doubleXPCoupons += granted
         if hasSeenOnboarding {
             notice = "🎁 Daily reward: +\(granted) Double XP coupon\(granted == 1 ? "" : "s")"
@@ -515,7 +522,7 @@ final class GameState: ObservableObject {
         guard dt > 0, dt < 3600 else { return } // ignore clock jumps
         for skill in slots {
             let actionsXP = Double(baseXPPerAction(for: skill)) * Balance.passiveActionsPerSecond * passiveRateMultiplier
-            addXP(actionsXP * dt * xpMultiplier * passiveXPMultiplier, to: skill)
+            addXP(actionsXP * dt * xpMultiplier * passiveXPMultiplier * passiveWorkshopMultiplier, to: skill)
             addEnergy(dt, to: skill)
         }
         decaySupercharges(by: dt)
@@ -570,6 +577,7 @@ final class GameState: ObservableObject {
                 * Balance.passiveActionsPerSecond * passiveRateMultiplier   // Hunter
             let gained = ratePerSecond * credited
                 * passiveXPMultiplier                                       // Smithing
+                * passiveWorkshopMultiplier                                 // Construction
                 * Balance.offlineXPMultiplier
             guard gained > 0 else { continue }
             let fromLevel = level(for: skill)
