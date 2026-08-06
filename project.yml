@@ -11,8 +11,6 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     SWIFT_VERSION: "5.0"
     CODE_SIGN_STYLE: Automatic
-    CODE_SIGNING_REQUIRED: "NO"
-    CODE_SIGNING_ALLOWED: "NO"
 targets:
   XPWaste:
     type: application
@@ -21,6 +19,7 @@ targets:
       - path: Sources
     settings:
       base:
+        DEVELOPMENT_TEAM: ACPF4NWF99
         PRODUCT_BUNDLE_IDENTIFIER: com.callmegreg.xpwaste
         GENERATE_INFOPLIST_FILE: "YES"
         INFOPLIST_KEY_CFBundleDisplayName: "XP Waste"
