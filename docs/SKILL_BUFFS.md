@@ -58,7 +58,7 @@ Values below are **level 1 → level 99** (the full envelope). "Kind" is the `Bu
 | Fishing 🎣 | Big Catch | `energyProc` | `0 → 15%` | Chance per tap to bank **bonus Energy** (`+1s` per proc). |
 | Mining ⛏️ | Deep Reserves | `energyCap` | `30s → 60s` | Raises the **maximum bankable Energy** for longer Supercharges. |
 | Farming 🌱 | Patient Growth | `offline` | `×1.0 → ×2.0` | Better **offline Energy** efficiency while the app is closed. |
-| Hunter 🪤 | Trapper | `passiveRate` | `×1.0 → ×2.5` | Slotted skills train **passively faster**. |
+| Hunter 🪤 | Trapper | `offlineRate` | `×1.0 → ×10.0` | Multiplies **offline** passive XP (app *closed*) — traps keep working while you're away. |
 
 ### Artisan — production & the boost economy
 
@@ -67,11 +67,11 @@ Values below are **level 1 → level 99** (the full envelope). "Kind" is the `Bu
 | Cooking 🍳 | Well Fed | `tapPercent` | `+0% → +50%` | **+% XP on every tap**, on every skill. |
 | Firemaking 🔥 | Slow Burn | `superchargeDuration` | `×1.0 → ×2.0` | **Supercharge bursts last longer.** |
 | Crafting 🧵 | Masterwork | `critMagnitude` | `×2.0 → ×4.0` | **Critical taps hit harder** (crit chance comes from Slayer). |
-| Smithing 🔨 | Foundry | `passivePercent` | `+0% → +100%` | **+% passive (slot) XP.** |
+| Smithing 🔨 | Foundry | `foregroundRate` | `×1.0 → ×10.0` | Multiplies **foreground idle** XP (app *open*). |
 | Fletching 🎯 | Extra Ammo | `flatTap` | `+0 → +8` | Adds **flat bonus XP** to every tap. |
 | Herblore 🧪 | Alchemist | `doubleXPDuration` | `+0 → +300s` | **Double XP boosts last longer.** |
 | Runecraft 🌀 | Runic Automaton | `autoTap` | `0 → 3 / s` | **Auto-taps** the skill you're currently training. |
-| Construction 🏠 | Workshop | `passiveMultiplier` | `×1.0 → ×2.0` | **Multiplies idle (slot) XP** — every level raises passive output. |
+| Construction 🏠 | Workshop | `offlineCap` | `10h → 48h` | Raises the **offline accrual cap** — bank more hours of away-time XP. |
 
 ### Support — tempo & meta
 

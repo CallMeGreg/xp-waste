@@ -69,10 +69,14 @@ and, at a reduced rate, while it's closed.
 - Passive rate: **~1 action / second** per slotted skill, valued at that skill's *current method*
   XP — so passive scales as methods improve, but stays a light trickle versus fast manual tapping.
 - **Offline progress:** slotted skills keep training while the app is closed at **40%** of the
-  foreground passive rate, credited on return and capped at **10 hours** of away time (the window
-  **resets each return**, so it can't be banked). A **"welcome back"** summary shows the per-skill
-  XP earned and any level-ups. Boosts are consumed in real time, so Supercharge / Double XP don't
-  apply to offline gains. Only *slotted* skills earn offline.
+  base foreground passive rate — scaled by **Hunter** (Trapper, offline XP rate ×) and credited on
+  return, capped by **Construction** (Workshop) at **10 h** of away time by default (up to **48 h**
+  at level 99; the window **resets each return**, so it can't be banked). A **"welcome back"**
+  summary shows the per-skill XP earned and any level-ups. Boosts are consumed in real time, so
+  Supercharge / Double XP don't apply to offline gains. Only *slotted* skills earn offline.
+- **Foreground idle** is a distinct lever: **Smithing** (Foundry) multiplies passive XP while the
+  app is *open* (Double XP still applies), so the app-open and app-closed rates are tuned
+  independently.
 - **Slots unlock with total level:** 1 slot at the start → **2nd at total 100** → **3rd at
   total 300** → **4th at total 500** → **5th at total 1000** (tuned for the 23-skill roster).
 
@@ -115,8 +119,8 @@ Runecraft literally auto-taps for you, and so on across all 23.
   layers on top of the tap and idle loops.
 - **The active tap is a "hit".** Combat perks reshape each tap into a rolled range: Strength sets
   the ceiling, Defence the floor, Attack biases toward the top, Ranged adds extra hits, and
-  Slayer × Crafting land the occasional crit. Non-combat perks feed the idle engine (Energy, passive
-  rate/multiplier, offline), the boost economy (Double XP potency/duration, Supercharge
+  Slayer × Crafting land the occasional crit. Non-combat perks feed the idle engine (Energy,
+  foreground idle rate, offline rate/cap), the boost economy (Double XP potency/duration, Supercharge
   power/duration, coupon/Energy refund), or account tempo (combo, auto-tap).
 
 The full per-skill lever table, designed synergies, and the exact tap pipeline order live in
@@ -178,8 +182,9 @@ v1 _(future: tap/level/supercharge SFX)_.
 - **Ticking:** a 1 Hz foreground timer applies passive XP + Energy and counts down active
   Supercharges using real elapsed `dt` (rate-correct regardless of tick jitter).
 - **Scene phase:** on background, persist state + timestamp; on foreground, credit **offline XP**
-  (40% of the passive rate, capped at 10 h) and **offline Energy** for slotted skills, then reset
-  the offline window. A "welcome back" summary is shown when the player was away long enough.
+  (40% base rate × Hunter, capped by Construction at 10–48 h) and **offline Energy** for slotted
+  skills, then reset the offline window. A "welcome back" summary is shown when the player was away
+  long enough.
 - **Persistence:** `Codable` snapshot in `UserDefaults`.
 - **Tuning:** every balance constant lives in `Balance.swift` so re-balancing is a one-file
   change.
@@ -189,8 +194,8 @@ v1 _(future: tap/level/supercharge SFX)_.
 | Constant | Value |
 |----------|-------|
 | Training method tiers | +1 / 3 / 6 / 12 / 25 / 50 XP-per-tap, unlocking at level 1 / 15 / 30 / 50 / 70 / 90 |
-| Passive rate | ~1 action / sec / slotted skill, valued at the skill's current method XP |
-| Offline passive XP | 40% of the foreground passive rate, capped at 10 h of away time (window resets on return) |
+| Passive rate | ~1 action / sec / slotted skill, valued at the skill's current method XP; **Smithing** multiplies the foreground (app-open) rate up to ×10 |
+| Offline passive XP | 40% base rate, scaled by **Hunter** (×1 → ×10) and capped by **Construction** at 10 h → 48 h of away time (window resets on return) |
 | Energy charge rate | 1 sec Supercharge per 60 sec real time |
 | Energy cap | 30 sec Supercharge (30 min real) |
 | Slot eligibility | skill level ≥ 10 |
@@ -215,10 +220,11 @@ v1 _(future: tap/level/supercharge SFX)_.
    v1's flat +1; treat further yield-scaling as a balance patch — trivial because all constants
    are centralized. More skills also means more parallel goals and more frequent method-upgrade
    dopamine hits.
-2. **Offline pacing balance.** Slotted skills now earn **offline XP** (40% of passive, capped at
-   10 h), so "idle" pays out directly in addition to Energy-banking. *Mitigation:* the reduced
-   rate and cap keep active tapping + Supercharge bursts primary; both are one-line tunables in
-   `Balance.swift` if returns feel too strong or too weak.
+2. **Offline pacing balance.** Slotted skills now earn **offline XP** (40% base, scaled by Hunter
+   and capped by Construction at 10–48 h), so "idle" pays out directly in addition to
+   Energy-banking. *Mitigation:* the reduced base rate and per-skill caps keep active tapping +
+   Supercharge bursts primary; all are one-line tunables in `Balance.swift` if returns feel too
+   strong or too weak.
 3. **Onboarding could overload** with four concepts. *Mitigation:* keep cards short and
    reinforce Energy/Supercharge contextually the first time a skill is slotted.
 4. **HP/Prayer abstraction** deviates from OSRS. *Mitigation:* accepted for a tapper; noted.

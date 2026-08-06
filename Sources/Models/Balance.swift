@@ -173,16 +173,16 @@ enum Balance {
         .fishing:      BuffScaling(at1: 0.0,   at99: 0.15),   // big catch: bonus-Energy chance
         .mining:       BuffScaling(at1: maxEnergySeconds, at99: 60.0), // deep reserves: Energy cap (seconds)
         .farming:      BuffScaling(at1: 1.0,   at99: 2.0),    // patient growth: offline Energy efficiency ×
-        .hunter:       BuffScaling(at1: 1.0,   at99: 2.5),    // trapper: passive actions/sec ×
+        .hunter:       BuffScaling(at1: 1.0,   at99: 10.0),   // trapper: OFFLINE passive XP rate × (app closed)
         // Artisan — production & the boost economy
         .cooking:      BuffScaling(at1: 0.0,   at99: 0.50),   // well fed: +fraction to all tap XP
         .firemaking:   BuffScaling(at1: 1.0,   at99: 2.0),    // slow burn: Supercharge duration ×
         .crafting:     BuffScaling(at1: 2.0,   at99: 4.0),    // masterwork: crit magnitude ×
-        .smithing:     BuffScaling(at1: 0.0,   at99: 1.0),    // foundry: +fraction to passive XP
+        .smithing:     BuffScaling(at1: 1.0,   at99: 10.0),   // foundry: FOREGROUND idle XP rate × (app open)
         .fletching:    BuffScaling(at1: 0.0,   at99: 8.0),    // extra ammo: +flat XP per tap
         .herblore:     BuffScaling(at1: 0.0,   at99: 300.0),  // alchemist: +seconds to Double XP duration
         .runecraft:    BuffScaling(at1: 0.0,   at99: 3.0),    // runic automaton: auto-taps per second
-        .construction: BuffScaling(at1: 1.0,   at99: 2.0),    // workshop: × idle (slot) XP — smooth, neutral ×1 at L1
+        .construction: BuffScaling(at1: maxOfflineHours, at99: 48.0), // workshop: OFFLINE accrual cap (hours), neutral at the base cap
         // Support — tempo & meta
         .agility:      BuffScaling(at1: 1.0,   at99: 1.6),    // momentum: tap-streak combo ceiling ×
         .thieving:     BuffScaling(at1: 0.0,   at99: 0.5),    // pickpocket: chance to refund a spent coupon / Supercharge
