@@ -207,18 +207,20 @@ final class GameState: ObservableObject {
     var energyProcChance: Double { buffRaw(.fishing) }
     var energyCapSeconds: Double { max(Balance.maxEnergySeconds, buffRaw(.mining)) }
     var offlineEnergyMultiplier: Double { buffRaw(.farming) }
-    var passiveRateMultiplier: Double { buffRaw(.hunter) }
+    /// Hunter "Trapper": multiplies OFFLINE passive XP (app closed). Neutral ×1 at level 1.
+    var offlineRateMultiplier: Double { buffRaw(.hunter) }
 
     // Artisan — production & boosts
     var tapXPMultiplier: Double { 1 + buffRaw(.cooking) }
     var superchargeDurationMultiplier: Double { buffRaw(.firemaking) }
     var critMagnitude: Double { buffRaw(.crafting) }
-    var passiveXPMultiplier: Double { 1 + buffRaw(.smithing) }
+    /// Smithing "Foundry": multiplies FOREGROUND idle XP (app open). Neutral ×1 at level 1.
+    var foregroundIdleMultiplier: Double { buffRaw(.smithing) }
     var flatTapBonus: Double { buffRaw(.fletching) }
     var doubleXPBonusDuration: TimeInterval { buffRaw(.herblore) }
     var autoTapsPerSecond: Double { buffRaw(.runecraft) }
-    /// Construction "Workshop": a smooth ×multiplier on passive (slot) XP, neutral ×1 at level 1.
-    var passiveWorkshopMultiplier: Double { buffRaw(.construction) }
+    /// Construction "Workshop": raises the OFFLINE accrual cap (hours). Neutral at `Balance.maxOfflineHours` (level 1).
+    var offlineCapHours: Double { max(Balance.maxOfflineHours, buffRaw(.construction)) }
 
     // Support — tempo & meta
     var comboCeiling: Double { buffRaw(.agility) }
@@ -340,15 +342,15 @@ final class GameState: ObservableObject {
         case .energyProc:          return String(format: "%.0f%% bonus Energy", v * 100)
         case .energyCap:           return String(format: "%.0fs Energy cap", max(Balance.maxEnergySeconds, v))
         case .offline:             return String(format: "×%.2f offline Energy", v)
-        case .passiveRate:         return String(format: "×%.2f passive", v)
+        case .offlineRate:         return String(format: "×%.2f offline XP", v)
         case .tapPercent:          return String(format: "+%.0f%% tap XP", v * 100)
         case .superchargeDuration: return String(format: "×%.2f Supercharge time", v)
         case .critMagnitude:       return String(format: "×%.1f crit damage", v)
-        case .passivePercent:      return String(format: "+%.0f%% passive XP", v * 100)
+        case .foregroundRate:      return String(format: "×%.2f idle XP", v)
         case .flatTap:             return String(format: "+%.1f XP per tap", v)
         case .doubleXPDuration:    return String(format: "+%.0fs Double XP", v)
         case .autoTap:             return String(format: "%.1f taps/sec", v)
-        case .passiveMultiplier:   return String(format: "×%.2f idle XP", v)
+        case .offlineCap:          return String(format: "%.0fh offline cap", max(Balance.maxOfflineHours, v))
         case .combo:               return String(format: "up to ×%.2f combo", v)
         case .refund:              return String(format: "%.1f%% refund chance", v * 100)
         case .critChance:          return String(format: "%.0f%% crit chance", v * 100)
@@ -521,8 +523,8 @@ final class GameState: ObservableObject {
         lastTick = now
         guard dt > 0, dt < 3600 else { return } // ignore clock jumps
         for skill in slots {
-            let actionsXP = Double(baseXPPerAction(for: skill)) * Balance.passiveActionsPerSecond * passiveRateMultiplier
-            addXP(actionsXP * dt * xpMultiplier * passiveXPMultiplier * passiveWorkshopMultiplier, to: skill)
+            let actionsXP = Double(baseXPPerAction(for: skill)) * Balance.passiveActionsPerSecond * foregroundIdleMultiplier
+            addXP(actionsXP * dt * xpMultiplier, to: skill)   // Smithing sets the idle rate; Double XP still applies
             addEnergy(dt, to: skill)
         }
         decaySupercharges(by: dt)
@@ -561,24 +563,24 @@ final class GameState: ObservableObject {
         save()
     }
 
-    /// Credits offline passive XP to each *slotted* skill for the time the app was closed, at a
-    /// reduced rate (`Balance.offlineXPMultiplier`) and clamped to `Balance.maxOfflineHours`.
-    /// Boosts (Supercharge / Double XP) are consumed in real time, so they don't apply offline.
-    /// Builds the "welcome back" summary when the player was away long enough.
+    /// Credits offline passive XP to each *slotted* skill for the time the app was closed, at the
+    /// base offline rate (`Balance.offlineXPMultiplier`) scaled by Hunter's `offlineRateMultiplier`,
+    /// and clamped to `offlineCapHours` (raised by Construction). Boosts (Supercharge / Double XP)
+    /// are consumed in real time, so they don't apply offline. Builds the "welcome back" summary
+    /// when the player was away long enough.
     private func creditOfflineProgress(timeAway: TimeInterval) {
         guard !slots.isEmpty, timeAway > 0 else { return }
-        let cap = Balance.maxOfflineHours * 3600
+        let cap = offlineCapHours * 3600                                    // Construction raises the cap
         let credited = min(timeAway, cap)
         guard credited > 0 else { return }
 
         var entries: [OfflineProgress.Entry] = []
         for skill in slots {
             let ratePerSecond = Double(baseXPPerAction(for: skill))
-                * Balance.passiveActionsPerSecond * passiveRateMultiplier   // Hunter
+                * Balance.passiveActionsPerSecond
+                * offlineRateMultiplier                                     // Hunter (offline rate)
             let gained = ratePerSecond * credited
-                * passiveXPMultiplier                                       // Smithing
-                * passiveWorkshopMultiplier                                 // Construction
-                * Balance.offlineXPMultiplier
+                * Balance.offlineXPMultiplier                              // base offline penalty (40%)
             guard gained > 0 else { continue }
             let fromLevel = level(for: skill)
             let before = xpBySkill[skill] ?? 0
@@ -725,7 +727,7 @@ final class GameState: ObservableObject {
         let away: TimeInterval = 8 * 3600 + 37 * 60
         offlineProgress = OfflineProgress(
             timeAway: away,
-            creditedTime: min(away, Balance.maxOfflineHours * 3600),
+            creditedTime: min(away, offlineCapHours * 3600),
             wasCapped: false,
             entries: entries,
             totalXP: entries.reduce(0) { $0 + $1.xpGained }

@@ -16,16 +16,16 @@ enum BuffKind {
     case energyProc          // Fishing: chance per tap to bank bonus Energy
     case energyCap           // Mining: raises the maximum bankable Energy
     case offline             // Farming: better Energy efficiency while the app is closed
-    case passiveRate         // Hunter: more passive actions/sec on slotted skills
+    case offlineRate         // Hunter: multiplies OFFLINE passive XP (app closed)
     // Artisan — production & the boost economy
     case tapPercent          // Cooking: +% XP on every tap
     case superchargeDuration // Firemaking: Supercharge bursts last longer
     case critMagnitude       // Crafting: critical taps hit harder
-    case passivePercent      // Smithing: +% passive (slot) XP
+    case foregroundRate      // Smithing: multiplies FOREGROUND idle XP (app open)
     case flatTap             // Fletching: +flat XP added to every tap
     case doubleXPDuration    // Herblore: Double XP boosts last longer
     case autoTap             // Runecraft: auto-taps the open skill
-    case passiveMultiplier   // Construction: multiplies idle (slot) XP
+    case offlineCap          // Construction: raises the OFFLINE accrual cap (hours)
     // Support — tempo & meta
     case combo               // Agility: tap-streak combo multiplier
     case refund              // Thieving: chance to refund a spent coupon or Supercharge
@@ -82,8 +82,8 @@ extension SkillID {
             return SkillBuffInfo(kind: .offline, name: "Patient Growth", icon: "moon.zzz.fill",
                                  blurb: "Banks more Energy while the app is closed.")
         case .hunter:
-            return SkillBuffInfo(kind: .passiveRate, name: "Trapper", icon: "timer",
-                                 blurb: "Slotted skills train passively faster.")
+            return SkillBuffInfo(kind: .offlineRate, name: "Trapper", icon: "timer",
+                                 blurb: "Traps keep working while you're away — faster offline XP.")
 
         // MARK: Artisan
         case .cooking:
@@ -96,8 +96,8 @@ extension SkillID {
             return SkillBuffInfo(kind: .critMagnitude, name: "Masterwork", icon: "hammer.fill",
                                  blurb: "Critical taps hit even harder.")
         case .smithing:
-            return SkillBuffInfo(kind: .passivePercent, name: "Foundry", icon: "gearshape.2.fill",
-                                 blurb: "+% passive XP on slotted skills.")
+            return SkillBuffInfo(kind: .foregroundRate, name: "Foundry", icon: "gearshape.2.fill",
+                                 blurb: "The forge roars while the app's open — faster idle XP.")
         case .fletching:
             return SkillBuffInfo(kind: .flatTap, name: "Extra Ammo", icon: "plus.circle.fill",
                                  blurb: "Adds flat bonus XP to every tap.")
@@ -108,8 +108,8 @@ extension SkillID {
             return SkillBuffInfo(kind: .autoTap, name: "Runic Automaton", icon: "cpu.fill",
                                  blurb: "Auto-taps the skill you're training.")
         case .construction:
-            return SkillBuffInfo(kind: .passiveMultiplier, name: "Workshop", icon: "wrench.and.screwdriver.fill",
-                                 blurb: "Your workshop multiplies idle output on every slot.")
+            return SkillBuffInfo(kind: .offlineCap, name: "Workshop", icon: "wrench.and.screwdriver.fill",
+                                 blurb: "Your workshop banks more hours of offline progress.")
 
         // MARK: Support
         case .agility:
