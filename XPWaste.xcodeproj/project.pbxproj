@@ -10,6 +10,7 @@
 		02FA3C955D93ADD8EBA9BDFB /* XPTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E0E45C7E9D9D0DE29D72FF3 /* XPTable.swift */; };
 		30C25ACAEE1BA59BB913A7F4 /* DoubleXPView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42712009D4921FA00B728FB6 /* DoubleXPView.swift */; };
 		42E3FC858C8AAA216E97261C /* SkillTileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A73F31CA01FA254794325B62 /* SkillTileView.swift */; };
+		4CD930F2481D373399C70C87 /* SkillBuff.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA92635CDC1688C41F943B2E /* SkillBuff.swift */; };
 		55350A696836F8EFBC5340E6 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1C4A48A3AB2D27D55890FB /* RootView.swift */; };
 		5B1E2E8A0E04A2D6DBDA58C3 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2089696249D42DE662D0E79 /* SettingsView.swift */; };
 		5C757E7204833E7A8984D3E0 /* Balance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FBADCB2442F8B64DE322F72 /* Balance.swift */; };
@@ -44,6 +45,7 @@
 		C2089696249D42DE662D0E79 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		D14F3654CA952949A7147EA4 /* TrainingMethod.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingMethod.swift; sourceTree = "<group>"; };
 		E9B478FD59A22ADAC0A2ABCF /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		FA92635CDC1688C41F943B2E /* SkillBuff.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillBuff.swift; sourceTree = "<group>"; };
 		FB187F79C7FE5E118212510E /* Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Store.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -77,6 +79,7 @@
 			children = (
 				2FBADCB2442F8B64DE322F72 /* Balance.swift */,
 				33472B73562B32DA87AB511B /* GameState.swift */,
+				FA92635CDC1688C41F943B2E /* SkillBuff.swift */,
 				A234E12FEEC3048572025502 /* SkillID.swift */,
 				FB187F79C7FE5E118212510E /* Store.swift */,
 				D14F3654CA952949A7147EA4 /* TrainingMethod.swift */,
@@ -190,6 +193,7 @@
 				967809326B0FB53C02C3565C /* OnboardingView.swift in Sources */,
 				55350A696836F8EFBC5340E6 /* RootView.swift in Sources */,
 				5B1E2E8A0E04A2D6DBDA58C3 /* SettingsView.swift in Sources */,
+				4CD930F2481D373399C70C87 /* SkillBuff.swift in Sources */,
 				CB95F8778113B507E3F72F71 /* SkillID.swift in Sources */,
 				42E3FC858C8AAA216E97261C /* SkillTileView.swift in Sources */,
 				B4CA291C706944B984EB3FC4 /* SkillTrainingView.swift in Sources */,

@@ -45,8 +45,9 @@ Sources/
   Models/   SkillID.swift               # the 23 skills, 4 categories + theming
             TrainingMethod.swift        # per-skill 6-tier thematic training methods
             XPTable.swift               # OSRS XP curve
-            Balance.swift               # ALL tunable constants (tiers, slots, supercharge…)
+            Balance.swift               # ALL tunable constants (tiers, slots, supercharge, perks…)
             GameState.swift             # source of truth: XP, slots, energy, supercharge, coupons
+            SkillBuff.swift             # per-skill unique account-wide perks (BuffKind + theming)
             Store.swift                 # StoreKit 2 in-app purchases (coupon packs)
   Views/    RootView / Onboarding / Home / SkillTile
             SkillTrainingView / StatsView / SettingsView / Components
@@ -54,7 +55,7 @@ Sources/
   Assets.xcassets                       # app icon + accent color
 Config/     Products.storekit           # local StoreKit config for testing IAP
 project.yml                             # XcodeGen project definition (universal: iPhone + iPad)
-docs/       GAME_DESIGN.md, DEVELOPMENT.md
+docs/       GAME_DESIGN.md, DEVELOPMENT.md, SKILL_BUFFS.md
 ```
 
 ## Architecture at a glance
@@ -67,12 +68,16 @@ docs/       GAME_DESIGN.md, DEVELOPMENT.md
 - **`XPTable.swift`** encodes the exact OSRS XP curve (L1 = 0 XP, L99 = 13,034,431).
 - **`SkillID.swift`** + **`TrainingMethod.swift`** define the 23 skills, their four categories,
   and each skill's six thematic training-method tiers.
+- **`SkillBuff.swift`** maps each of the 23 skills to a **unique account-wide perk**; the scaling
+  envelopes live in `Balance.buffScaling` and the effects are applied in `GameState` (see
+  [SKILL_BUFFS.md](SKILL_BUFFS.md)).
 
 ## Tuning
 
 All balance lives in `Sources/Models/Balance.swift` — training-method tiers, passive rate,
-Energy cap, slot thresholds, Supercharge multipliers, and Double XP timing. Re-balancing the
-game is a one-file change.
+Energy cap, slot thresholds, Supercharge multipliers, Double XP timing, and the **per-skill perk
+scaling** (`buffScaling` — every perk's neutral level-1 and fully-trained level-99 value).
+Re-balancing the game is a one-file change.
 
 ## Testing in-app purchases
 

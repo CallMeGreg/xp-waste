@@ -29,6 +29,14 @@ Training isn't static. As a skill grows, its training **method upgrades to somet
 more powerful** — and each tap is worth more XP. Woodcutting starts you on a normal tree and
 works its way up to mighty redwoods; every skill has six tiers of thematic progression to unlock.
 
+### 🎁 Every skill makes you stronger
+Leveling isn't just a number — **every one of the 23 skills grants a permanent perk** that
+benefits your whole account, and it grows the more you train that skill. Strength gives your taps
+a shot at bigger hits, Attack makes those big hits more reliable, Mining deepens your Energy
+reserves, Crafting and Slayer team up for critical taps, Runecraft even **auto-taps** the skill
+you're training. No two perks do the same thing, so there's always a reason to spread your taps —
+maxing everything makes you strongest of all.
+
 ### 🎰 Training slots (passive XP)
 Slot a skill into a **training slot** and it earns experience passively while the app is open —
 so you can tap one skill while another trains itself. You start with a single slot and unlock

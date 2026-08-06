@@ -54,6 +54,10 @@ final class GameState: ObservableObject {
     private var lastFreeCouponDay: String?
     private var autosaveAccumulator: TimeInterval = 0
 
+    /// Agility combo tracking (runtime only — derived from tap timing, never persisted).
+    private var comboStreak: Int = 0
+    private var lastTapAt: Date = .distantPast
+
     private static let saveKey = "xpWaste.save.v1"
 
     init() {
@@ -78,9 +82,9 @@ final class GameState: ObservableObject {
     func isEligibleForSlot(_ skill: SkillID) -> Bool { level(for: skill) >= Balance.slotEligibilityLevel }
     func isMaxed(_ skill: SkillID) -> Bool { level(for: skill) >= XPTable.maxLevel }
 
-    /// Progress (0...1) of banked Energy toward the 30s cap.
+    /// Progress (0...1) of banked Energy toward the (perk-adjusted) cap.
     func energyFraction(for skill: SkillID) -> Double {
-        min(energy(for: skill) / Balance.maxEnergySeconds, 1.0)
+        min(energy(for: skill) / energyCapSeconds, 1.0)
     }
 
     func canSupercharge(_ skill: SkillID) -> Bool {
@@ -90,7 +94,7 @@ final class GameState: ObservableObject {
     var totalLevel: Int { SkillID.allCases.reduce(0) { $0 + level(for: $1) } }
     var totalXP: Int { SkillID.allCases.reduce(0) { $0 + xp(for: $1) } }
     var maxTotalLevel: Int { SkillID.allCases.count * XPTable.maxLevel }
-    var maxSlots: Int { Balance.maxSlots(forTotalLevel: totalLevel) }
+    var maxSlots: Int { Balance.maxSlots(forTotalLevel: totalLevel) + extraTrainingSlots }
     var superchargeMultiplier: Int { Balance.superchargeMultiplier(forTotalLevel: totalLevel) }
     var maxedSkillCount: Int { SkillID.allCases.filter { isMaxed($0) }.count }
     var isFullyMaxed: Bool { maxedSkillCount == SkillID.allCases.count }
@@ -129,17 +133,193 @@ final class GameState: ObservableObject {
     /// Seconds left on the active Double XP boost (0 when inactive).
     var doubleXPRemaining: TimeInterval { max(0, (doubleXPExpiry ?? Date()).timeIntervalSinceNow) }
 
-    /// The current global XP multiplier (2× while boosted, otherwise 1×).
-    var xpMultiplier: Double { isDoubleXPActive ? Balance.doubleXPMultiplier : 1 }
+    /// The current global XP multiplier (Magic-boosted Double XP while active, otherwise 1×).
+    var xpMultiplier: Double { isDoubleXPActive ? doubleXPPotency : 1 }
 
     /// True when the player has a coupon to spend and no boost is already running.
     var canActivateDoubleXP: Bool { !isDoubleXPActive && doubleXPCoupons > 0 }
 
-    /// Effective XP earned per tap on `skill`, folding in the current method, Supercharge, and Double XP.
-    func tapGain(for skill: SkillID) -> Int {
-        let base = baseXPPerAction(for: skill)
-        let multiplier = isSupercharged(skill) ? superchargeMultiplier : 1
-        return Int((Double(base * multiplier) * xpMultiplier).rounded())
+    // MARK: - Skill perks (account-wide buffs)
+
+    /// Raw interpolated magnitude of a skill's perk at its current level.
+    private func buffRaw(_ skill: SkillID) -> Double {
+        guard let scaling = Balance.buffScaling[skill] else { return 0 }
+        return Balance.buffValue(level: level(for: skill), scaling: scaling)
+    }
+
+    // Combat — tap "hit" shaping
+    var accuracyBias: Double { buffRaw(.attack) }          // 0 = uniform roll; higher biases toward max
+    var maxHitMultiplier: Double { buffRaw(.strength) }    // × base method XP (the hit ceiling)
+    var minHitMultiplier: Double { buffRaw(.defence) }     // × base method XP (the hit floor)
+    var energyRateMultiplier: Double { buffRaw(.hitpoints) }
+    var extraHitChance: Double { buffRaw(.ranged) }
+    var superchargeBonus: Int { Int(buffRaw(.prayer).rounded()) }
+    var doubleXPPotency: Double { buffRaw(.magic) }        // the live Double XP multiplier value
+
+    // Gathering — idle engine
+    var cacheChance: Double { buffRaw(.woodcutting) }
+    var energyProcChance: Double { buffRaw(.fishing) }
+    var energyCapSeconds: Double { max(Balance.maxEnergySeconds, buffRaw(.mining)) }
+    var offlineEnergyMultiplier: Double { buffRaw(.farming) }
+    var passiveRateMultiplier: Double { buffRaw(.hunter) }
+
+    // Artisan — production & boosts
+    var tapXPMultiplier: Double { 1 + buffRaw(.cooking) }
+    var superchargeDurationMultiplier: Double { buffRaw(.firemaking) }
+    var critMagnitude: Double { buffRaw(.crafting) }
+    var passiveXPMultiplier: Double { 1 + buffRaw(.smithing) }
+    var flatTapBonus: Double { buffRaw(.fletching) }
+    var doubleXPBonusDuration: TimeInterval { buffRaw(.herblore) }
+    var autoTapsPerSecond: Double { buffRaw(.runecraft) }
+    var extraTrainingSlots: Int {
+        Balance.constructionSlotLevels.filter { level(for: .construction) >= $0 }.count
+    }
+
+    // Support — tempo & meta
+    var comboCeiling: Double { buffRaw(.agility) }
+    var dailyCoupons: Int { max(1, Int(buffRaw(.thieving).rounded())) }
+    var critChance: Double { buffRaw(.slayer) }
+
+    /// Current Agility combo multiplier from the recent tap streak (decays once you stop tapping).
+    var comboMultiplier: Double {
+        guard comboCeiling > 1, comboStreak > 0,
+              Date().timeIntervalSince(lastTapAt) <= Balance.agilityComboWindow else { return 1 }
+        let frac = min(Double(comboStreak) / Double(Balance.agilityComboTapsToMax), 1)
+        return 1 + (comboCeiling - 1) * frac
+    }
+
+    /// One tap's outcome, so the UI can animate crits, extra hits, caches, and Energy procs.
+    struct TapResult {
+        var xp: Int
+        var didCrit: Bool = false
+        var extraHits: Int = 0
+        var gotCache: Bool = false
+        var gotEnergy: Bool = false
+    }
+
+    /// Rolls a single "hit": XP within [min, max], biased toward max by Accuracy (Attack).
+    private func rollHit(base: Double) -> Double {
+        let maxHit = base * maxHitMultiplier
+        let minHit = min(base * minHitMultiplier, maxHit)
+        guard maxHit > minHit else { return maxHit }
+        let u = Double.random(in: 0...1)
+        let skewed = pow(u, 1.0 / (1.0 + accuracyBias))
+        return minHit + (maxHit - minHit) * skewed
+    }
+
+    /// Number of *extra* hits a tap lands (Ranged). Chances > 100% guarantee +1 and roll for more.
+    private func rollExtraHits() -> Int {
+        var chance = extraHitChance
+        var extra = 0
+        while chance > 0 {
+            if chance >= 1 { extra += 1; chance -= 1 }
+            else {
+                if Double.random(in: 0..<1) < chance { extra += 1 }
+                break
+            }
+        }
+        return extra
+    }
+
+    /// Resolves a full tap through the perk pipeline. See `docs/SKILL_BUFFS.md` for the order.
+    func rollTap(for skill: SkillID) -> TapResult {
+        let base = Double(baseXPPerAction(for: skill))
+        let combo = comboMultiplier
+        let hitCount = 1 + rollExtraHits()
+        var didCrit = false
+        var total = 0.0
+        for _ in 0..<hitCount {
+            var hit = rollHit(base: base) + flatTapBonus     // Fletching flat bonus
+            hit *= tapXPMultiplier                            // Cooking
+            hit *= combo                                      // Agility
+            if critChance > 0, Double.random(in: 0..<1) < critChance {   // Slayer chance
+                hit *= critMagnitude                          // Crafting magnitude
+                didCrit = true
+            }
+            total += hit
+        }
+        var gotCache = false
+        if cacheChance > 0, Double.random(in: 0..<1) < cacheChance {     // Woodcutting
+            total += base * Balance.woodcuttingCacheMultiple
+            gotCache = true
+        }
+        if isSupercharged(skill) { total *= Double(superchargeMultiplier + superchargeBonus) } // + Prayer
+        if isDoubleXPActive { total *= doubleXPPotency }                 // Magic-boosted Double XP
+        var gotEnergy = false
+        if energyProcChance > 0, Double.random(in: 0..<1) < energyProcChance {  // Fishing
+            bankEnergySeconds(Balance.fishingProcEnergySeconds, to: skill)
+            gotEnergy = true
+        }
+        return TapResult(xp: Int(total.rounded()), didCrit: didCrit,
+                         extraHits: hitCount - 1, gotCache: gotCache, gotEnergy: gotEnergy)
+    }
+
+    /// Deterministic *average* XP per tap with all perks folded in — for display only.
+    func expectedTapGain(for skill: SkillID) -> Int {
+        let base = Double(baseXPPerAction(for: skill))
+        let maxHit = base * maxHitMultiplier
+        let minHit = min(base * minHitMultiplier, maxHit)
+        let skewMean = (1 + accuracyBias) / (2 + accuracyBias)   // E[u^(1/(1+bias))]
+        var hit = (minHit + (maxHit - minHit) * skewMean) + flatTapBonus
+        hit *= tapXPMultiplier
+        hit *= comboMultiplier
+        hit *= 1 + critChance * (critMagnitude - 1)               // expected crit uplift
+        var total = hit * (1 + extraHitChance)                    // expected extra hits
+        total += cacheChance * base * Balance.woodcuttingCacheMultiple
+        if isSupercharged(skill) { total *= Double(superchargeMultiplier + superchargeBonus) }
+        if isDoubleXPActive { total *= doubleXPPotency }
+        return max(1, Int(total.rounded()))
+    }
+
+    /// A formatted (current, next-level) description of a skill's perk magnitude, for the UI.
+    func buffValues(for skill: SkillID) -> (current: String, next: String?) {
+        let lvl = level(for: skill)
+        let current = formattedBuff(skill, atLevel: lvl)
+        let next = lvl < XPTable.maxLevel ? formattedBuff(skill, atLevel: lvl + 1) : nil
+        return (current, next)
+    }
+
+    private func formattedBuff(_ skill: SkillID, atLevel lvl: Int) -> String {
+        guard let scaling = Balance.buffScaling[skill] else { return "—" }
+        let v = Balance.buffValue(level: lvl, scaling: scaling)
+        switch skill.buff.kind {
+        case .accuracy:            return String(format: "avg roll %.0f%% of max", (1 + v) / (2 + v) * 100)
+        case .maxHit:              return String(format: "+%.0f%% max hit", (v - 1) * 100)
+        case .minHit:              return String(format: "+%.0f%% min hit", (v - 1) * 100)
+        case .energyRate:          return String(format: "×%.2f Energy rate", v)
+        case .extraHit:            return String(format: "%.0f%% extra hit", v * 100)
+        case .superchargeBonus:    return String(format: "+%.0f Supercharge ×", v)
+        case .doubleXPPotency:     return String(format: "%.2f× Double XP", v)
+        case .cache:               return String(format: "%.0f%% bonus cache", v * 100)
+        case .energyProc:          return String(format: "%.0f%% bonus Energy", v * 100)
+        case .energyCap:           return String(format: "%.0fs Energy cap", max(Balance.maxEnergySeconds, v))
+        case .offline:             return String(format: "×%.2f offline Energy", v)
+        case .passiveRate:         return String(format: "×%.2f passive", v)
+        case .tapPercent:          return String(format: "+%.0f%% tap XP", v * 100)
+        case .superchargeDuration: return String(format: "×%.2f Supercharge time", v)
+        case .critMagnitude:       return String(format: "×%.1f crit damage", v)
+        case .passivePercent:      return String(format: "+%.0f%% passive XP", v * 100)
+        case .flatTap:             return String(format: "+%.1f XP per tap", v)
+        case .doubleXPDuration:    return String(format: "+%.0fs Double XP", v)
+        case .autoTap:             return String(format: "%.1f taps/sec", v)
+        case .extraSlots:
+            let n = Balance.constructionSlotLevels.filter { lvl >= $0 }.count
+            return "+\(n) training slot\(n == 1 ? "" : "s")"
+        case .combo:               return String(format: "up to ×%.2f combo", v)
+        case .dailyCoupons:        return "\(max(1, Int(v.rounded())))/day coupons"
+        case .critChance:          return String(format: "%.0f%% crit chance", v * 100)
+        }
+    }
+
+    /// Records a tap for Agility combo purposes (extends or resets the streak).
+    private func registerComboTap() {
+        let now = Date()
+        if now.timeIntervalSince(lastTapAt) <= Balance.agilityComboWindow {
+            comboStreak = min(comboStreak + 1, Balance.agilityComboTapsToMax)
+        } else {
+            comboStreak = 1
+        }
+        lastTapAt = now
     }
 
     /// The next training-slot unlock as (slot number, required total level), or nil if all unlocked.
@@ -151,9 +331,13 @@ final class GameState: ObservableObject {
 
     // MARK: - Player actions
 
-    /// Register a tap on a skill's trainable object.
-    func tap(_ skill: SkillID) {
-        addXP(Double(tapGain(for: skill)), to: skill)
+    /// Register a tap on a skill's trainable object. Returns the roll so the UI can animate it.
+    @discardableResult
+    func tap(_ skill: SkillID) -> TapResult {
+        let result = rollTap(for: skill)
+        addXP(Double(result.xp), to: skill)
+        registerComboTap()
+        return result
     }
 
     /// Assign or remove a skill from a training slot. Returns true if the state changed.
@@ -175,7 +359,7 @@ final class GameState: ObservableObject {
     func supercharge(_ skill: SkillID) -> Bool {
         let banked = energy(for: skill)
         guard banked >= Balance.minEnergyToSupercharge else { return false }
-        superchargeBySkill[skill] = banked
+        superchargeBySkill[skill] = banked * superchargeDurationMultiplier   // Firemaking extends the burst
         energyBySkill[skill] = 0
         save()
         return true
@@ -188,7 +372,7 @@ final class GameState: ObservableObject {
     func activateDoubleXP() -> Bool {
         guard canActivateDoubleXP else { return false }
         doubleXPCoupons -= 1
-        doubleXPExpiry = Date().addingTimeInterval(Balance.doubleXPDurationSeconds)
+        doubleXPExpiry = Date().addingTimeInterval(Balance.doubleXPDurationSeconds + doubleXPBonusDuration)
         save()
         return true
     }
@@ -209,9 +393,10 @@ final class GameState: ObservableObject {
         let today = Self.dayKey()
         guard lastFreeCouponDay != today else { return false }
         lastFreeCouponDay = today
-        doubleXPCoupons += Balance.dailyFreeCoupons
+        let granted = dailyCoupons   // Thieving raises the free daily haul
+        doubleXPCoupons += granted
         if hasSeenOnboarding {
-            notice = "🎁 Daily reward: +\(Balance.dailyFreeCoupons) Double XP coupon\(Balance.dailyFreeCoupons == 1 ? "" : "s")"
+            notice = "🎁 Daily reward: +\(granted) Double XP coupon\(granted == 1 ? "" : "s")"
         }
         save()
         return true
@@ -257,8 +442,8 @@ final class GameState: ObservableObject {
         lastTick = now
         guard dt > 0, dt < 3600 else { return } // ignore clock jumps
         for skill in slots {
-            let actionsXP = Double(baseXPPerAction(for: skill)) * Balance.passiveActionsPerSecond
-            addXP(actionsXP * dt * xpMultiplier, to: skill)
+            let actionsXP = Double(baseXPPerAction(for: skill)) * Balance.passiveActionsPerSecond * passiveRateMultiplier
+            addXP(actionsXP * dt * xpMultiplier * passiveXPMultiplier, to: skill)
             addEnergy(dt, to: skill)
         }
         decaySupercharges(by: dt)
@@ -275,7 +460,7 @@ final class GameState: ObservableObject {
         let now = Date()
         let elapsed = now.timeIntervalSince(lastActive)
         if elapsed > 0 {
-            for skill in slots { addEnergy(elapsed, to: skill) }
+            for skill in slots { addEnergy(elapsed, to: skill, offline: true) }
             decaySupercharges(by: elapsed)
         }
         expireDoubleXPIfNeeded()
@@ -307,10 +492,18 @@ final class GameState: ObservableObject {
         }
     }
 
-    private func addEnergy(_ realSeconds: TimeInterval, to skill: SkillID) {
+    private func addEnergy(_ realSeconds: TimeInterval, to skill: SkillID, offline: Bool = false) {
         let current = energyBySkill[skill] ?? 0
-        let gained = realSeconds / Balance.realSecondsPerEnergySecond
-        energyBySkill[skill] = min(current + gained, Balance.maxEnergySeconds)
+        var rate = energyRateMultiplier                       // Hitpoints
+        if offline { rate *= offlineEnergyMultiplier }        // Farming (offline only)
+        let gained = realSeconds / Balance.realSecondsPerEnergySecond * rate
+        energyBySkill[skill] = min(current + gained, energyCapSeconds)   // Mining raises the cap
+    }
+
+    /// Banks `seconds` of Supercharge Energy directly (used by Fishing "big catch" procs).
+    private func bankEnergySeconds(_ seconds: Double, to skill: SkillID) {
+        let current = energyBySkill[skill] ?? 0
+        energyBySkill[skill] = min(current + seconds, energyCapSeconds)
     }
 
     private func decaySupercharges(by dt: TimeInterval) {
