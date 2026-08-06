@@ -1,40 +1,25 @@
 import SwiftUI
 
-/// The main hub: total-level header + a grid of skill tiles grouped by category.
+/// The main hub: a compact total-level header, top-bar boost icons, and a grouped
+/// "stat list" of every skill (emblem, name, inline XP bar, level, supercharge-ready flag).
 struct HomeView: View {
     @EnvironmentObject private var game: GameState
     @State private var showStats = false
     @State private var showSettings = false
-    @State private var showDoubleXP = false
+    @State private var showBoosts = false
     @State private var path: [SkillID] = []
-
-    private let columns = [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 14)]
 
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView {
-                VStack(spacing: 22) {
-                    HeaderCard()
-                    DoubleXPCard(show: $showDoubleXP)
+                VStack(spacing: 14) {
+                    TotalLevelHeader()
                     ForEach(SkillCategory.allCases) { category in
-                        VStack(alignment: .leading, spacing: 12) {
-                            Label(category.rawValue.uppercased(), systemImage: category.symbol)
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, 4)
-                            LazyVGrid(columns: columns, spacing: 14) {
-                                ForEach(SkillID.skills(in: category)) { skill in
-                                    NavigationLink(value: skill) {
-                                        SkillTileView(skill: skill)
-                                    }
-                                    .buttonStyle(PressableStyle())
-                                }
-                            }
-                        }
+                        SkillStatGroup(category: category)
                     }
                 }
-                .padding(16)
-                .frame(maxWidth: 820)
+                .padding(14)
+                .frame(maxWidth: 760)
                 .frame(maxWidth: .infinity)
             }
             .background(GameBackground())
@@ -50,6 +35,9 @@ struct HomeView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
+                    BoostsIcons { showBoosts = true }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     Button { showSettings = true } label: {
                         Image(systemName: "gearshape.fill")
                     }
@@ -57,7 +45,7 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showStats) { StatsView() }
             .sheet(isPresented: $showSettings) { SettingsView() }
-            .sheet(isPresented: $showDoubleXP) { BoostsView() }
+            .sheet(isPresented: $showBoosts) { BoostsView() }
             .onAppear {
                 #if DEBUG
                 if path.isEmpty,
@@ -66,7 +54,7 @@ struct HomeView: View {
                     path = [skill]
                 }
                 if ProcessInfo.processInfo.environment["OPEN_SHEET"] == "doublexp" {
-                    showDoubleXP = true
+                    showBoosts = true
                 }
                 #endif
             }
@@ -74,122 +62,132 @@ struct HomeView: View {
     }
 }
 
-/// Top-of-hub summary: total level, max-cape progress, slots, and the next unlock hint.
-private struct HeaderCard: View {
+/// Compact hub header: total level, max-cape progress, and a one-line slots/supercharge summary.
+private struct TotalLevelHeader: View {
     @EnvironmentObject private var game: GameState
-
     var body: some View {
-        VStack(spacing: 14) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Total Level")
-                        .font(.caption).foregroundStyle(.secondary)
-                    Text("\(game.totalLevel)")
-                        .font(.system(size: 42, weight: .heavy, design: .rounded))
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 6) {
-                    Label("\(game.slots.count) / \(game.maxSlots) slots", systemImage: "bolt.fill")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.yellow)
-                    Label("×\(game.effectiveSuperchargeMultiplier) supercharge", systemImage: "flame.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.orange)
-                }
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text("TOTAL LEVEL").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
+                Text("\(game.totalLevel)")
+                    .font(.system(size: 30, weight: .heavy, design: .rounded)).monospacedDigit()
             }
-
-            VStack(spacing: 5) {
+            VStack(alignment: .leading, spacing: 4) {
                 XPProgressBar(progress: Double(game.totalLevel) / Double(game.maxTotalLevel),
-                              tint: .accentColor, height: 10)
-                HStack {
-                    Text("Max cape progress")
-                        .font(.caption2).foregroundStyle(.secondary)
-                    Spacer()
-                    Text("\(game.totalLevel) / \(game.maxTotalLevel)")
-                        .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
-                }
-            }
-
-            if game.isFullyMaxed {
-                Text("🏆 Maxed! Level 99 in every skill.")
-                    .font(.caption.bold()).foregroundStyle(.yellow)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            } else if let next = game.nextSlotUnlock {
-                Text("Reach total level \(next.totalLevel) to unlock training slot \(next.slot).")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                              tint: .accentColor, height: 7)
+                Text(subtitle).font(.caption2).foregroundStyle(.secondary)
             }
         }
-        .padding(16)
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Color.white.opacity(0.08)))
+        .padding(.horizontal, 16).padding(.vertical, 12)
+        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.white.opacity(0.08)))
+    }
+
+    private var subtitle: String {
+        if game.isFullyMaxed { return "Maxed — level 99 in every skill" }
+        return "\(game.slots.count)/\(game.maxSlots) slots · ×\(game.effectiveSuperchargeMultiplier) supercharge"
     }
 }
 
-/// Home entry point for the Double XP feature: shows a live countdown while a boost
-/// is running, otherwise an "Activate" prompt with the player's coupon balance.
-private struct DoubleXPCard: View {
+/// A category card: a header label plus a divider-separated list of skill "stat" rows.
+private struct SkillStatGroup: View {
+    let category: SkillCategory
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Label(category.rawValue.uppercased(), systemImage: category.symbol)
+                    .font(.caption2.weight(.bold)).foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            ForEach(Array(SkillID.skills(in: category).enumerated()), id: \.element) { idx, skill in
+                if idx > 0 {
+                    Divider().overlay(Color.white.opacity(0.06)).padding(.leading, 52)
+                }
+                NavigationLink(value: skill) {
+                    SkillStatRow(skill: skill)
+                }
+                .buttonStyle(PressableStyle(scale: 0.98))
+            }
+        }
+        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.white.opacity(0.08)))
+    }
+}
+
+/// A single skill row: emblem, name, inline XP bar, level, and a Ready/Slot status flag.
+private struct SkillStatRow: View {
     @EnvironmentObject private var game: GameState
-    @Binding var show: Bool
+    let skill: SkillID
+    var body: some View {
+        let level = game.level(for: skill)
+        let method = game.currentMethod(for: skill)
+        let slotted = game.isSlotted(skill)
+        let ready = game.canSupercharge(skill)
+        return HStack(spacing: 12) {
+            ZStack {
+                Circle().fill(skill.tint.opacity(0.22)).frame(width: 34, height: 34)
+                ArtworkView(art: method.art, size: 18 * method.scale, color: method.tint ?? skill.tint)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(skill.displayName)
+                        .font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                    Spacer()
+                    if ready {
+                        Label("Ready", systemImage: "flame.fill")
+                            .font(.caption2.weight(.bold)).foregroundStyle(.orange)
+                    } else if slotted, let i = game.slotIndex(of: skill) {
+                        Label("Slot \(i + 1)", systemImage: "bolt.fill")
+                            .font(.caption2.weight(.semibold)).foregroundStyle(.yellow)
+                    }
+                    Text("\(level)")
+                        .font(.subheadline.weight(.bold)).monospacedDigit().foregroundStyle(.primary)
+                    Text("/99").font(.caption2).foregroundStyle(.secondary)
+                }
+                XPProgressBar(progress: XPTable.progressToNextLevel(forXP: game.xp(for: skill)),
+                              tint: skill.tint, height: 5)
+            }
+        }
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .contentShape(Rectangle())
+    }
+}
+
+/// Two compact top-bar chips — Double XP (coupon count, or a live countdown while active) and
+/// Energy Cells — that open the Boosts sheet. Split for at-a-glance status.
+private struct BoostsIcons: View {
+    @EnvironmentObject private var game: GameState
+    var onTap: () -> Void
 
     var body: some View {
-        Button { show = true } label: {
-            Group {
+        HStack(spacing: 8) {
+            Button(action: onTap) {
                 if game.isDoubleXPActive {
-                    TimelineView(.periodic(from: .now, by: 1)) { _ in activeContent }
+                    TimelineView(.periodic(from: .now, by: 1)) { _ in
+                        chip(system: "sparkles", tint: .doubleXP,
+                             text: Format.clock(game.doubleXPRemaining), wide: true)
+                    }
                 } else {
-                    idleContent
+                    chip(system: "sparkles", tint: .doubleXP,
+                         text: "\(game.doubleXPCoupons)", wide: false)
                 }
             }
-            .padding(16)
-            .frame(maxWidth: .infinity)
-            .background(Color.doubleXP.opacity(game.isDoubleXPActive ? 0.16 : 0.10),
-                        in: RoundedRectangle(cornerRadius: 18))
-            .overlay(RoundedRectangle(cornerRadius: 18)
-                .strokeBorder(Color.doubleXP.opacity(game.isDoubleXPActive ? 0.6 : 0.35), lineWidth: 1))
-        }
-        .buttonStyle(PressableStyle())
-    }
-
-    private var activeContent: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "sparkles").font(.title2).foregroundStyle(Color.doubleXP)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(multText(game.xpMultiplier)) XP ACTIVE")
-                    .font(.subheadline.weight(.heavy)).foregroundStyle(Color.doubleXP)
-                Text("Every skill earns \(multText(game.xpMultiplier)) XP")
-                    .font(.caption).foregroundStyle(.secondary)
+            .buttonStyle(.plain)
+            Button(action: onTap) {
+                chip(system: "bolt.fill", tint: .orange, text: "\(game.energyCells)", wide: false)
             }
-            Spacer()
-            Text(Format.clock(game.doubleXPRemaining))
-                .font(.system(size: 26, weight: .heavy, design: .rounded))
-                .monospacedDigit().contentTransition(.numericText())
+            .buttonStyle(.plain)
         }
     }
 
-    private var idleContent: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "sparkles").font(.title2).foregroundStyle(Color.doubleXP)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Double XP & Energy")
-                    .font(.subheadline.weight(.bold))
-                Text(game.doubleXPCoupons > 0
-                     ? "Tap to activate \(multText(game.doubleXPPotency)) XP · buy boosts"
-                     : "Free coupon daily · buy boosts anytime")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            Spacer()
-            HStack(spacing: 5) {
-                Text("🎟️")
-                Text("\(game.doubleXPCoupons)")
-                    .font(.headline.weight(.bold)).monospacedDigit()
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.bold)).foregroundStyle(.secondary)
-            }
+    private func chip(system: String, tint: Color, text: String, wide: Bool) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: system).font(.footnote.weight(.bold)).foregroundStyle(tint)
+            Text(text).font(.caption.weight(.bold)).monospacedDigit().foregroundStyle(.primary)
         }
-    }
-
-    private func multText(_ v: Double) -> String {
-        v == v.rounded() ? String(format: "×%.0f", v) : String(format: "×%.1f", v)
+        .padding(.horizontal, wide ? 10 : 8).padding(.vertical, 6)
+        .background(tint.opacity(0.16), in: Capsule())
+        .overlay(Capsule().strokeBorder(tint.opacity(0.45)))
     }
 }

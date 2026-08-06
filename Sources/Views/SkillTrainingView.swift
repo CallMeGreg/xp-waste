@@ -45,6 +45,7 @@ struct SkillTrainingView: View {
     @State private var superchargeHaptic = 0
     @State private var energyCellHaptic = 0
     @State private var showSlotFull = false
+    @State private var showDetails = false
     @State private var autoTapAccumulator: Double = 0
     @Environment(\.horizontalSizeClass) private var hSize
 
@@ -58,15 +59,18 @@ struct SkillTrainingView: View {
 
         return ZStack {
             GameBackground()
-            Group {
-                if hSize == .regular {
-                    regularLayout(level: level, xp: xp, supercharged: supercharged)
-                } else {
-                    compactLayout(level: level, xp: xp, supercharged: supercharged)
-                }
+            VStack(spacing: 16) {
+                slimHeader(level: level, xp: xp, supercharged: supercharged)
+                methodPerkChip
+                Spacer(minLength: 0)
+                objectArea(supercharged: supercharged, diameter: hSize == .regular ? 300 : 240)
+                Spacer(minLength: 0)
+                focusControlBar(supercharged: supercharged)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 10)
             }
-            .frame(maxWidth: 1000)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: 640)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .navigationTitle(skill.displayName)
         .navigationBarTitleDisplayMode(.inline)
@@ -79,44 +83,200 @@ struct SkillTrainingView: View {
         } message: {
             Text("Remove a skill from a slot, or raise your total level to unlock another slot.")
         }
+        .sheet(isPresented: $showDetails) { detailsSheet }
     }
 
-    // MARK: Layouts
+    // MARK: Header + method/perk chip
 
-    /// iPhone / compact-width layout: a single scrollable vertical column (survives short heights).
-    private func compactLayout(level: Int, xp: Int, supercharged: Bool) -> some View {
-        ScrollView {
-            VStack(spacing: 12) {
-                header(level: level, xp: xp, supercharged: supercharged)
-                methodBanner.padding(.horizontal, 20)
-                buffBanner.padding(.horizontal, 20)
-                objectArea(supercharged: supercharged, diameter: 240)
-                    .padding(.top, 4)
-                controlCard
+    /// Slim level + XP header. Active Double XP is flagged inline; Supercharge status lives in the
+    /// control bar and on the object itself, keeping this strip minimal.
+    private func slimHeader(level: Int, xp: Int, supercharged: Bool) -> some View {
+        VStack(spacing: 7) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("\(level)")
+                    .font(.system(size: 30, weight: .heavy, design: .rounded))
+                    .foregroundStyle(skill.tint)
+                Text("/ 99").font(.subheadline).foregroundStyle(.secondary)
+                Spacer()
+                if game.isDoubleXPActive {
+                    Label(multText(game.xpMultiplier), systemImage: "sparkles")
+                        .font(.subheadline.weight(.bold)).foregroundStyle(Color.doubleXP)
+                }
+                Text("\(Format.abbrev(xp)) XP").font(.caption).foregroundStyle(.secondary)
             }
-            .padding(.bottom, 12)
+            XPProgressBar(progress: XPTable.progressToNextLevel(forXP: xp), tint: skill.tint, height: 8)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+    }
+
+    /// One combined chip: current method + XP/tap and the skill's perk, with full details a tap away.
+    private var methodPerkChip: some View {
+        let method = game.currentMethod(for: skill)
+        return Button { showDetails = true } label: {
+            HStack(spacing: 9) {
+                ArtworkView(art: method.art, size: 22 * method.scale, color: method.tint ?? skill.tint)
+                Text(method.name).font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1).minimumScaleFactor(0.85)
+                Text("+\(game.baseXPPerAction(for: skill))/tap")
+                    .font(.caption.weight(.bold)).monospacedDigit().foregroundStyle(skill.tint)
+                    .layoutPriority(1)
+                Spacer(minLength: 4)
+                Divider().frame(height: 14).overlay(Color.white.opacity(0.2))
+                Image(systemName: skill.buff.icon).font(.caption).foregroundStyle(skill.tint)
+                Text(skill.buff.name)
+                    .font(.caption.weight(.semibold)).foregroundStyle(.primary)
+                    .lineLimit(1).layoutPriority(1)
+                Image(systemName: "info.circle").font(.caption2).foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 10)
+            .background(Color.white.opacity(0.05), in: Capsule())
+            .overlay(Capsule().strokeBorder(Color.white.opacity(0.08)))
+        }
+        .buttonStyle(PressableStyle(scale: 0.98))
+        .padding(.horizontal, 16)
+    }
+
+    // MARK: Control bar (slot · energy · supercharge)
+
+    private func focusControlBar(supercharged: Bool) -> some View {
+        let slotted = game.isSlotted(skill)
+        let ready = game.canSupercharge(skill)
+        let banked = game.energy(for: skill)
+        let canUseCell = game.energyCells > 0 && slotted && banked < game.energyCapSeconds
+        return HStack(spacing: 10) {
+            slotControlButton(slotted: slotted)
+            energyControlButton(ready: ready, banked: banked, canUseCell: canUseCell)
+            superchargeControlButton(supercharged: supercharged, ready: ready)
         }
     }
 
-    /// iPad / regular-width layout: object on the left, method + perk + controls on the right.
-    private func regularLayout(level: Int, xp: Int, supercharged: Bool) -> some View {
-        VStack(spacing: 12) {
-            header(level: level, xp: xp, supercharged: supercharged)
-            Spacer(minLength: 0)
-            HStack(alignment: .center, spacing: 24) {
-                objectArea(supercharged: supercharged, diameter: 340)
-                    .frame(maxWidth: .infinity)
+    @ViewBuilder
+    private func slotControlButton(slotted: Bool) -> some View {
+        if slotted {
+            Button { game.toggleSlot(skill) } label: {
+                controlPill {
+                    controlGlyph(.bolt, .yellow)
+                    Text(slotLabel).font(.caption.weight(.semibold)).foregroundStyle(.primary)
+                }
+            }
+            .buttonStyle(PressableStyle())
+        } else if game.isEligibleForSlot(skill) {
+            Button {
+                if !game.toggleSlot(skill) { showSlotFull = true }
+            } label: {
+                controlPill {
+                    controlGlyph(.bolt, .secondary)
+                    Text("Add slot").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                }
+            }
+            .buttonStyle(PressableStyle())
+        } else {
+            controlPill {
+                controlGlyph(.lock, .secondary)
+                Text("Lv \(Balance.slotEligibilityLevel)").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var slotLabel: String {
+        if let idx = game.slotIndex(of: skill) { return "Slot \(idx + 1)" }
+        return "Slotted"
+    }
+
+    @ViewBuilder
+    private func energyControlButton(ready: Bool, banked: Double, canUseCell: Bool) -> some View {
+        let content = HStack(spacing: 8) {
+            ZStack {
+                EnergyRing(fraction: game.energyFraction(for: skill), ready: ready, lineWidth: 4)
+                    .frame(width: 30, height: 30)
+                controlGlyph(canUseCell ? .bolt : .flame, .orange, size: 13)
+            }
+            Text("\(Int(banked.rounded(.down)))/\(Int(game.energyCapSeconds))s")
+                .font(.caption.weight(.semibold)).monospacedDigit().foregroundStyle(.primary)
+        }
+        .frame(maxWidth: .infinity).padding(.vertical, 12)
+        .background(canUseCell ? Color.orange.opacity(0.15) : Color.white.opacity(0.05),
+                    in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(
+            canUseCell ? Color.orange.opacity(0.5) : Color.white.opacity(0.08)))
+
+        if canUseCell {
+            Button {
+                if game.useEnergyCell(), game.hapticsEnabled { energyCellHaptic += 1 }
+            } label: { content }
+            .buttonStyle(PressableStyle())
+        } else {
+            content
+        }
+    }
+
+    @ViewBuilder
+    private func superchargeControlButton(supercharged: Bool, ready: Bool) -> some View {
+        if supercharged {
+            HStack(spacing: 6) {
+                controlGlyph(.flame, .orange)
+                Text("\(Int(game.superchargeSeconds(for: skill).rounded()))s")
+                    .font(.subheadline.weight(.bold)).foregroundStyle(.orange)
+            }
+            .frame(maxWidth: .infinity).padding(.vertical, 12)
+            .background(Color.orange.opacity(0.18), in: RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.orange.opacity(0.5)))
+        } else {
+            Button {
+                if game.supercharge(skill), game.hapticsEnabled { superchargeHaptic += 1 }
+            } label: {
+                Text("Supercharge ×\(game.effectiveSuperchargeMultiplier)")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(ready ? .black : .secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+                    .background(ready ? Color.orange : Color.white.opacity(0.08),
+                                in: RoundedRectangle(cornerRadius: 14))
+                    .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(
+                        ready ? Color.clear : Color.white.opacity(0.08)))
+            }
+            .buttonStyle(PressableStyle())
+            .disabled(!ready)
+        }
+    }
+
+    private func controlPill<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        HStack(spacing: 6) { content() }
+            .frame(maxWidth: .infinity).padding(.vertical, 12)
+            .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.white.opacity(0.08)))
+    }
+
+    /// A small drawn control-bar glyph. Uses `VectorIcon` paths rather than `Image(systemName:)`
+    /// because SF Symbols in the bottom bar phantom-render near the nav bar on iPad.
+    private func controlGlyph(_ icon: VectorIcon, _ color: Color, size: CGFloat = 15) -> some View {
+        icon.view(color: color).frame(width: size, height: size)
+    }
+
+    // MARK: Details sheet (full method + perk info, one tap from the chip)
+
+    private var detailsSheet: some View {
+        NavigationStack {
+            ScrollView {
                 VStack(spacing: 16) {
                     methodBanner
                     buffBanner
-                    controlCard
                 }
-                .frame(maxWidth: 400)
+                .padding(20)
+                .frame(maxWidth: 640).frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, 8)
-            Spacer(minLength: 0)
+            .background(GameBackground())
+            .navigationTitle(skill.displayName)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { showDetails = false }
+                }
+            }
         }
-        .padding(.top, 4)
+        .presentationDetents([.medium, .large])
     }
 
     // MARK: Method banner
@@ -192,41 +352,6 @@ struct SkillTrainingView: View {
         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(skill.tint.opacity(0.20)))
     }
 
-    private func header(level: Int, xp: Int, supercharged: Bool) -> some View {
-        VStack(spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("Level").font(.subheadline).foregroundStyle(.secondary)
-                Text("\(level)")
-                    .font(.system(size: 34, weight: .heavy, design: .rounded))
-                    .foregroundStyle(skill.tint)
-                Text("/ 99").font(.subheadline).foregroundStyle(.secondary)
-                Spacer()
-                if game.isDoubleXPActive {
-                    Label(multText(game.xpMultiplier), systemImage: "sparkles")
-                        .font(.headline.weight(.bold)).foregroundStyle(Color.doubleXP)
-                }
-                if supercharged {
-                    Label("×\(game.effectiveSuperchargeMultiplier) · \(Int(game.superchargeSeconds(for: skill).rounded()))s",
-                          systemImage: "flame.fill")
-                        .font(.headline).foregroundStyle(.orange)
-                }
-            }
-            XPProgressBar(progress: XPTable.progressToNextLevel(forXP: xp), tint: skill.tint, height: 10)
-            HStack {
-                Text("\(Format.abbrev(xp)) XP").font(.caption).foregroundStyle(.secondary)
-                Spacer()
-                if level < XPTable.maxLevel {
-                    Text("\(Format.abbrev(XPTable.xpToNextLevel(forXP: xp))) to level \(level + 1)")
-                        .font(.caption).foregroundStyle(.secondary)
-                } else {
-                    Text("Maxed").font(.caption.bold()).foregroundStyle(.green)
-                }
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 8)
-    }
-
     // MARK: Tappable object
 
     private func objectArea(supercharged: Bool, diameter: CGFloat) -> some View {
@@ -263,125 +388,6 @@ struct SkillTrainingView: View {
             Text(supercharged ? "SUPERCHARGED — tap fast!" : "Tap to train")
                 .font(.callout.weight(.semibold))
                 .foregroundStyle(supercharged ? Color.orange : .secondary)
-        }
-    }
-
-    // MARK: Bottom controls
-
-    private var controlCard: some View {
-        VStack(spacing: 14) {
-            slotControl
-            Divider().overlay(Color.white.opacity(0.12))
-            energyControl
-        }
-        .padding(16)
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(Color.white.opacity(0.08)))
-        .padding(.horizontal, 16)
-        .padding(.bottom, 12)
-    }
-
-    @ViewBuilder
-    private var slotControl: some View {
-        if game.isSlotted(skill), let idx = game.slotIndex(of: skill) {
-            Button { game.toggleSlot(skill) } label: {
-                HStack {
-                    Label("Training in slot \(idx + 1)", systemImage: "bolt.fill")
-                        .foregroundStyle(.yellow)
-                    Spacer()
-                    Text("Remove").foregroundStyle(.secondary)
-                }
-                .font(.subheadline.weight(.semibold))
-            }
-        } else if game.isEligibleForSlot(skill) {
-            Button {
-                if !game.toggleSlot(skill) { showSlotFull = true }
-            } label: {
-                HStack {
-                    Label("Add to training slot", systemImage: "bolt")
-                    Spacer()
-                    Text("\(game.slots.count)/\(game.maxSlots)").foregroundStyle(.secondary)
-                }
-                .font(.subheadline.weight(.semibold))
-            }
-        } else {
-            HStack {
-                Label("Passive training locked", systemImage: "lock.fill")
-                Spacer()
-                Text("Reach level \(Balance.slotEligibilityLevel)")
-            }
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-        }
-    }
-
-    @ViewBuilder
-    private var energyControl: some View {
-        let banked = game.energy(for: skill)
-        let supercharged = game.isSupercharged(skill)
-
-        HStack(spacing: 14) {
-            ZStack {
-                EnergyRing(fraction: game.energyFraction(for: skill),
-                           ready: game.canSupercharge(skill), lineWidth: 5)
-                    .frame(width: 44, height: 44)
-                Image(systemName: "flame.fill").font(.system(size: 15)).foregroundStyle(.orange)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Energy").font(.subheadline.weight(.semibold))
-                Text("\(Int(banked.rounded(.down)))s / \(Int(game.energyCapSeconds))s banked")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            Spacer()
-            if game.energyCells > 0 && game.isSlotted(skill) && banked < game.energyCapSeconds {
-                Button {
-                    if game.useEnergyCell(), game.hapticsEnabled { energyCellHaptic += 1 }
-                } label: {
-                    Label("Use Cell", systemImage: "bolt.batteryblock.fill")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.orange)
-                        .padding(.horizontal, 10).padding(.vertical, 7)
-                        .background(Color.orange.opacity(0.15), in: Capsule())
-                        .overlay(Capsule().strokeBorder(Color.orange.opacity(0.5), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-            }
-            superchargeButton(supercharged: supercharged)
-        }
-
-        if game.energyCells > 0 && game.isSlotted(skill) && banked < game.energyCapSeconds {
-            Text("🔋 \(game.energyCells) Energy Cell\(game.energyCells == 1 ? "" : "s") — instantly recharge every slot to full.")
-                .font(.caption2).foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-
-        if !game.isSlotted(skill) && banked < Balance.minEnergyToSupercharge {
-            Text("Slot this skill to bank Energy — even while the app is closed.")
-                .font(.caption2).foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    @ViewBuilder
-    private func superchargeButton(supercharged: Bool) -> some View {
-        if supercharged {
-            Label("\(Int(game.superchargeSeconds(for: skill).rounded()))s", systemImage: "flame.fill")
-                .font(.subheadline.weight(.bold))
-                .foregroundStyle(.orange)
-                .padding(.horizontal, 14).padding(.vertical, 8)
-                .background(Color.orange.opacity(0.15), in: Capsule())
-        } else {
-            let enabled = game.canSupercharge(skill)
-            Button {
-                if game.supercharge(skill), game.hapticsEnabled { superchargeHaptic += 1 }
-            } label: {
-                Text("Supercharge ×\(game.effectiveSuperchargeMultiplier)")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(enabled ? .black : .secondary)
-                    .padding(.horizontal, 14).padding(.vertical, 8)
-                    .background(enabled ? Color.orange : Color.white.opacity(0.1), in: Capsule())
-            }
-            .disabled(!enabled)
         }
     }
 
