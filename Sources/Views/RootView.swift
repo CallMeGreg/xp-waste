@@ -43,6 +43,9 @@ struct RootView: View {
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: game.levelUpEvent)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: game.notice)
+        .sheet(item: $game.offlineProgress) { progress in
+            WelcomeBackView(progress: progress)
+        }
     }
 }
 

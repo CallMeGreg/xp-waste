@@ -1,8 +1,8 @@
 # XP Waste ⚔️ 🎣 ⛏️
 
 **Level every skill to 99 — one tap at a time.** XP Waste is a cozy skilling game inspired by
-Old School RuneScape. Tap to train, unlock passive training, bank up energy while you're away, and
-chase the max cape across **all 23 skills**.
+Old School RuneScape. Tap to train, unlock passive training that keeps going even while you're
+away, bank up energy for big bursts, and chase the max cape across **all 23 skills**.
 
 ---
 
@@ -38,9 +38,12 @@ you're training. No two perks do the same thing, so there's always a reason to s
 maxing everything makes you strongest of all.
 
 ### 🎰 Training slots (passive XP)
-Slot a skill into a **training slot** and it earns experience passively while the app is open —
-so you can tap one skill while another trains itself. You start with a single slot and unlock
-more as your **total level** climbs. Juggle your slots to grow the skills you care about.
+Slot a skill into a **training slot** and it earns experience passively — while the app is open
+*and* while it's closed, so you can tap one skill while others train themselves. Come back after a
+break and a **welcome-back summary** shows the XP (and any level-ups) your slots earned while you
+were away; offline training runs at a gentler rate, so active tapping still pays off best. You
+start with a single slot and unlock more as your **total level** climbs. Juggle your slots to grow
+the skills you care about.
 
 ### ⚡ Energy & Supercharge
 Every skill quietly charges **Energy** — while you play *and* while the app is closed. Spend a

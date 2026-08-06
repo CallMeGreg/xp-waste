@@ -61,12 +61,18 @@ hands → cave crawlers → bloodvelds → abyssal demons → gargoyles → hydr
 grant more XP per tap, they also **accelerate the brutal late-game curve** (a deliberate pacing
 lever). All tier flavor lives in `TrainingMethod.swift`; the ladder itself is in `Balance.swift`.
 
-### 3.3 Passive — "Training Slots" (idle, app open)
-Assign a skill to a **training slot** to earn passive XP while the app is in the foreground.
+### 3.3 Passive — "Training Slots" (idle, app open *and* closed)
+Assign a skill to a **training slot** to earn passive XP — both while the app is in the foreground
+and, at a reduced rate, while it's closed.
 
 - A skill must reach **level 10** before it can be slotted (gives early tapping a purpose).
 - Passive rate: **~1 action / second** per slotted skill, valued at that skill's *current method*
   XP — so passive scales as methods improve, but stays a light trickle versus fast manual tapping.
+- **Offline progress:** slotted skills keep training while the app is closed at **40%** of the
+  foreground passive rate, credited on return and capped at **10 hours** of away time (the window
+  **resets each return**, so it can't be banked). A **"welcome back"** summary shows the per-skill
+  XP earned and any level-ups. Boosts are consumed in real time, so Supercharge / Double XP don't
+  apply to offline gains. Only *slotted* skills earn offline.
 - **Slots unlock with total level:** 1 slot at the start → **2nd slot at total 100** →
   **3rd slot at total 300** (tuned for the 23-skill roster).
 
@@ -165,9 +171,9 @@ v1 _(future: tap/level/supercharge SFX)_.
   supercharge multiplier).
 - **Ticking:** a 1 Hz foreground timer applies passive XP + Energy and counts down active
   Supercharges using real elapsed `dt` (rate-correct regardless of tick jitter).
-- **Scene phase:** on background, persist state + timestamp; on foreground, credit **offline
-  Energy** for slotted skills (capped) — offline grants Energy only, never passive XP, per
-  the design.
+- **Scene phase:** on background, persist state + timestamp; on foreground, credit **offline XP**
+  (40% of the passive rate, capped at 10 h) and **offline Energy** for slotted skills, then reset
+  the offline window. A "welcome back" summary is shown when the player was away long enough.
 - **Persistence:** `Codable` snapshot in `UserDefaults`.
 - **Tuning:** every balance constant lives in `Balance.swift` so re-balancing is a one-file
   change.
@@ -178,6 +184,7 @@ v1 _(future: tap/level/supercharge SFX)_.
 |----------|-------|
 | Training method tiers | +1 / 3 / 6 / 12 / 25 / 50 XP-per-tap, unlocking at level 1 / 15 / 30 / 50 / 70 / 90 |
 | Passive rate | ~1 action / sec / slotted skill, valued at the skill's current method XP |
+| Offline passive XP | 40% of the foreground passive rate, capped at 10 h of away time (window resets on return) |
 | Energy charge rate | 1 sec Supercharge per 60 sec real time |
 | Energy cap | 30 sec Supercharge (30 min real) |
 | Slot eligibility | skill level ≥ 10 |
@@ -202,9 +209,10 @@ v1 _(future: tap/level/supercharge SFX)_.
    v1's flat +1; treat further yield-scaling as a balance patch — trivial because all constants
    are centralized. More skills also means more parallel goals and more frequent method-upgrade
    dopamine hits.
-2. **"Idle" is really Energy-banking, not offline XP** (per spec). *Mitigation:* lean into the
-   return-and-burst payoff and keep passive a light trickle so active tapping stays primary.
-   _(future: optional offline passive XP as a prestige upgrade.)_
+2. **Offline pacing balance.** Slotted skills now earn **offline XP** (40% of passive, capped at
+   10 h), so "idle" pays out directly in addition to Energy-banking. *Mitigation:* the reduced
+   rate and cap keep active tapping + Supercharge bursts primary; both are one-line tunables in
+   `Balance.swift` if returns feel too strong or too weak.
 3. **Onboarding could overload** with four concepts. *Mitigation:* keep cards short and
    reinforce Energy/Supercharge contextually the first time a skill is slotted.
 4. **HP/Prayer abstraction** deviates from OSRS. *Mitigation:* accepted for a tapper; noted.
@@ -214,7 +222,7 @@ constants; the first post-launch pass is pure balancing.
 
 ## 11. Roadmap beyond v1 _(future)_
 
-- Yield-scaling / prestige and optional offline passive XP.
+- Yield-scaling / prestige upgrades (including boosts to the offline XP rate/cap).
 - Custom art & animation per skill; SFX and music.
 - Achievements, daily goals, and a "max cape" celebration.
 - iCloud sync; Game Center leaderboards for total level.

@@ -115,6 +115,7 @@ Used for deterministic screenshots / UI checks — preserve them when refactorin
   `super`, an active Supercharge + Double XP boost).
 - `OPEN_SKILL=<rawValue>` — deep-links Home straight into a skill's training screen.
 - `OPEN_SHEET=doublexp` — auto-presents the Double XP sheet.
+- `OFFLINE_DEMO=1` — seeds a representative "welcome back" offline-earnings summary sheet.
 
 Pass them to the simulator via the `SIMCTL_CHILD_` prefix, e.g.
 `SIMCTL_CHILD_SEED_DEMO=super SIMCTL_CHILD_OPEN_SKILL=attack xcrun simctl launch ...`.

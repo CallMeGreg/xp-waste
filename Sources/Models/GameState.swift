@@ -7,6 +7,30 @@ struct LevelUpEvent: Identifiable, Equatable {
     let newLevel: Int
 }
 
+/// Summary of the XP each *slotted* skill earned while the app was closed, surfaced as a
+/// "welcome back" sheet on return. Transient UI state — never persisted.
+struct OfflineProgress: Identifiable, Equatable {
+    let id = UUID()
+    /// How long the player was actually away.
+    let timeAway: TimeInterval
+    /// The portion of `timeAway` that earned XP (clamped to `Balance.maxOfflineHours`).
+    let creditedTime: TimeInterval
+    /// True when `timeAway` exceeded the offline cap, so some idle time wasn't counted.
+    let wasCapped: Bool
+    let entries: [Entry]
+    let totalXP: Int
+
+    /// One slotted skill's offline gain.
+    struct Entry: Identifiable, Equatable {
+        var id: SkillID { skill }
+        let skill: SkillID
+        let xpGained: Int
+        let fromLevel: Int
+        let toLevel: Int
+        var leveledUp: Bool { toLevel > fromLevel }
+    }
+}
+
 /// Codable snapshot persisted to `UserDefaults`.
 private struct SaveData: Codable {
     var xp: [String: Double]
@@ -50,6 +74,9 @@ final class GameState: ObservableObject {
     /// Most recent level-up, consumed by the UI for a celebratory toast.
     @Published var levelUpEvent: LevelUpEvent?
 
+    /// The most recent offline-earnings summary, presented as a "welcome back" sheet on return.
+    @Published var offlineProgress: OfflineProgress?
+
     /// Transient, user-facing message surfaced as a toast (daily reward, purchase, etc.).
     @Published var notice: String?
 
@@ -72,6 +99,7 @@ final class GameState: ObservableObject {
         if hasSeenOnboarding { grantDailyCouponIfNeeded() }
         #if DEBUG
         applyDemoSeedIfRequested()
+        applyOfflineDemoIfRequested()
         #endif
     }
 
@@ -499,19 +527,24 @@ final class GameState: ObservableObject {
         }
     }
 
-    /// Called when the app returns to the foreground: credits *offline Energy only* (no passive XP).
+    /// Called when the app returns to the foreground: credits offline XP to slotted skills
+    /// (reduced-rate and capped) plus offline Energy, then resets the offline window.
     func handleBecameActive() {
         let now = Date()
         let elapsed = now.timeIntervalSince(lastActive)
         if elapsed > 0 {
+            creditOfflineProgress(timeAway: elapsed)
             for skill in slots { addEnergy(elapsed, to: skill, offline: true) }
             decaySupercharges(by: elapsed)
         }
         expireDoubleXPIfNeeded()
         grantDailyCouponIfNeeded()
+        // Resetting `lastActive` restarts the offline counter, so the next away period is measured
+        // from now (and the capped window can't be "banked" across returns).
         lastActive = now
         lastTick = now
         isForeground = true
+        save()
     }
 
     /// Called when the app leaves the foreground: stamp the time and persist.
@@ -521,9 +554,47 @@ final class GameState: ObservableObject {
         save()
     }
 
+    /// Credits offline passive XP to each *slotted* skill for the time the app was closed, at a
+    /// reduced rate (`Balance.offlineXPMultiplier`) and clamped to `Balance.maxOfflineHours`.
+    /// Boosts (Supercharge / Double XP) are consumed in real time, so they don't apply offline.
+    /// Builds the "welcome back" summary when the player was away long enough.
+    private func creditOfflineProgress(timeAway: TimeInterval) {
+        guard !slots.isEmpty, timeAway > 0 else { return }
+        let cap = Balance.maxOfflineHours * 3600
+        let credited = min(timeAway, cap)
+        guard credited > 0 else { return }
+
+        var entries: [OfflineProgress.Entry] = []
+        for skill in slots {
+            let ratePerSecond = Double(baseXPPerAction(for: skill))
+                * Balance.passiveActionsPerSecond * passiveRateMultiplier   // Hunter
+            let gained = ratePerSecond * credited
+                * passiveXPMultiplier                                       // Smithing
+                * Balance.offlineXPMultiplier
+            guard gained > 0 else { continue }
+            let fromLevel = level(for: skill)
+            let before = xpBySkill[skill] ?? 0
+            addXP(gained, to: skill, announceLevelUp: false)
+            let earned = Int(((xpBySkill[skill] ?? 0) - before).rounded())
+            guard earned > 0 else { continue }
+            entries.append(.init(skill: skill, xpGained: earned,
+                                 fromLevel: fromLevel, toLevel: level(for: skill)))
+        }
+
+        let total = entries.reduce(0) { $0 + $1.xpGained }
+        guard total > 0, timeAway >= Balance.minOfflineSecondsForSummary else { return }
+        offlineProgress = OfflineProgress(
+            timeAway: timeAway,
+            creditedTime: credited,
+            wasCapped: timeAway > cap + 1,
+            entries: entries,
+            totalXP: total
+        )
+    }
+
     // MARK: - Internal mutation
 
-    private func addXP(_ amount: Double, to skill: SkillID) {
+    private func addXP(_ amount: Double, to skill: SkillID, announceLevelUp: Bool = true) {
         guard amount > 0 else { return }
         let current = xpBySkill[skill] ?? 0
         guard current < Double(XPTable.maxXP) else { return }
@@ -531,7 +602,7 @@ final class GameState: ObservableObject {
         let updated = min(current + amount, Double(XPTable.maxXP))
         xpBySkill[skill] = updated
         let newLevel = XPTable.level(forXP: Int(updated.rounded(.down)))
-        if newLevel > oldLevel {
+        if announceLevelUp, newLevel > oldLevel {
             levelUpEvent = LevelUpEvent(skill: skill, newLevel: newLevel)
         }
     }
@@ -628,6 +699,33 @@ final class GameState: ObservableObject {
         lastActive = Date()
         lastTick = Date()
         save()
+    }
+
+    /// Seeds a representative "welcome back" summary when launched with `OFFLINE_DEMO`, so the
+    /// offline sheet can be screenshotted deterministically. Never runs in release.
+    private func applyOfflineDemoIfRequested() {
+        guard ProcessInfo.processInfo.environment["OFFLINE_DEMO"] != nil else { return }
+        hasSeenOnboarding = true
+        if slots.isEmpty { slots = [.woodcutting, .fishing, .attack] }
+        let sampleXP: [SkillID: Int] = [.woodcutting: 8_640, .fishing: 5_180, .attack: 2_400]
+        let entries: [OfflineProgress.Entry] = slots.map { skill in
+            let from = level(for: skill)
+            let xp = sampleXP[skill] ?? 3_000
+            return .init(skill: skill, xpGained: xp,
+                         fromLevel: from, toLevel: skill == .woodcutting ? from + 1 : from)
+        }
+        let away: TimeInterval = 8 * 3600 + 37 * 60
+        offlineProgress = OfflineProgress(
+            timeAway: away,
+            creditedTime: min(away, Balance.maxOfflineHours * 3600),
+            wasCapped: false,
+            entries: entries,
+            totalXP: entries.reduce(0) { $0 + $1.xpGained }
+        )
+        // Stamp now so the real offline-accrual pass in `handleBecameActive` doesn't clobber
+        // this deterministic demo summary.
+        lastActive = Date()
+        lastTick = Date()
     }
     #endif
 

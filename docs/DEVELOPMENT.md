@@ -75,9 +75,9 @@ docs/       GAME_DESIGN.md, DEVELOPMENT.md, SKILL_BUFFS.md
 ## Tuning
 
 All balance lives in `Sources/Models/Balance.swift` — training-method tiers, passive rate,
-Energy cap, slot thresholds, Supercharge multipliers, Double XP timing, and the **per-skill perk
-scaling** (`buffScaling` — every perk's neutral level-1 and fully-trained level-99 value).
-Re-balancing the game is a one-file change.
+offline XP rate/cap, Energy cap, slot thresholds, Supercharge multipliers, Double XP timing, and
+the **per-skill perk scaling** (`buffScaling` — every perk's neutral level-1 and fully-trained
+level-99 value). Re-balancing the game is a one-file change.
 
 ## Testing in-app purchases
 
@@ -102,6 +102,8 @@ Used for deterministic screenshots / UI checks:
   (and, for `super`, an active Supercharge + Double XP boost).
 - `OPEN_SKILL=<rawValue>` — deep-links Home straight into a skill's training screen.
 - `OPEN_SHEET=doublexp` — auto-presents the Boosts sheet (Double XP + Energy Cells).
+- `OFFLINE_DEMO=1` — seeds a representative **"welcome back"** offline-earnings summary (per-skill
+  XP + level-ups) so the sheet can be screenshotted deterministically.
 
 Pass them to the simulator via the `SIMCTL_CHILD_` prefix, e.g.
 `SIMCTL_CHILD_SEED_DEMO=super SIMCTL_CHILD_OPEN_SKILL=attack xcrun simctl launch ...`.
