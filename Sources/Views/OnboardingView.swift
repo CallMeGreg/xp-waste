@@ -20,9 +20,11 @@ struct OnboardingView: View {
         Card(icon: "⚡️", title: "Slot skills & bank Energy",
              body: "Reach level 10 to slot a skill for passive XP. Slotted skills bank Energy in real time — even while you're away."),
         Card(icon: "🔥", title: "Supercharge for big bursts",
-             body: "Spend banked Energy to Supercharge a skill: seconds of bonus XP per tap."),
+             body: "Spend banked Energy to Supercharge a skill: seconds of bonus XP per tap. Out of patience? An Energy Cell instantly refills every slotted skill."),
         Card(icon: "🎟️", title: "Double XP coupons",
-             body: "Activate a coupon for 10 minutes of 2× XP across every skill — it even stacks with Supercharge. Claim one free every day, or grab more anytime.")
+             body: "Activate a coupon for a timed burst of multiplied XP across every skill — it even stacks with Supercharge. Claim a free one daily, or grab more anytime."),
+        Card(icon: "🌟", title: "Every skill grants a perk",
+             body: "Leveling any skill unlocks a permanent, account-wide perk — bigger Energy caps, stronger Supercharge, longer boosts, crit taps, richer daily rewards and more. The higher the level, the more powerful the perk.")
     ]
 
     var body: some View {

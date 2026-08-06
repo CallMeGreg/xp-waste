@@ -46,14 +46,14 @@ Sources/
             TrainingMethod.swift        # per-skill 6-tier thematic training methods
             XPTable.swift               # OSRS XP curve
             Balance.swift               # ALL tunable constants (tiers, slots, supercharge, perks…)
-            GameState.swift             # source of truth: XP, slots, energy, supercharge, coupons
+            GameState.swift             # source of truth: XP, slots, energy, supercharge, coupons, energy cells
             SkillBuff.swift             # per-skill unique account-wide perks (BuffKind + theming)
-            Store.swift                 # StoreKit 2 in-app purchases (coupon packs)
+            Store.swift                 # StoreKit 2 in-app purchases (coupon + Energy Cell packs)
   Views/    RootView / Onboarding / Home / SkillTile
             SkillTrainingView / StatsView / SettingsView / Components
-            DoubleXPView                # activate boost + coupon store
+            BoostsView                  # activate Double XP, use/buy Energy Cells, both stores
   Assets.xcassets                       # app icon + accent color
-Config/     Products.storekit           # local StoreKit config for testing IAP
+Config/     Products.storekit           # local StoreKit config for testing IAP (2 families)
 project.yml                             # XcodeGen project definition (universal: iPhone + iPad)
 docs/       GAME_DESIGN.md, DEVELOPMENT.md, SKILL_BUFFS.md
 ```
@@ -61,7 +61,7 @@ docs/       GAME_DESIGN.md, DEVELOPMENT.md, SKILL_BUFFS.md
 ## Architecture at a glance
 
 - **`GameState`** (`@MainActor`, `ObservableObject`) is the single source of truth for XP,
-  slots, Energy, Supercharge timers, and coupons; views read derived values via
+  slots, Energy, Supercharge timers, coupons, and Energy Cells; views read derived values via
   `.environmentObject`.
 - **`Balance.swift`** centralizes *every* tunable number — re-balancing never requires touching
   gameplay or view code.
@@ -81,23 +81,27 @@ Re-balancing the game is a one-file change.
 
 ## Testing in-app purchases
 
-`Config/Products.storekit` defines the consumable coupon packs and is wired into the
-`XPWaste` scheme's Run action, so purchases work locally in the simulator when you run from
-**Xcode** (no App Store Connect needed). In production these map to real App Store Connect
-product IDs (`com.callmegreg.xpwaste.coupons.*`).
+`Config/Products.storekit` defines two families of consumables — **Double XP coupon** packs
+(`…coupons.small/medium/large`) and **Energy Cell** packs (`…energy.small/medium/large`) — and is
+wired into the `XPWaste` scheme's Run action, so purchases work locally in the simulator when you
+run from **Xcode** (no App Store Connect needed). In production these map to real App Store Connect
+product IDs (`com.callmegreg.xpwaste.coupons.*` and `com.callmegreg.xpwaste.energy.*`). The
+`Store.grants` table maps each product ID to its family (`ProductKind`) and amount — keep it in
+sync with `Products.storekit`, and route grants in `XPWasteApp` (`onGrant`) to `addCoupons` /
+`addEnergyCells`.
 
 > `simctl launch` from the CLI does **not** apply the scheme's StoreKit config, so
-> `Product.products` is empty there. `Store.swift` has a `#if DEBUG` mock catalog fallback so the
-> store still renders for screenshots / UI verification.
+> `Product.products` is empty there. `Store.swift` has a `#if DEBUG` mock catalog fallback (both
+> families) so the store still renders for screenshots / UI verification.
 
 ## Debug hooks (guarded by `#if DEBUG`, never in release)
 
 Used for deterministic screenshots / UI checks:
 
-- `SEED_DEMO=ready|super` — seeds representative levels, slots, energy, coupons (and, for
-  `super`, an active Supercharge + Double XP boost).
+- `SEED_DEMO=ready|super` — seeds representative levels, slots, energy, coupons, and Energy Cells
+  (and, for `super`, an active Supercharge + Double XP boost).
 - `OPEN_SKILL=<rawValue>` — deep-links Home straight into a skill's training screen.
-- `OPEN_SHEET=doublexp` — auto-presents the Double XP sheet.
+- `OPEN_SHEET=doublexp` — auto-presents the Boosts sheet (Double XP + Energy Cells).
 
 Pass them to the simulator via the `SIMCTL_CHILD_` prefix, e.g.
 `SIMCTL_CHILD_SEED_DEMO=super SIMCTL_CHILD_OPEN_SKILL=attack xcrun simctl launch ...`.
