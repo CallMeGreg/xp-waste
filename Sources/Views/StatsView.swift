@@ -89,9 +89,10 @@ struct StatsView: View {
                          done: game.totalLevel >= Balance.slot2TotalLevel)
             milestoneRow("Unlock 3rd training slot (total \(Balance.slot3TotalLevel))",
                          done: game.totalLevel >= Balance.slot3TotalLevel)
-            milestoneRow("Supercharge ×5 (total 100)", done: game.totalLevel >= 100)
-            milestoneRow("Supercharge ×10 (total 300)", done: game.totalLevel >= 300)
-            milestoneRow("Supercharge ×20 (total 500)", done: game.totalLevel >= 500)
+            ForEach(Balance.superchargeTiers.dropFirst(), id: \.totalLevel) { tier in
+                milestoneRow("Supercharge ×\(tier.multiplier) (total \(tier.totalLevel))",
+                             done: game.totalLevel >= tier.totalLevel)
+            }
             milestoneRow("Max cape — every skill 99", done: game.isFullyMaxed)
         }
     }
