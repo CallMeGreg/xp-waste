@@ -14,6 +14,18 @@ enum Format {
             return value.formatted()
         }
     }
+
+    /// Formats a duration as `M:SS`, rounding up so a fresh boost reads its full length.
+    static func clock(_ seconds: TimeInterval) -> String {
+        let total = max(0, Int(seconds.rounded(.up)))
+        return String(format: "%d:%02d", total / 60, total % 60)
+    }
+}
+
+extension Color {
+    /// Accent used across the Double XP boost UI (a vivid violet, distinct from the
+    /// yellow slot / orange Supercharge colors).
+    static let doubleXP = Color(red: 0.60, green: 0.36, blue: 0.98)
 }
 
 /// App-wide dark background gradient.

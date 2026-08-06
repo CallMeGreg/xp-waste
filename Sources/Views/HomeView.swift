@@ -5,6 +5,7 @@ struct HomeView: View {
     @EnvironmentObject private var game: GameState
     @State private var showStats = false
     @State private var showSettings = false
+    @State private var showDoubleXP = false
     @State private var path: [SkillID] = []
 
     private let columns = [GridItem(.flexible(), spacing: 14),
@@ -15,6 +16,7 @@ struct HomeView: View {
             ScrollView {
                 VStack(spacing: 22) {
                     HeaderCard()
+                    DoubleXPCard(show: $showDoubleXP)
                     ForEach(SkillCategory.allCases) { category in
                         VStack(alignment: .leading, spacing: 12) {
                             Text(category.rawValue.uppercased())
@@ -54,12 +56,16 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showStats) { StatsView() }
             .sheet(isPresented: $showSettings) { SettingsView() }
+            .sheet(isPresented: $showDoubleXP) { DoubleXPView() }
             .onAppear {
                 #if DEBUG
                 if path.isEmpty,
                    let raw = ProcessInfo.processInfo.environment["OPEN_SKILL"],
                    let skill = SkillID(rawValue: raw) {
                     path = [skill]
+                }
+                if ProcessInfo.processInfo.environment["OPEN_SHEET"] == "doublexp" {
+                    showDoubleXP = true
                 }
                 #endif
             }
@@ -116,5 +122,69 @@ private struct HeaderCard: View {
         .padding(16)
         .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 18))
         .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Color.white.opacity(0.08)))
+    }
+}
+
+/// Home entry point for the Double XP feature: shows a live countdown while a boost
+/// is running, otherwise an "Activate" prompt with the player's coupon balance.
+private struct DoubleXPCard: View {
+    @EnvironmentObject private var game: GameState
+    @Binding var show: Bool
+
+    var body: some View {
+        Button { show = true } label: {
+            Group {
+                if game.isDoubleXPActive {
+                    TimelineView(.periodic(from: .now, by: 1)) { _ in activeContent }
+                } else {
+                    idleContent
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity)
+            .background(Color.doubleXP.opacity(game.isDoubleXPActive ? 0.16 : 0.10),
+                        in: RoundedRectangle(cornerRadius: 18))
+            .overlay(RoundedRectangle(cornerRadius: 18)
+                .strokeBorder(Color.doubleXP.opacity(game.isDoubleXPActive ? 0.6 : 0.35), lineWidth: 1))
+        }
+        .buttonStyle(PressableStyle())
+    }
+
+    private var activeContent: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "sparkles").font(.title2).foregroundStyle(Color.doubleXP)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("2× XP ACTIVE")
+                    .font(.subheadline.weight(.heavy)).foregroundStyle(Color.doubleXP)
+                Text("Every skill earns double XP")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text(Format.clock(game.doubleXPRemaining))
+                .font(.system(size: 26, weight: .heavy, design: .rounded))
+                .monospacedDigit().contentTransition(.numericText())
+        }
+    }
+
+    private var idleContent: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "sparkles").font(.title2).foregroundStyle(Color.doubleXP)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Double XP")
+                    .font(.subheadline.weight(.bold))
+                Text(game.doubleXPCoupons > 0
+                     ? "Tap to activate 10 min of 2× XP"
+                     : "Free coupon daily · buy more anytime")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            HStack(spacing: 5) {
+                Text("🎟️")
+                Text("\(game.doubleXPCoupons)")
+                    .font(.headline.weight(.bold)).monospacedDigit()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold)).foregroundStyle(.secondary)
+            }
+        }
     }
 }

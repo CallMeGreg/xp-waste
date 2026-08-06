@@ -3,14 +3,20 @@ import SwiftUI
 @main
 struct IdleSkillerApp: App {
     @StateObject private var game = GameState()
+    @StateObject private var store = Store()
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(game)
+                .environmentObject(store)
                 .preferredColorScheme(.dark)
                 .tint(.accentColor)
+                .task {
+                    store.onGrant = { [weak game] coupons in game?.addCoupons(coupons) }
+                    store.start()
+                }
         }
         .onChange(of: scenePhase) { _, phase in
             switch phase {

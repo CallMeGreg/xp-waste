@@ -17,6 +17,10 @@ private struct SaveData: Codable {
     var soundEnabled: Bool
     var hapticsEnabled: Bool
     var lastActive: Date
+    // Added in v1.1 — optional for backward-compatible decoding of older saves.
+    var doubleXPCoupons: Int?
+    var doubleXPExpiry: Date?
+    var lastFreeCouponDay: String?
 }
 
 /// The single source of truth for all game state and rules.
@@ -32,13 +36,22 @@ final class GameState: ObservableObject {
     @Published var soundEnabled: Bool = true
     @Published var hapticsEnabled: Bool = true
 
+    /// Double XP coupons the player owns (free daily + in-app purchases).
+    @Published private(set) var doubleXPCoupons: Int = 0
+    /// When the current Double XP boost ends, or `nil` if no boost is active.
+    @Published private(set) var doubleXPExpiry: Date?
+
     /// Most recent level-up, consumed by the UI for a celebratory toast.
     @Published var levelUpEvent: LevelUpEvent?
+
+    /// Transient, user-facing message surfaced as a toast (daily reward, purchase, etc.).
+    @Published var notice: String?
 
     // MARK: Runtime-only state
     private var isForeground: Bool = true
     private var lastTick: Date = Date()
     private var lastActive: Date = Date()
+    private var lastFreeCouponDay: String?
     private var autosaveAccumulator: TimeInterval = 0
 
     private static let saveKey = "idleSkiller.save.v1"
@@ -46,6 +59,7 @@ final class GameState: ObservableObject {
     init() {
         load()
         lastTick = Date()
+        if hasSeenOnboarding { grantDailyCouponIfNeeded() }
         #if DEBUG
         applyDemoSeedIfRequested()
         #endif
@@ -82,6 +96,26 @@ final class GameState: ObservableObject {
     var isFullyMaxed: Bool { maxedSkillCount == SkillID.allCases.count }
     var hasFreeSlot: Bool { slots.count < maxSlots }
 
+    // MARK: Double XP
+
+    /// Whether a Double XP boost is currently running.
+    var isDoubleXPActive: Bool { (doubleXPExpiry ?? .distantPast) > Date() }
+
+    /// Seconds left on the active Double XP boost (0 when inactive).
+    var doubleXPRemaining: TimeInterval { max(0, (doubleXPExpiry ?? Date()).timeIntervalSinceNow) }
+
+    /// The current global XP multiplier (2× while boosted, otherwise 1×).
+    var xpMultiplier: Double { isDoubleXPActive ? Balance.doubleXPMultiplier : 1 }
+
+    /// True when the player has a coupon to spend and no boost is already running.
+    var canActivateDoubleXP: Bool { !isDoubleXPActive && doubleXPCoupons > 0 }
+
+    /// Effective XP earned per tap on `skill`, folding in Supercharge and Double XP.
+    func tapGain(for skill: SkillID) -> Int {
+        let base = isSupercharged(skill) ? superchargeXPPerTap : 1
+        return Int((Double(base) * xpMultiplier).rounded())
+    }
+
     /// The next training-slot unlock as (slot number, required total level), or nil if all unlocked.
     var nextSlotUnlock: (slot: Int, totalLevel: Int)? {
         if maxSlots < 2 { return (2, Balance.slot2TotalLevel) }
@@ -93,8 +127,7 @@ final class GameState: ObservableObject {
 
     /// Register a tap on a skill's trainable object.
     func tap(_ skill: SkillID) {
-        let gain = isSupercharged(skill) ? Double(superchargeXPPerTap) : 1.0
-        addXP(gain, to: skill)
+        addXP(Double(tapGain(for: skill)), to: skill)
     }
 
     /// Assign or remove a skill from a training slot. Returns true if the state changed.
@@ -122,8 +155,50 @@ final class GameState: ObservableObject {
         return true
     }
 
+    // MARK: - Double XP actions
+
+    /// Spend one coupon to start a 10-minute, 2× XP boost across every skill.
+    @discardableResult
+    func activateDoubleXP() -> Bool {
+        guard canActivateDoubleXP else { return false }
+        doubleXPCoupons -= 1
+        doubleXPExpiry = Date().addingTimeInterval(Balance.doubleXPDurationSeconds)
+        save()
+        return true
+    }
+
+    /// Add coupons to the player's balance (free daily grant or a completed purchase).
+    func addCoupons(_ count: Int, announce: Bool = true) {
+        guard count > 0 else { return }
+        doubleXPCoupons += count
+        if announce {
+            notice = "🎟️ +\(count) Double XP coupon\(count == 1 ? "" : "s")"
+        }
+        save()
+    }
+
+    /// Grants the free daily coupon the first time the app is opened each calendar day.
+    @discardableResult
+    func grantDailyCouponIfNeeded() -> Bool {
+        let today = Self.dayKey()
+        guard lastFreeCouponDay != today else { return false }
+        lastFreeCouponDay = today
+        doubleXPCoupons += Balance.dailyFreeCoupons
+        if hasSeenOnboarding {
+            notice = "🎁 Daily reward: +\(Balance.dailyFreeCoupons) Double XP coupon\(Balance.dailyFreeCoupons == 1 ? "" : "s")"
+        }
+        save()
+        return true
+    }
+
+    private static func dayKey(_ date: Date = Date()) -> String {
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
     func completeOnboarding() {
         hasSeenOnboarding = true
+        grantDailyCouponIfNeeded()
         lastActive = Date()
         lastTick = Date()
         save()
@@ -135,6 +210,7 @@ final class GameState: ObservableObject {
         superchargeBySkill = [:]
         slots = []
         levelUpEvent = nil
+        doubleXPExpiry = nil
         lastActive = Date()
         lastTick = Date()
         save()
@@ -155,10 +231,11 @@ final class GameState: ObservableObject {
         lastTick = now
         guard dt > 0, dt < 3600 else { return } // ignore clock jumps
         for skill in slots {
-            addXP(Balance.passiveXPPerSecond * dt, to: skill)
+            addXP(Balance.passiveXPPerSecond * dt * xpMultiplier, to: skill)
             addEnergy(dt, to: skill)
         }
         decaySupercharges(by: dt)
+        expireDoubleXPIfNeeded()
         autosaveAccumulator += dt
         if autosaveAccumulator >= 15 {
             autosaveAccumulator = 0
@@ -174,6 +251,8 @@ final class GameState: ObservableObject {
             for skill in slots { addEnergy(elapsed, to: skill) }
             decaySupercharges(by: elapsed)
         }
+        expireDoubleXPIfNeeded()
+        grantDailyCouponIfNeeded()
         lastActive = now
         lastTick = now
         isForeground = true
@@ -215,6 +294,14 @@ final class GameState: ObservableObject {
         }
     }
 
+    /// Clears the boost once its window has elapsed so the UI updates and the save stays clean.
+    private func expireDoubleXPIfNeeded() {
+        if let expiry = doubleXPExpiry, expiry <= Date() {
+            doubleXPExpiry = nil
+            save()
+        }
+    }
+
     // MARK: - Persistence
 
     private func load() {
@@ -234,6 +321,10 @@ final class GameState: ObservableObject {
         soundEnabled = saved.soundEnabled
         hapticsEnabled = saved.hapticsEnabled
         lastActive = saved.lastActive
+        doubleXPCoupons = saved.doubleXPCoupons ?? 0
+        doubleXPExpiry = saved.doubleXPExpiry
+        lastFreeCouponDay = saved.lastFreeCouponDay
+        if let expiry = doubleXPExpiry, expiry <= Date() { doubleXPExpiry = nil }
     }
 
     #if DEBUG
@@ -253,9 +344,11 @@ final class GameState: ObservableObject {
         slots = [.attack, .woodcutting]
         energyBySkill = [.attack: 18, .woodcutting: 9]
         superchargeBySkill = [:]
+        doubleXPCoupons = 3
         if variant == "super" {
             superchargeBySkill = [.attack: 26]
             energyBySkill[.attack] = 0
+            doubleXPExpiry = Date().addingTimeInterval(423) // 7:03 remaining
         }
         hasSeenOnboarding = true
         lastActive = Date()
@@ -273,7 +366,10 @@ final class GameState: ObservableObject {
             hasSeenOnboarding: hasSeenOnboarding,
             soundEnabled: soundEnabled,
             hapticsEnabled: hapticsEnabled,
-            lastActive: lastActive
+            lastActive: lastActive,
+            doubleXPCoupons: doubleXPCoupons,
+            doubleXPExpiry: doubleXPExpiry,
+            lastFreeCouponDay: lastFreeCouponDay
         )
         if let data = try? JSONEncoder().encode(snapshot) {
             UserDefaults.standard.set(data, forKey: Self.saveKey)

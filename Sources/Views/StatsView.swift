@@ -35,6 +35,7 @@ struct StatsView: View {
             statRow("Skills maxed", "\(game.maxedSkillCount) / \(SkillID.allCases.count)")
             statRow("Training slots", "\(game.slots.count) / \(game.maxSlots)")
             statRow("Supercharge", "×\(game.superchargeXPPerTap) XP / tap")
+            statRow("Double XP coupons", "\(game.doubleXPCoupons)")
         }
     }
 

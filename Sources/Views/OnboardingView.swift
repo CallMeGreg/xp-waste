@@ -20,7 +20,9 @@ struct OnboardingView: View {
         Card(icon: "⚡️", title: "Slot skills & bank Energy",
              body: "Reach level 10 to slot a skill for passive XP. Slotted skills bank Energy in real time — even while the app is closed."),
         Card(icon: "🔥", title: "Supercharge for big bursts",
-             body: "Spend banked Energy to Supercharge a skill: seconds of bonus XP per tap. Go away, come back, and unleash it.")
+             body: "Spend banked Energy to Supercharge a skill: seconds of bonus XP per tap. Go away, come back, and unleash it."),
+        Card(icon: "🎟️", title: "Double XP coupons",
+             body: "Activate a coupon for 10 minutes of 2× XP across every skill — it even stacks with Supercharge. Claim one free every day, or grab more anytime.")
     ]
 
     var body: some View {

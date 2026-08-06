@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		067818E9C5D0F2F9294280E0 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2654A786CFE972C54B563658 /* Components.swift */; };
 		085F73CA4E1D44E3F733B44D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8FAA649993102926D5A4C7BF /* Assets.xcassets */; };
+		263F3D8F5D42F28DCE9107FE /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88E8C41F1793F6D725F5C19F /* Store.swift */; };
+		28489519E5910F4463E3316F /* DoubleXPView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BBD9060B2BEE11DB5C3DACA /* DoubleXPView.swift */; };
 		3A294015622B57516978C4F8 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E3591D70C823A082F6036D /* RootView.swift */; };
 		3D3A4FB88C6061CA43BC275A /* SkillTrainingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DD448D26D4B05BB94E4F48F /* SkillTrainingView.swift */; };
 		5D67CD489908F7E115C53FFB /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69A45BD2A51058022DFF5D4B /* GameState.swift */; };
@@ -30,9 +32,11 @@
 		3A8F76A4A2E08BFF2A3CFE11 /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
 		4E905DB741FD94772A6AA0E5 /* Balance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Balance.swift; sourceTree = "<group>"; };
 		5AE6CE3067CED131E6320A62 /* IdleSkiller.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = IdleSkiller.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5BBD9060B2BEE11DB5C3DACA /* DoubleXPView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoubleXPView.swift; sourceTree = "<group>"; };
 		5DD448D26D4B05BB94E4F48F /* SkillTrainingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillTrainingView.swift; sourceTree = "<group>"; };
 		5FC8A729DF91D2B0B653966B /* XPTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPTable.swift; sourceTree = "<group>"; };
 		69A45BD2A51058022DFF5D4B /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
+		88E8C41F1793F6D725F5C19F /* Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Store.swift; sourceTree = "<group>"; };
 		8FAA649993102926D5A4C7BF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		99E3591D70C823A082F6036D /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		A8C1DBAE435EC4B974261C4A /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -46,6 +50,7 @@
 			isa = PBXGroup;
 			children = (
 				2654A786CFE972C54B563658 /* Components.swift */,
+				5BBD9060B2BEE11DB5C3DACA /* DoubleXPView.swift */,
 				A8C1DBAE435EC4B974261C4A /* HomeView.swift */,
 				1F52669AC8FD10828BE7DA7E /* OnboardingView.swift */,
 				99E3591D70C823A082F6036D /* RootView.swift */,
@@ -82,6 +87,7 @@
 				4E905DB741FD94772A6AA0E5 /* Balance.swift */,
 				69A45BD2A51058022DFF5D4B /* GameState.swift */,
 				C10A1062ACB20CFEE69C2F7F /* SkillID.swift */,
+				88E8C41F1793F6D725F5C19F /* Store.swift */,
 				5FC8A729DF91D2B0B653966B /* XPTable.swift */,
 			);
 			path = Models;
@@ -175,6 +181,7 @@
 			files = (
 				96F2C3ED5A3F32E2A9DAEF3B /* Balance.swift in Sources */,
 				067818E9C5D0F2F9294280E0 /* Components.swift in Sources */,
+				28489519E5910F4463E3316F /* DoubleXPView.swift in Sources */,
 				5D67CD489908F7E115C53FFB /* GameState.swift in Sources */,
 				FE6189F8C709ED87D7FC2457 /* HomeView.swift in Sources */,
 				6F1CC5D86F57BE59B61789F3 /* IdleSkillerApp.swift in Sources */,
@@ -185,6 +192,7 @@
 				70B9B168B1197B82D9D7538D /* SkillTileView.swift in Sources */,
 				3D3A4FB88C6061CA43BC275A /* SkillTrainingView.swift in Sources */,
 				8CB85495584067B070572BA5 /* StatsView.swift in Sources */,
+				263F3D8F5D42F28DCE9107FE /* Store.swift in Sources */,
 				8D4395AF65254D752E3251B6 /* XPTable.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

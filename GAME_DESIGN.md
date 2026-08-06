@@ -119,6 +119,7 @@ v1 _(future: tap/level/supercharge SFX)_.
 | Slot eligibility | skill level ≥ 10 |
 | Slot 2 / Slot 3 unlock | total level 50 / 150 |
 | Supercharge tiers | 2 / 5 / 10 / 20 XP-per-tap at total 0 / 100 / 300 / 500 |
+| Double XP boost | 2× all XP for 10 min; 1 free coupon/day; IAP packs of 5 / 25 / 100 |
 
 ## 9. Professional critique (indie-dev self-review)
 
@@ -150,3 +151,44 @@ constants; the first post-launch pass is pure balancing.
 - Achievements, daily goals, and a "max cape" celebration.
 - iCloud sync; Game Center leaderboards for total level.
 - Skill interactions (e.g., gathering feeds a crafting loop).
+
+## 11. Double XP coupons & monetization _(v1.1)_
+
+**Concept.** A universal **Double XP** boost: activate a coupon to earn **2× XP on every
+skill for 10 minutes** — taps, Supercharge taps, and passive slot XP alike. The multiplier
+stacks *multiplicatively* with Supercharge (e.g. ×5 tap → ×10 while boosted), creating a
+"stack your buffs" power fantasy.
+
+**Economy.**
+- **Free daily coupon** — one is granted the first time you open the app each calendar day
+  (a classic daily-login hook; missed days don't stack, which rewards returning).
+- **Coupons are inventory.** You spend one to start a boost, and you can't start a second
+  while one is running (prevents accidental waste). Owning more than one just lets you chain
+  sessions.
+- **In-app purchases (StoreKit 2, consumables):** Pouch (5), Sack (25), Chest (100). Real
+  purchase + transaction verification; a local `Config/Products.storekit` file drives testing
+  in the simulator, and a DEBUG mock catalog keeps the store UI renderable offline.
+
+**UX.**
+- A violet **Double XP card** on the Home hub shows either "Tap to activate" (+ coupon count)
+  or a live **2× XP ACTIVE · M:SS** countdown.
+- The training screen shows a **2×** badge next to the Supercharge badge so the stacked
+  multiplier is legible, and tap "+X" pops reflect the true per-tap amount.
+- A dedicated **Double XP sheet** handles activation, coupon balance, and the store.
+- Daily rewards and purchases surface a top toast.
+
+**Monetization critique (indie-dev self-review).**
+- *Strength:* the boost is **fun-first and non-coercive** — a free daily coupon means F2P
+  players always taste the mechanic, and purchases buy *more of a good time*, not power gates.
+  Consumables suit a long grind and stack naturally with the existing Supercharge hook.
+- *Risk — "pay-to-skip" perception.* Because XP is the only resource, buying coupons is
+  effectively buying progression. *Mitigation:* keep the boost time-boxed and session-based
+  (you must be actively tapping to benefit), so it sells *engagement*, not AFK power.
+- *Risk — real-time expiry can feel punishing* if the player is interrupted mid-boost.
+  *Mitigation (future):* consider pausing the timer on backgrounding, or a "boost only counts
+  foreground seconds" model. V1 keeps wall-clock expiry for simplicity and honesty ("10 min").
+- *Risk — App Review / ethics:* consumables must be clearly described and restore-exempt;
+  the store copy states coupons are consumable and prices are region-dependent. No loot boxes,
+  no randomized rewards.
+- *Balance lever:* `Balance.doubleXPMultiplier`, `doubleXPDurationSeconds`, and
+  `dailyFreeCoupons` are centralized, so tuning generosity vs. monetization is a one-file change.

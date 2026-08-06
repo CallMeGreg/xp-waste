@@ -28,7 +28,21 @@ struct RootView: View {
                     }
             }
         }
+        .overlay(alignment: .top) {
+            if let notice = game.notice {
+                NoticeToast(text: notice)
+                    .id(notice)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task(id: notice) {
+                        try? await Task.sleep(nanoseconds: 2_400_000_000)
+                        if game.notice == notice {
+                            withAnimation { game.notice = nil }
+                        }
+                    }
+            }
+        }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: game.levelUpEvent)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: game.notice)
     }
 }
 
@@ -53,5 +67,22 @@ struct LevelUpToast: View {
         .overlay(Capsule().strokeBorder(event.skill.tint.opacity(0.7), lineWidth: 1.5))
         .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
         .padding(.top, 6)
+    }
+}
+
+/// Transient banner for general notices (daily rewards, purchases).
+struct NoticeToast: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(.subheadline.weight(.semibold))
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(Capsule().strokeBorder(Color.doubleXP.opacity(0.7), lineWidth: 1.5))
+            .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
+            .padding(.top, 6)
     }
 }

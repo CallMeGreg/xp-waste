@@ -26,6 +26,7 @@ struct SettingsView: View {
                     infoRow("⚡️", "Reach level 10 to slot a skill for passive XP.")
                     infoRow("🔋", "Slotted skills bank Energy — even while the app is closed.")
                     infoRow("🔥", "Supercharge to spend Energy for bonus XP per tap.")
+                    infoRow("🎟️", "Activate a Double XP coupon for 10 min of 2× on every skill — one free daily.")
                 }
 
                 Section("Data") {

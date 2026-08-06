@@ -31,6 +31,18 @@ enum Balance {
         (500, 20)
     ]
 
+    // MARK: Double XP boost
+
+    /// Multiplier applied to *all* XP (taps + passive) while a Double XP boost is active.
+    /// Stacks multiplicatively with Supercharge.
+    static let doubleXPMultiplier: Double = 2.0
+
+    /// How long a single Double XP coupon lasts once activated, in seconds (10 minutes).
+    static let doubleXPDurationSeconds: TimeInterval = 600
+
+    /// Free Double XP coupons granted the first time the app is opened on a new calendar day.
+    static let dailyFreeCoupons: Int = 1
+
     // MARK: Training slots
 
     /// A skill must reach this level before it can be assigned to a training slot.

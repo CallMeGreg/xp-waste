@@ -15,6 +15,8 @@ See **[GAME_DESIGN.md](GAME_DESIGN.md)** for the full design, balance table, and
 - **Training slots** for passive XP (1 → 2 → 3 slots as your total level grows).
 - **Energy & Supercharge** — bank up to 30s of Supercharge while the app is open *or closed*,
   then spend it for **2 / 5 / 10 / 20 XP-per-tap** bursts (tier scales with total level).
+- **Double XP coupons** — activate a coupon for **10 minutes of 2× XP on every skill** (stacks
+  with Supercharge). One **free coupon daily**, plus **in-app purchase** packs (StoreKit 2).
 - **Home hub, Stats/Milestones, Settings**, and first-launch onboarding.
 - Full **offline-Energy** crediting and `UserDefaults` persistence.
 
@@ -49,12 +51,22 @@ Sources/
   Models/   SkillID.swift               # the 10 skills + theming
             XPTable.swift               # OSRS XP curve
             Balance.swift               # ALL tunable constants
-            GameState.swift             # source of truth: XP, slots, energy, supercharge
+            GameState.swift             # source of truth: XP, slots, energy, supercharge, coupons
+            Store.swift                 # StoreKit 2 in-app purchases (coupon packs)
   Views/    RootView / Onboarding / Home / SkillTile
             SkillTrainingView / StatsView / SettingsView / Components
+            DoubleXPView                # activate boost + coupon store
   Assets.xcassets                       # app icon + accent color
+Config/     Products.storekit           # local StoreKit config for testing IAP
 project.yml                             # XcodeGen project definition
 ```
+
+## Testing in-app purchases
+
+`Config/Products.storekit` defines the consumable coupon packs and is wired into the
+`IdleSkiller` scheme's Run action, so purchases work locally in the simulator when you
+run from **Xcode** (no App Store Connect needed). In production these map to real
+App Store Connect product IDs (`com.callmegreg.idleskiller.coupons.*`).
 
 ## Tuning
 

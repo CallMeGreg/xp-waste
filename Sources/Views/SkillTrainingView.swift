@@ -79,6 +79,10 @@ struct SkillTrainingView: View {
                     .foregroundStyle(skill.tint)
                 Text("/ 99").font(.subheadline).foregroundStyle(.secondary)
                 Spacer()
+                if game.isDoubleXPActive {
+                    Label("2×", systemImage: "sparkles")
+                        .font(.headline.weight(.bold)).foregroundStyle(Color.doubleXP)
+                }
                 if supercharged {
                     Label("×\(game.superchargeXPPerTap) · \(Int(game.superchargeSeconds(for: skill).rounded()))s",
                           systemImage: "flame.fill")
@@ -127,7 +131,7 @@ struct SkillTrainingView: View {
                     radius: supercharged ? 22 : 12)
 
             ForEach(pops) { pop in
-                PopView(pop: pop, tint: supercharged ? .orange : skill.tint)
+                PopView(pop: pop, tint: supercharged ? .orange : (game.isDoubleXPActive ? .doubleXP : skill.tint))
             }
         }
         .frame(height: 330)
@@ -241,8 +245,7 @@ struct SkillTrainingView: View {
     // MARK: Tap handling
 
     private func handleTap() {
-        let supercharged = game.isSupercharged(skill)
-        let gain = supercharged ? game.superchargeXPPerTap : 1
+        let gain = game.tapGain(for: skill)
         game.tap(skill)
 
         let pop = TapPop(text: "+\(gain)", x: CGFloat.random(in: -34...34))
