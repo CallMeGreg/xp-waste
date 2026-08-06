@@ -29,9 +29,11 @@ requirement, not an afterthought.**
 
 - The target ships as a universal app: `TARGETED_DEVICE_FAMILY = "1,2"` in `project.yml`.
   Never drop iPad (family `2`).
-- iPhone runs portrait; iPad supports **all four orientations**
-  (`INFOPLIST_KEY_UISupportedInterfaceOrientations~ipad`). Layouts must survive rotation and
-  iPad multitasking (Split View / Slide Over), i.e. arbitrary widths and heights.
+- iPhone runs portrait; iPad supports **all four orientations**. The iPad orientations are set
+  via `UISupportedInterfaceOrientations~ipad` in the partial `Config/Info.plist` (merged with the
+  generated Info.plist) — Xcode's auto-generation ignores the `~ipad` suffix on
+  `INFOPLIST_KEY_*` build settings, so that key must live in a real plist. Layouts must survive
+  rotation and iPad multitasking (Split View / Slide Over), i.e. arbitrary widths and heights.
 - **Never hard-code screen sizes.** Build responsive layouts with `GridItem(.adaptive(...))`,
   `@Environment(\.horizontalSizeClass)` / `verticalSizeClass`, `GeometryReader` only when
   necessary, `Spacer`, and relative sizing.
