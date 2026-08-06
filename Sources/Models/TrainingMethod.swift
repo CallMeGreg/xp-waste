@@ -154,14 +154,14 @@ extension SkillID {
 
         // MARK: Artisan
         case .cooking:
-            // One meal, raw shrimp → fine wine.
+            // One meal, bread → summer pie.
             return tiered([
-                TrainingMethod(name: "Cook shrimp", art: .symbol("fork.knife"), tint: Palette.rgb(0.93, 0.58, 0.53)),
-                TrainingMethod(name: "Cook trout", art: .symbol("fork.knife"), tint: Palette.rgb(0.58, 0.68, 0.82)),
-                TrainingMethod(name: "Bake bread", art: .symbol("fork.knife"), tint: Palette.rgb(0.82, 0.62, 0.36)),
-                TrainingMethod(name: "Cook lobster", art: .symbol("fork.knife"), tint: Palette.rgb(0.86, 0.42, 0.30)),
-                TrainingMethod(name: "Cook shark", art: .symbol("fork.knife"), tint: Palette.rgb(0.55, 0.60, 0.66)),
-                TrainingMethod(name: "Brew fine wines", art: .symbol("fork.knife"), tint: Palette.rgb(0.66, 0.24, 0.44))
+                TrainingMethod(name: "Bake bread", art: .symbol("fork.knife"), tint: Palette.rgb(0.82, 0.64, 0.40)),
+                TrainingMethod(name: "Brew wine", art: .symbol("fork.knife"), tint: Palette.rgb(0.66, 0.24, 0.44)),
+                TrainingMethod(name: "Bake pizza", art: .symbol("fork.knife"), tint: Palette.rgb(0.86, 0.40, 0.28)),
+                TrainingMethod(name: "Bake cake", art: .symbol("fork.knife"), tint: Palette.rgb(0.93, 0.66, 0.74)),
+                TrainingMethod(name: "Cook tuna potato", art: .symbol("fork.knife"), tint: Palette.rgb(0.90, 0.78, 0.46)),
+                TrainingMethod(name: "Bake summer pie", art: .symbol("fork.knife"), tint: Palette.rgb(0.95, 0.70, 0.30))
             ])
         case .firemaking:
             // One fire, dull embers → magic flame.
@@ -174,14 +174,14 @@ extension SkillID {
                 TrainingMethod(name: "Burn magic logs", art: .symbol("flame.fill"), tint: Palette.rgb(0.55, 0.72, 0.95))
             ])
         case .crafting:
-            // One cut gem, opal → diamond.
+            // One cut gem, sapphire → onyx.
             return tiered([
-                TrainingMethod(name: "Cut opals", art: .symbol("diamond.fill"), tint: Palette.rgb(0.80, 0.82, 0.90)),
-                TrainingMethod(name: "Cut jade", art: .symbol("diamond.fill"), tint: Palette.rgb(0.36, 0.66, 0.42)),
-                TrainingMethod(name: "Cut red topaz", art: .symbol("diamond.fill"), tint: Palette.rgb(0.86, 0.42, 0.26)),
                 TrainingMethod(name: "Cut sapphires", art: .symbol("diamond.fill"), tint: Palette.sapphire),
                 TrainingMethod(name: "Cut emeralds", art: .symbol("diamond.fill"), tint: Palette.emerald),
-                TrainingMethod(name: "Cut diamonds", art: .symbol("diamond.fill"), tint: Palette.diamond)
+                TrainingMethod(name: "Cut rubies", art: .symbol("diamond.fill"), tint: Palette.rgb(0.85, 0.22, 0.30)),
+                TrainingMethod(name: "Cut diamonds", art: .symbol("diamond.fill"), tint: Palette.diamond),
+                TrainingMethod(name: "Cut dragonstones", art: .symbol("diamond.fill"), tint: Palette.rgb(0.72, 0.32, 0.66)),
+                TrainingMethod(name: "Cut onyx", art: .symbol("diamond.fill"), tint: Palette.rgb(0.34, 0.32, 0.42))
             ])
         case .smithing:
             // One ingot, bronze → rune.
@@ -209,7 +209,7 @@ extension SkillID {
                 TrainingMethod(name: "Mix Attack potions", art: .symbol("flask.fill"), tint: Palette.potion[0]),
                 TrainingMethod(name: "Brew Strength potions", art: .symbol("flask.fill"), tint: Palette.potion[1]),
                 TrainingMethod(name: "Make Prayer potions", art: .symbol("flask.fill"), tint: Palette.potion[2]),
-                TrainingMethod(name: "Mix Super potions", art: .symbol("flask.fill"), tint: Palette.potion[3]),
+                TrainingMethod(name: "Mix Super energy potions", art: .symbol("flask.fill"), tint: Palette.potion[3]),
                 TrainingMethod(name: "Brew Ranging potions", art: .symbol("flask.fill"), tint: Palette.potion[4]),
                 TrainingMethod(name: "Decant Super Combat", art: .symbol("flask.fill"), tint: Palette.potion[5])
             ])
@@ -261,8 +261,8 @@ extension SkillID {
                 TrainingMethod(name: "Slay crawling hands", art: .vector(.skull), tint: Palette.rgb(0.74, 0.70, 0.64)),
                 TrainingMethod(name: "Slay cave crawlers", art: .vector(.skull), tint: Palette.rgb(0.56, 0.70, 0.46)),
                 TrainingMethod(name: "Slay bloodvelds", art: .vector(.skull), tint: Palette.rgb(0.80, 0.30, 0.32)),
-                TrainingMethod(name: "Slay abyssal demons", art: .vector(.skull), tint: Palette.rgb(0.56, 0.40, 0.74)),
                 TrainingMethod(name: "Slay gargoyles", art: .vector(.skull), tint: Palette.rgb(0.55, 0.56, 0.62)),
+                TrainingMethod(name: "Slay abyssal demons", art: .vector(.skull), tint: Palette.rgb(0.56, 0.40, 0.74)),
                 TrainingMethod(name: "Slay alchemical hydra", art: .vector(.skull), tint: Palette.rgb(0.92, 0.62, 0.28))
             ])
         }
