@@ -42,6 +42,7 @@ struct StatsView: View {
     private func skillRow(_ skill: SkillID) -> some View {
         let xp = game.xp(for: skill)
         let level = game.level(for: skill)
+        let buff = game.buffValues(for: skill)
         return VStack(spacing: 6) {
             HStack(spacing: 8) {
                 Text(skill.glyph)
@@ -60,6 +61,13 @@ struct StatsView: View {
                     Text("\(Format.abbrev(XPTable.xpToNextLevel(forXP: xp))) to next")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
+            }
+            HStack(spacing: 6) {
+                Image(systemName: skill.buff.icon).font(.caption2).foregroundStyle(skill.tint)
+                Text("\(skill.buff.name): \(buff.current)")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                Spacer()
             }
         }
         .padding(.vertical, 2)

@@ -1,10 +1,12 @@
 import SwiftUI
 
-/// A single floating "+X" indicator spawned on tap.
+/// A single floating indicator spawned on tap. `crit`/`special` change its styling.
 struct TapPop: Identifiable {
     let id = UUID()
     let text: String
     let x: CGFloat
+    var crit: Bool = false
+    var special: Bool = false
 }
 
 /// Animates a `TapPop` upward and fades it out.
@@ -16,14 +18,15 @@ struct PopView: View {
 
     var body: some View {
         Text(pop.text)
-            .font(.system(size: 26, weight: .heavy, design: .rounded))
-            .foregroundStyle(tint)
+            .font(.system(size: pop.crit ? 34 : (pop.special ? 20 : 26),
+                          weight: .heavy, design: .rounded))
+            .foregroundStyle(pop.crit ? Color.yellow : (pop.special ? Color.orange : tint))
             .shadow(color: .black.opacity(0.45), radius: 2, y: 1)
             .offset(x: pop.x, y: offsetY)
             .opacity(opacity)
             .onAppear {
                 withAnimation(.easeOut(duration: 1.0)) {
-                    offsetY = -130
+                    offsetY = pop.crit ? -160 : -130
                     opacity = 0
                 }
             }
@@ -41,7 +44,11 @@ struct SkillTrainingView: View {
     @State private var tapHaptic = 0
     @State private var superchargeHaptic = 0
     @State private var showSlotFull = false
+    @State private var autoTapAccumulator: Double = 0
     @Environment(\.horizontalSizeClass) private var hSize
+
+    /// Drives Runecraft's auto-tap perk while this screen is open.
+    private let autoTapTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         let level = game.level(for: skill)
@@ -64,6 +71,7 @@ struct SkillTrainingView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sensoryFeedback(.impact(weight: .light), trigger: tapHaptic)
         .sensoryFeedback(.success, trigger: superchargeHaptic)
+        .onReceive(autoTapTimer) { _ in stepAutoTap(0.1) }
         .alert("All slots are full", isPresented: $showSlotFull) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -73,21 +81,22 @@ struct SkillTrainingView: View {
 
     // MARK: Layouts
 
-    /// iPhone / compact-width layout: a single vertical column.
+    /// iPhone / compact-width layout: a single scrollable vertical column (survives short heights).
     private func compactLayout(level: Int, xp: Int, supercharged: Bool) -> some View {
-        VStack(spacing: 0) {
-            header(level: level, xp: xp, supercharged: supercharged)
-            methodBanner
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
-            Spacer(minLength: 8)
-            objectArea(supercharged: supercharged, diameter: 250)
-            Spacer(minLength: 8)
-            controlCard
+        ScrollView {
+            VStack(spacing: 12) {
+                header(level: level, xp: xp, supercharged: supercharged)
+                methodBanner.padding(.horizontal, 20)
+                buffBanner.padding(.horizontal, 20)
+                objectArea(supercharged: supercharged, diameter: 240)
+                    .padding(.top, 4)
+                controlCard
+            }
+            .padding(.bottom, 12)
         }
     }
 
-    /// iPad / regular-width layout: object on the left, method + controls on the right.
+    /// iPad / regular-width layout: object on the left, method + perk + controls on the right.
     private func regularLayout(level: Int, xp: Int, supercharged: Bool) -> some View {
         VStack(spacing: 12) {
             header(level: level, xp: xp, supercharged: supercharged)
@@ -97,6 +106,7 @@ struct SkillTrainingView: View {
                     .frame(maxWidth: .infinity)
                 VStack(spacing: 16) {
                     methodBanner
+                    buffBanner
                     controlCard
                 }
                 .frame(maxWidth: 400)
@@ -147,7 +157,38 @@ struct SkillTrainingView: View {
         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.white.opacity(0.08)))
     }
 
-    // MARK: Header
+    // MARK: Perk banner
+
+    /// Shows this skill's unique, account-wide perk, its current magnitude, and the next-level value.
+    private var buffBanner: some View {
+        let info = skill.buff
+        let values = game.buffValues(for: skill)
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                Image(systemName: info.icon).font(.title3).foregroundStyle(skill.tint)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Perk · \(info.name)").font(.caption2).foregroundStyle(.secondary)
+                    Text(values.current)
+                        .font(.subheadline.weight(.semibold)).foregroundStyle(skill.tint)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                }
+                Spacer()
+            }
+            Text(info.blurb)
+                .font(.caption2).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if let next = values.next {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.up.circle.fill").font(.caption2).foregroundStyle(.secondary)
+                    Text("Next level: \(next)").font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                }
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity)
+        .background(skill.tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(skill.tint.opacity(0.20)))
+    }
 
     private func header(level: Int, xp: Int, supercharged: Bool) -> some View {
         VStack(spacing: 8) {
@@ -285,7 +326,7 @@ struct SkillTrainingView: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text("Energy").font(.subheadline.weight(.semibold))
-                Text("\(Int(banked.rounded(.down)))s / \(Int(Balance.maxEnergySeconds))s banked")
+                Text("\(Int(banked.rounded(.down)))s / \(Int(game.energyCapSeconds))s banked")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
@@ -325,19 +366,48 @@ struct SkillTrainingView: View {
     // MARK: Tap handling
 
     private func handleTap() {
-        let gain = game.tapGain(for: skill)
-        game.tap(skill)
+        let result = game.tap(skill)
+        spawnPops(for: result)
+        tapScale = 0.9
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) { tapScale = 1.0 }
+        if game.hapticsEnabled { tapHaptic += 1 }
+    }
 
-        let pop = TapPop(text: "+\(gain)", x: CGFloat.random(in: -34...34))
+    /// Advances Runecraft's auto-tap perk; fires whole taps accumulated over `dt`.
+    private func stepAutoTap(_ dt: Double) {
+        let rate = game.autoTapsPerSecond
+        guard rate > 0 else { autoTapAccumulator = 0; return }
+        autoTapAccumulator += rate * dt
+        var fired = 0
+        while autoTapAccumulator >= 1, fired < 5 {
+            autoTapAccumulator -= 1
+            spawnPops(for: game.tap(skill))
+            fired += 1
+        }
+    }
+
+    /// Spawns floating indicators for a tap, calling out crits, extra hits, caches, and Energy procs.
+    private func spawnPops(for result: GameState.TapResult) {
+        let text = result.didCrit ? "✦ +\(result.xp)!" : "+\(result.xp)"
+        addPop(TapPop(text: text, x: .random(in: -34...34), crit: result.didCrit))
+        if result.extraHits > 0 {
+            addPop(TapPop(text: "＋\(result.extraHits) hit\(result.extraHits == 1 ? "" : "s")",
+                          x: .random(in: -48...48), special: true))
+        }
+        if result.gotCache {
+            addPop(TapPop(text: "🪹 cache!", x: .random(in: -48...48), special: true))
+        }
+        if result.gotEnergy {
+            addPop(TapPop(text: "⚡︎ energy", x: .random(in: -48...48), special: true))
+        }
+    }
+
+    private func addPop(_ pop: TapPop) {
         pops.append(pop)
-        if pops.count > 12 { pops.removeFirst(pops.count - 12) }
+        if pops.count > 16 { pops.removeFirst(pops.count - 16) }
         let id = pop.id
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             pops.removeAll { $0.id == id }
         }
-
-        tapScale = 0.9
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) { tapScale = 1.0 }
-        if game.hapticsEnabled { tapHaptic += 1 }
     }
 }
