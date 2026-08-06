@@ -14,13 +14,13 @@ struct OnboardingView: View {
 
     private let cards: [Card] = [
         Card(icon: "🏆", title: "Train all 23 skills to 99",
-             body: "Every Old School RuneScape skill — combat, gathering, artisan and support — on the real OSRS XP curve. The goal: a level-99 max cape in all of them."),
+             body: "Earn experience across 23 different skills — combat, gathering, artisan and support — to level each one up. The goal: reach level 99 in every skill and claim a max cape."),
         Card(icon: "👆", title: "Tap to train",
-             body: "Open a skill and tap its object to earn XP. As you level up the method evolves — normal trees become oaks, willows, then magic trees."),
+             body: "Open a skill and tap its object to earn XP. As you level up, that skill's training method improves into a faster, more rewarding one — and every tap earns more."),
         Card(icon: "⚡️", title: "Slot skills & bank Energy",
-             body: "Reach level 10 to slot a skill for passive XP. Slotted skills bank Energy in real time — even while the app is closed."),
+             body: "Reach level 10 to slot a skill for passive XP. Slotted skills bank Energy in real time — even while you're away."),
         Card(icon: "🔥", title: "Supercharge for big bursts",
-             body: "Spend banked Energy to Supercharge a skill: seconds of bonus XP per tap. Go away, come back, and unleash it."),
+             body: "Spend banked Energy to Supercharge a skill: seconds of bonus XP per tap."),
         Card(icon: "🎟️", title: "Double XP coupons",
              body: "Activate a coupon for 10 minutes of 2× XP across every skill — it even stacks with Supercharge. Claim one free every day, or grab more anytime.")
     ]
