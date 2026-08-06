@@ -7,6 +7,7 @@ app logistics lives in this folder.
 | Doc | What it covers |
 |-----|----------------|
 | [GAME_DESIGN.md](GAME_DESIGN.md) | Full game design document — vision, skills, mechanics, progression, balance tables, and the indie-dev critique. |
+| [SKILL_BUFFS.md](SKILL_BUFFS.md) | The 23 unique account-wide skill perks — per-skill lever table, designed synergies, scaling model, and the tap "hit" pipeline. |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Engineering setup: requirements, build & run, project layout, architecture, tuning, StoreKit/IAP testing, and debug hooks. |
 | [../.github/copilot-instructions.md](../.github/copilot-instructions.md) | Guidance for AI coding agents working in this repo (conventions, universal-app rules, doc layout). |
 

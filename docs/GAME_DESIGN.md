@@ -90,7 +90,30 @@ supercharged ×10, under 2× Double XP = 240 XP per tap). This creates the signa
 **return-and-burst loop**: idle to bank Energy, come back, and tap furiously during the
 Supercharge window. Passive XP keeps trickling during a Supercharge; only *taps* get the multiplier.
 
-## 4. Progression arc (1 → maxed)
+## 4. Skill perks (account-wide passive buffs)
+
+Leveling a skill grants more than XP and prettier objects: **every skill confers a unique,
+account-wide passive perk** that grows stronger as that skill climbs. No two perks pull the same
+lever, so training *any* skill benefits the whole account in its own way — Strength widens your
+tap's damage ceiling, Attack skews rolls toward that ceiling, Mining deepens your Energy cap,
+Runecraft literally auto-taps for you, and so on across all 23.
+
+- **Neutral at level 1.** Each perk's level-1 value is `0`, `×1`, or the exact prior constant, so a
+  fresh account plays identically to the pre-perk game. Perks are strictly additive as you level.
+- **Scales to 99.** A perk interpolates from its level-1 value to its level-99 value along a curve
+  (`linear` in v1), so the buff becomes more prevalent the more you train — a permanent reward that
+  layers on top of the tap and idle loops.
+- **The active tap is a "hit".** Combat perks reshape each tap into a rolled range: Strength sets
+  the ceiling, Defence the floor, Attack biases toward the top, Ranged adds extra hits, and
+  Slayer × Crafting land the occasional crit. Non-combat perks feed the idle engine (Energy, passive
+  rate, offline), the boost economy (Double XP potency/duration/supply, Supercharge power/duration),
+  or account tempo (combo, extra slots, auto-tap).
+
+The full per-skill lever table, designed synergies, and the exact tap pipeline order live in
+**[SKILL_BUFFS.md](SKILL_BUFFS.md)**. All perk numbers are centralized in `Balance.buffScaling`, so
+re-balancing a perk is a one-line change that never touches gameplay or view code.
+
+## 5. Progression arc (1 → maxed)
 
 - **Early (total 23–100):** Tap skills to level 10 to unlock slotting. Start the first passive
   slot. Learn Supercharge on the first return. Hit the first method upgrades (level 15/30).
@@ -101,7 +124,7 @@ Supercharge window. Passive XP keeps trickling during a Supercharge; only *taps*
   70/90) accelerate the brutal OSRS tail. Milestones: first 99 → all combat 99 → all gathering
   99 → all artisan 99 → all support 99 → **max cape (2277)**.
 
-## 5. Screens & UX
+## 6. Screens & UX
 
 1. **Splash** — brief branded loader.
 2. **Onboarding** (first launch, 4 short cards) — goal, tap-to-train, slots+Energy,
@@ -112,15 +135,18 @@ Supercharge window. Passive XP keeps trickling during a Supercharge; only *taps*
    slot badge, Energy ring, and a "Supercharge ready" glow. Toolbar → Stats and Settings.
 4. **Skill Training (full screen, responsive)** — the big tappable object (which upgrades with
    your method tier); a header with level + XP-to-next bar; a **method banner** showing the
-   current method, its +X/tap, and the next unlock; a slot toggle (enabled at level 10); and an
-   Energy meter + **Supercharge** button with live countdown and active multiplier. On iPad /
+   current method, its +X/tap, and the next unlock; a **perk banner** showing this skill's
+   account-wide buff, its current magnitude, and the next-level preview; a slot toggle (enabled at
+   level 10); and an Energy meter + **Supercharge** button with live countdown and active
+   multiplier. Tap "+X" pops highlight **crits, extra hits, and cache windfalls**. On iPad /
    regular width this becomes a **two-pane** layout (object left, method + controls right); on
    iPhone it's a single vertical column.
-5. **Stats / Milestones** — total level, per-skill levels, unlock thresholds, and a milestone
-   checklist.
+5. **Stats / Milestones** — total level, per-skill levels, unlock thresholds, a milestone
+   checklist, and each skill's **current perk** (icon, name, and live magnitude) so you can see
+   exactly what every level is buying you.
 6. **Settings** — haptics/sound toggles, reset progress, about + OSRS-inspired disclaimer.
 
-## 6. Visual & audio direction
+## 7. Visual & audio direction
 
 Dark, cozy "parchment + rune" palette. Each skill has a signature tint and a **vector icon**
 (SF Symbol or hand-authored path, via `Artwork.swift`) as its trainable object; the object keeps
@@ -128,7 +154,7 @@ one motif per skill and upgrades by tint + size as the method tier advances. Fee
 floating XP numbers, object bounce, level-up flash, and haptics. Audio hooks are stubbed for
 v1 _(future: tap/level/supercharge SFX)_.
 
-## 7. Technical architecture
+## 8. Technical architecture
 
 - **SwiftUI**, iOS 17+, **universal (iPhone + iPad)**, MVVM. Responsive layouts via adaptive
   grids and `horizontalSizeClass` (two-pane training on regular width); content is width-capped
@@ -146,7 +172,7 @@ v1 _(future: tap/level/supercharge SFX)_.
 - **Tuning:** every balance constant lives in `Balance.swift` so re-balancing is a one-file
   change.
 
-## 8. Balance constants (v1, all tunable in `Balance.swift`)
+## 9. Balance constants (v1, all tunable in `Balance.swift`)
 
 | Constant | Value |
 |----------|-------|
@@ -157,9 +183,11 @@ v1 _(future: tap/level/supercharge SFX)_.
 | Slot eligibility | skill level ≥ 10 |
 | Slot 2 / Slot 3 unlock | total level 100 / 300 |
 | Supercharge tiers | ×2 / ×5 / ×10 / ×20 tap multiplier at total 0 / 100 / 300 / 500 |
-| Double XP boost | 2× all XP for 10 min; 1 free coupon/day; IAP packs of 5 / 25 / 100 |
+| Double XP boost | 2× all XP for 10 min (base; Magic/Herblore perks scale ×/duration); 1 free coupon/day; IAP packs of 5 / 25 / 100 |
+| Energy Cells | Consumable that instantly refills every slotted skill to its Energy cap; IAP packs of 3 / 10 / 30 |
+| Skill perks | 23 unique account-wide buffs, each neutral at level 1 and scaling to its level-99 value (`Balance.buffScaling`) — see [SKILL_BUFFS.md](SKILL_BUFFS.md) |
 
-## 9. Professional critique (indie-dev self-review)
+## 10. Professional critique (indie-dev self-review)
 
 **Strengths**
 - Clean, legible core loop (tap ↔ idle ↔ Supercharge burst). The Supercharge mechanic is a
@@ -184,7 +212,7 @@ v1 _(future: tap/level/supercharge SFX)_.
 **Verdict:** the loop is fun and shippable. Ship v1 faithful to the spec with fully tunable
 constants; the first post-launch pass is pure balancing.
 
-## 10. Roadmap beyond v1 _(future)_
+## 11. Roadmap beyond v1 _(future)_
 
 - Yield-scaling / prestige and optional offline passive XP.
 - Custom art & animation per skill; SFX and music.
@@ -192,43 +220,72 @@ constants; the first post-launch pass is pure balancing.
 - iCloud sync; Game Center leaderboards for total level.
 - Skill interactions (e.g., gathering feeds a crafting loop).
 
-## 11. Double XP coupons & monetization _(v1.1)_
+## 12. Boosts: Double XP, Energy Cells & monetization _(v1.1, energy added v1.2)_
 
-**Concept.** A universal **Double XP** boost: activate a coupon to earn **2× XP on every
-skill for 10 minutes** — taps, Supercharge taps, and passive slot XP alike. The multiplier
-stacks *multiplicatively* with Supercharge (e.g. ×5 tap → ×10 while boosted), creating a
-"stack your buffs" power fantasy.
+**Concept.** Two consumable "boost" families let players spend for *time and multipliers*, never
+for permanent power (permanent power comes from the skill perks in [§4](#4-skill-perks-account-wide-passive-buffs)):
+
+- **Double XP coupons** — activate one to earn **2× XP on every skill for 10 minutes** (base
+  values) — taps, Supercharge taps, and passive slot XP alike. The multiplier stacks
+  *multiplicatively* with Supercharge (e.g. ×5 tap → ×10 while boosted).
+- **Energy Cells** — spend one to **instantly refill every slotted skill to its Energy cap**, so
+  you can Supercharge on demand instead of waiting out the real-time charge.
+
+Skill perks feed both economies rather than competing with them: **Magic** raises the Double XP
+multiplier above 2×, **Herblore** extends the duration past 10 minutes, **Thieving** grants more
+free coupons per day, and **Mining / Firemaking / Prayer** make each Energy Cell charge bigger,
+longer-lasting, and more powerful. Perks make purchases *stronger*, so IAP and progression
+synergize instead of one obsoleting the other.
 
 **Economy.**
-- **Free daily coupon** — one is granted the first time you open the app each calendar day
-  (a classic daily-login hook; missed days don't stack, which rewards returning).
+- **Free daily coupon(s)** — at least one is granted the first time you open the app each calendar
+  day (a classic daily-login hook; missed days don't stack, which rewards returning). The
+  **Thieving** perk increases the daily haul as it levels.
 - **Coupons are inventory.** You spend one to start a boost, and you can't start a second
   while one is running (prevents accidental waste). Owning more than one just lets you chain
   sessions.
-- **In-app purchases (StoreKit 2, consumables):** Pouch (5), Sack (25), Chest (100). Real
-  purchase + transaction verification; a local `Config/Products.storekit` file drives testing
-  in the simulator, and a DEBUG mock catalog keeps the store UI renderable offline.
+- **Energy Cells are inventory.** Each is a one-tap "skip the wait" — it never raises the cap or
+  the multiplier, only fills the meter you already have, so it sells *convenience*, not power.
+- **In-app purchases (StoreKit 2, consumables):** two product families —
+  coupons as Pouch (5) / Sack (25) / Chest (100) and Energy Cells as Spark (3) / Charged (10) /
+  Power Core (30). Real purchase + transaction verification; a local `Config/Products.storekit`
+  file drives testing in the simulator, and a DEBUG mock catalog keeps the store UI renderable
+  offline. Both families remain purchasable at all times, so a player can always buy an XP
+  multiplier *or* Energy.
 
 **UX.**
-- A violet **Double XP card** on the Home hub shows either "Tap to activate" (+ coupon count)
-  or a live **2× XP ACTIVE · M:SS** countdown.
-- The training screen shows a **2×** badge next to the Supercharge badge so the stacked
-  multiplier is legible, and tap "+X" pops reflect the true per-tap amount.
-- A dedicated **Double XP sheet** handles activation, coupon balance, and the store.
-- Daily rewards and purchases surface a top toast.
+- A violet **Double XP & Energy card** on the Home hub shows either "Tap to activate" (+ coupon
+  count) or a live **×N XP ACTIVE · M:SS** countdown (the multiplier reflects the player's live
+  Magic-perk value, not a hard-coded 2×).
+- The training screen shows a live **×N** Double XP badge next to the Supercharge badge (which
+  itself shows the Prayer-inclusive effective multiplier) so the stacked multiplier is legible,
+  and tap "+X" pops reflect the true per-tap amount. When you hold Energy Cells, a **Use Cell**
+  quick action appears right in the Energy control to recharge on the spot.
+- A dedicated **Boosts sheet** handles Double XP activation, coupon balance, Energy Cell use, and
+  both storefronts.
+- Daily rewards, purchases, and cell use surface a top toast.
 
 **Monetization critique (indie-dev self-review).**
-- *Strength:* the boost is **fun-first and non-coercive** — a free daily coupon means F2P
-  players always taste the mechanic, and purchases buy *more of a good time*, not power gates.
-  Consumables suit a long grind and stack naturally with the existing Supercharge hook.
+- *Strength:* both boosts are **fun-first and non-coercive** — a free daily coupon means F2P
+  players always taste the Double XP mechanic, and purchases buy *more of a good time*, not power
+  gates. Consumables suit a long grind and stack naturally with the existing Supercharge hook.
+- *Agnostic vs. perks (v1.2 rebalance):* the agnostic systems (Energy cap/rate, Supercharge tiers,
+  Double XP ×/duration, daily coupons) are deliberately set so their **base value equals each
+  related perk at level 1** — at a fresh account the game plays exactly as it did pre-perks, and
+  perks only ever add on top. This keeps defaults sensible and stops perks from silently
+  redefining the paid systems.
 - *Risk — "pay-to-skip" perception.* Because XP is the only resource, buying coupons is
   effectively buying progression. *Mitigation:* keep the boost time-boxed and session-based
-  (you must be actively tapping to benefit), so it sells *engagement*, not AFK power.
+  (you must be actively tapping to benefit), so it sells *engagement*, not AFK power. Energy Cells
+  are likewise a *skip-the-wait* convenience, capped by your existing Energy cap.
 - *Risk — real-time expiry can feel punishing* if the player is interrupted mid-boost.
   *Mitigation (future):* consider pausing the timer on backgrounding, or a "boost only counts
   foreground seconds" model. V1 keeps wall-clock expiry for simplicity and honesty ("10 min").
 - *Risk — App Review / ethics:* consumables must be clearly described and restore-exempt;
-  the store copy states coupons are consumable and prices are region-dependent. No loot boxes,
-  no randomized rewards.
-- *Balance lever:* `Balance.doubleXPMultiplier`, `doubleXPDurationSeconds`, and
-  `dailyFreeCoupons` are centralized, so tuning generosity vs. monetization is a one-file change.
+  the store copy states coupons and Energy Cells are consumable and prices are region-dependent.
+  No loot boxes, no randomized rewards. Consumables are **not** wiped by a progress reset (paid
+  goods are preserved).
+- *Balance lever:* `Balance.doubleXPMultiplier`, `doubleXPDurationSeconds`, `dailyFreeCoupons`,
+  and `maxEnergySeconds` are centralized and set the **base** (perk level-1) values; the Magic,
+  Herblore, Thieving, and Mining/Firemaking/Prayer perks scale above them via
+  `Balance.buffScaling`. Tuning generosity vs. monetization is a one-file change.

@@ -34,14 +34,16 @@ struct StatsView: View {
             statRow("Total XP", Format.abbrev(game.totalXP))
             statRow("Skills maxed", "\(game.maxedSkillCount) / \(SkillID.allCases.count)")
             statRow("Training slots", "\(game.slots.count) / \(game.maxSlots)")
-            statRow("Supercharge", "×\(game.superchargeMultiplier) tap XP")
+            statRow("Supercharge", "×\(game.effectiveSuperchargeMultiplier) tap XP")
             statRow("Double XP coupons", "\(game.doubleXPCoupons)")
+            statRow("Energy Cells", "\(game.energyCells)")
         }
     }
 
     private func skillRow(_ skill: SkillID) -> some View {
         let xp = game.xp(for: skill)
         let level = game.level(for: skill)
+        let buff = game.buffValues(for: skill)
         return VStack(spacing: 6) {
             HStack(spacing: 8) {
                 ArtworkView(art: skill.art, size: 22, color: skill.tint)
@@ -60,6 +62,13 @@ struct StatsView: View {
                     Text("\(Format.abbrev(XPTable.xpToNextLevel(forXP: xp))) to next")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
+            }
+            HStack(spacing: 6) {
+                Image(systemName: skill.buff.icon).font(.caption2).foregroundStyle(skill.tint)
+                Text("\(skill.buff.name): \(buff.current)")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                Spacer()
             }
         }
         .padding(.vertical, 2)

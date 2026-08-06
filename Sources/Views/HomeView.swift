@@ -57,7 +57,7 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showStats) { StatsView() }
             .sheet(isPresented: $showSettings) { SettingsView() }
-            .sheet(isPresented: $showDoubleXP) { DoubleXPView() }
+            .sheet(isPresented: $showDoubleXP) { BoostsView() }
             .onAppear {
                 #if DEBUG
                 if path.isEmpty,
@@ -92,7 +92,7 @@ private struct HeaderCard: View {
                     Label("\(game.slots.count) / \(game.maxSlots) slots", systemImage: "bolt.fill")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.yellow)
-                    Label("×\(game.superchargeMultiplier) supercharge", systemImage: "flame.fill")
+                    Label("×\(game.effectiveSuperchargeMultiplier) supercharge", systemImage: "flame.fill")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.orange)
                 }
@@ -155,9 +155,9 @@ private struct DoubleXPCard: View {
         HStack(spacing: 12) {
             Image(systemName: "sparkles").font(.title2).foregroundStyle(Color.doubleXP)
             VStack(alignment: .leading, spacing: 2) {
-                Text("2× XP ACTIVE")
+                Text("\(multText(game.xpMultiplier)) XP ACTIVE")
                     .font(.subheadline.weight(.heavy)).foregroundStyle(Color.doubleXP)
-                Text("Every skill earns double XP")
+                Text("Every skill earns \(multText(game.xpMultiplier)) XP")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
@@ -171,11 +171,11 @@ private struct DoubleXPCard: View {
         HStack(spacing: 12) {
             Image(systemName: "sparkles").font(.title2).foregroundStyle(Color.doubleXP)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Double XP")
+                Text("Double XP & Energy")
                     .font(.subheadline.weight(.bold))
                 Text(game.doubleXPCoupons > 0
-                     ? "Tap to activate 10 min of 2× XP"
-                     : "Free coupon daily · buy more anytime")
+                     ? "Tap to activate \(multText(game.doubleXPPotency)) XP · buy boosts"
+                     : "Free coupon daily · buy boosts anytime")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
@@ -187,5 +187,9 @@ private struct DoubleXPCard: View {
                     .font(.caption.weight(.bold)).foregroundStyle(.secondary)
             }
         }
+    }
+
+    private func multText(_ v: Double) -> String {
+        v == v.rounded() ? String(format: "×%.0f", v) : String(format: "×%.1f", v)
     }
 }

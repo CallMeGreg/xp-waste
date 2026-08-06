@@ -29,6 +29,14 @@ Training isn't static. As a skill grows, its training **method upgrades to somet
 more powerful** — and each tap is worth more XP. Woodcutting starts you on a normal tree and
 works its way up to mighty redwoods; every skill has six tiers of thematic progression to unlock.
 
+### 🎁 Every skill makes you stronger
+Leveling isn't just a number — **every one of the 23 skills grants a permanent perk** that
+benefits your whole account, and it grows the more you train that skill. Strength gives your taps
+a shot at bigger hits, Attack makes those big hits more reliable, Mining deepens your Energy
+reserves, Crafting and Slayer team up for critical taps, Runecraft even **auto-taps** the skill
+you're training. No two perks do the same thing, so there's always a reason to spread your taps —
+maxing everything makes you strongest of all.
+
 ### 🎰 Training slots (passive XP)
 Slot a skill into a **training slot** and it earns experience passively while the app is open —
 so you can tap one skill while another trains itself. You start with a single slot and unlock
@@ -38,12 +46,16 @@ more as your **total level** climbs. Juggle your slots to grow the skills you ca
 Every skill quietly charges **Energy** — while you play *and* while the app is closed. Spend a
 skill's full Energy bar to **Supercharge** it: a burst of multiplied XP per tap (×2, and up to
 ×20 at high total levels) for a short window. The more you're away, the bigger the payoff when
-you come back.
+you come back. In a hurry? An **Energy Cell** instantly refills every slotted skill so you can
+Supercharge right now — earn them as you play or grab a pack as an optional in-app purchase.
 
 ### ✨ Double XP
 Once a day you can activate a **Double XP** boost that doubles all experience for 10 minutes —
 stack it with a Supercharge for an enormous burst. Want more? Double XP coupons are available as
 an optional in-app purchase.
+
+Both boosts get stronger as you level up: certain skills grant perks that raise your Double XP
+multiplier, extend it, hand out extra daily coupons, and make every Energy Cell charge bigger.
 
 ## Your goal 🏆
 
