@@ -25,10 +25,10 @@ enum BuffKind {
     case flatTap             // Fletching: +flat XP added to every tap
     case doubleXPDuration    // Herblore: Double XP boosts last longer
     case autoTap             // Runecraft: auto-taps the open skill
-    case extraSlots          // Construction: extra training slots
+    case passiveMultiplier   // Construction: multiplies idle (slot) XP
     // Support — tempo & meta
     case combo               // Agility: tap-streak combo multiplier
-    case dailyCoupons        // Thieving: more free daily coupons
+    case refund              // Thieving: chance to refund a spent coupon or Supercharge
     case critChance          // Slayer: chance for a critical tap
 }
 
@@ -108,16 +108,16 @@ extension SkillID {
             return SkillBuffInfo(kind: .autoTap, name: "Runic Automaton", icon: "cpu.fill",
                                  blurb: "Auto-taps the skill you're training.")
         case .construction:
-            return SkillBuffInfo(kind: .extraSlots, name: "Architect", icon: "square.grid.2x2.fill",
-                                 blurb: "Builds extra training slots.")
+            return SkillBuffInfo(kind: .passiveMultiplier, name: "Workshop", icon: "wrench.and.screwdriver.fill",
+                                 blurb: "Your workshop multiplies idle output on every slot.")
 
         // MARK: Support
         case .agility:
             return SkillBuffInfo(kind: .combo, name: "Momentum", icon: "figure.run",
                                  blurb: "Fast tapping builds a combo multiplier.")
         case .thieving:
-            return SkillBuffInfo(kind: .dailyCoupons, name: "Pickpocket", icon: "ticket.fill",
-                                 blurb: "More free Double XP coupons each day.")
+            return SkillBuffInfo(kind: .refund, name: "Pickpocket", icon: "ticket.fill",
+                                 blurb: "Chance to nick back a spent coupon or Supercharge.")
         case .slayer:
             return SkillBuffInfo(kind: .critChance, name: "Assassinate", icon: "burst.fill",
                                  blurb: "Chance for a critical tap.")

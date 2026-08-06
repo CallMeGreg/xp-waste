@@ -118,7 +118,7 @@ struct BoostsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Coupons")
                     .font(.subheadline.weight(.semibold))
-                Text(game.dailyCoupons == 1 ? "1 free every day" : "\(game.dailyCoupons) free every day")
+                Text(Balance.dailyFreeCoupons == 1 ? "1 free every day" : "\(Balance.dailyFreeCoupons) free every day")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()

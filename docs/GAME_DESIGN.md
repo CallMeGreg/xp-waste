@@ -73,8 +73,8 @@ and, at a reduced rate, while it's closed.
   **resets each return**, so it can't be banked). A **"welcome back"** summary shows the per-skill
   XP earned and any level-ups. Boosts are consumed in real time, so Supercharge / Double XP don't
   apply to offline gains. Only *slotted* skills earn offline.
-- **Slots unlock with total level:** 1 slot at the start → **2nd slot at total 100** →
-  **3rd slot at total 300** (tuned for the 23-skill roster).
+- **Slots unlock with total level:** 1 slot at the start → **2nd at total 100** → **3rd at
+  total 300** → **4th at total 500** → **5th at total 1000** (tuned for the 23-skill roster).
 
 ### 3.4 Energy & Supercharge (idle, app open *and* closed)
 Each slotted skill accumulates **Energy** in real time — whether the app is open or closed.
@@ -116,8 +116,8 @@ Runecraft literally auto-taps for you, and so on across all 23.
 - **The active tap is a "hit".** Combat perks reshape each tap into a rolled range: Strength sets
   the ceiling, Defence the floor, Attack biases toward the top, Ranged adds extra hits, and
   Slayer × Crafting land the occasional crit. Non-combat perks feed the idle engine (Energy, passive
-  rate, offline), the boost economy (Double XP potency/duration/supply, Supercharge power/duration),
-  or account tempo (combo, extra slots, auto-tap).
+  rate/multiplier, offline), the boost economy (Double XP potency/duration, Supercharge
+  power/duration, coupon/Energy refund), or account tempo (combo, auto-tap).
 
 The full per-skill lever table, designed synergies, and the exact tap pipeline order live in
 **[SKILL_BUFFS.md](SKILL_BUFFS.md)**. All perk numbers are centralized in `Balance.buffScaling`, so

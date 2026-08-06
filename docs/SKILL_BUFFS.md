@@ -71,14 +71,14 @@ Values below are **level 1 → level 99** (the full envelope). "Kind" is the `Bu
 | Fletching 🎯 | Extra Ammo | `flatTap` | `+0 → +8` | Adds **flat bonus XP** to every tap. |
 | Herblore 🧪 | Alchemist | `doubleXPDuration` | `+0 → +300s` | **Double XP boosts last longer.** |
 | Runecraft 🌀 | Runic Automaton | `autoTap` | `0 → 3 / s` | **Auto-taps** the skill you're currently training. |
-| Construction 🏠 | Architect | `extraSlots` | `+1 @ 40, +1 @ 80` | Builds **extra training slots** at Construction level 40 and 80. |
+| Construction 🏠 | Workshop | `passiveMultiplier` | `×1.0 → ×2.0` | **Multiplies idle (slot) XP** — every level raises passive output. |
 
 ### Support — tempo & meta
 
 | Skill | Perk | Kind | Lever (1 → 99) | Effect |
 |-------|------|------|-----------------|--------|
 | Agility 🏃 | Momentum | `combo` | `×1.0 → ×1.6` | Fast tapping builds a **combo multiplier** (ramps over ~20 taps within a 1.2s window). |
-| Thieving 🥷 | Pickpocket | `dailyCoupons` | `1 → 3` | More **free Double XP coupons** each day. |
+| Thieving 🥷 | Pickpocket | `refund` | `0% → 50%` | Chance to **refund a spent coupon or Supercharge** ("nick it back"). |
 | Slayer 💀 | Assassinate | `critChance` | `0 → 15%` | Chance for a **critical tap** (magnitude comes from Crafting). |
 
 ## Designed synergies
@@ -88,10 +88,12 @@ Some perks intentionally pair across skills so leveling two things compounds:
 - **Crits = Slayer × Crafting.** Slayer sets the *chance*, Crafting sets the *magnitude*. Slayer
   starts at `0%`, so no tap crits until you train it (preserving non-regression); Crafting starts
   at `×2`, so your first crit is already meaty.
-- **Supercharge power = Prayer, duration = Firemaking, cap = Mining, rate = Hitpoints.** The whole
-  Energy/Supercharge loop is levered by four different skills.
-- **Double XP = Magic (potency) × Herblore (duration) × Thieving (supply).** The boost economy is
-  levered by three skills.
+- **Supercharge power = Prayer, duration = Firemaking, cap = Mining, rate = Hitpoints, refund =
+  Thieving.** The whole Energy/Supercharge loop is levered by five different skills.
+- **Double XP = Magic (potency) × Herblore (duration) × Thieving (refund).** The boost economy is
+  levered by three skills — Thieving can even hand the spent coupon straight back.
+- **Idle engine = Hunter (rate) × Smithing (+% XP) × Construction (workshop ×).** Slotted passive
+  training is levered by three skills that stack multiplicatively.
 - **Tap "hit" range = Strength (ceiling) × Defence (floor) × Attack (bias).** The core click is
   shaped by three combat skills at once.
 
@@ -128,4 +130,3 @@ Beyond the `buffScaling` envelope, a few perks reference fixed constants in `Bal
 | `fishingProcEnergySeconds` | `1s` | Fishing Big Catch Energy per proc |
 | `agilityComboWindow` | `1.2s` | Max gap between taps to keep a combo chaining |
 | `agilityComboTapsToMax` | `20` | Taps to ramp a combo to its ceiling |
-| `constructionSlotLevels` | `[40, 80]` | Construction levels that each grant a slot |
