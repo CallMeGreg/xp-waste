@@ -16,7 +16,7 @@ struct SkillTileView: View {
                 Circle()
                     .fill(skill.tint.opacity(0.22))
                     .frame(width: 62, height: 62)
-                Text(skill.glyph)
+                Text(game.currentMethod(for: skill).glyph)
                     .font(.system(size: 32))
                 if slotted {
                     EnergyRing(fraction: game.energyFraction(for: skill), ready: ready)

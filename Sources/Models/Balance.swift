@@ -8,8 +8,37 @@ enum Balance {
 
     // MARK: Passive training (foreground only)
 
-    /// XP granted per second to each slotted skill while the app is in the foreground.
-    static let passiveXPPerSecond: Double = 1.0
+    /// "Actions" auto-performed per second by each slotted skill. Passive XP equals this times
+    /// that skill's *current method* XP-per-action, so passive scales as training methods improve.
+    static let passiveActionsPerSecond: Double = 1.0
+
+    // MARK: Training method tiers
+
+    /// A tier in a skill's training progression: unlocks at `unlockLevel` and grants
+    /// `xpPerAction` XP per tap. Each skill supplies thematic flavor (name + glyph) per tier
+    /// in `SkillID.trainingMethods`.
+    struct TrainingTier {
+        let unlockLevel: Int
+        let xpPerAction: Int
+    }
+
+    /// Shared tier ladder. As a skill levels up it unlocks higher tiers that grant more XP per
+    /// tap, so the on-screen training method visibly evolves (normal tree → oak → willow → …).
+    static let trainingTiers: [TrainingTier] = [
+        TrainingTier(unlockLevel: 1,  xpPerAction: 1),
+        TrainingTier(unlockLevel: 15, xpPerAction: 3),
+        TrainingTier(unlockLevel: 30, xpPerAction: 6),
+        TrainingTier(unlockLevel: 50, xpPerAction: 12),
+        TrainingTier(unlockLevel: 70, xpPerAction: 25),
+        TrainingTier(unlockLevel: 90, xpPerAction: 50)
+    ]
+
+    /// Index into `trainingTiers` of the highest tier unlocked at `level`.
+    static func trainingTierIndex(forSkillLevel level: Int) -> Int {
+        var index = 0
+        for (i, tier) in trainingTiers.enumerated() where level >= tier.unlockLevel { index = i }
+        return index
+    }
 
     // MARK: Energy & Supercharge
 
@@ -22,9 +51,9 @@ enum Balance {
     /// Minimum banked Energy (seconds) required to trigger a Supercharge.
     static let minEnergyToSupercharge: Double = 1.0
 
-    /// Supercharge XP-per-tap tiers, keyed by the total level required to unlock them.
-    /// Must stay sorted ascending by `totalLevel`; the highest unlocked tier applies.
-    static let superchargeTiers: [(totalLevel: Int, xpPerTap: Int)] = [
+    /// Supercharge multiplier tiers, keyed by the total level required to unlock them.
+    /// While supercharged, taps earn `method XP × multiplier`. Sorted ascending; highest applies.
+    static let superchargeTiers: [(totalLevel: Int, multiplier: Int)] = [
         (0, 2),
         (100, 5),
         (300, 10),
@@ -49,8 +78,9 @@ enum Balance {
     static let slotEligibilityLevel: Int = 10
 
     /// Total-level thresholds that unlock the 2nd and 3rd training slots.
-    static let slot2TotalLevel: Int = 50
-    static let slot3TotalLevel: Int = 150
+    /// Tuned for the full 23-skill roster (max total level 2277).
+    static let slot2TotalLevel: Int = 100
+    static let slot3TotalLevel: Int = 300
 
     /// Number of training slots unlocked for a given total level.
     static func maxSlots(forTotalLevel total: Int) -> Int {
@@ -59,17 +89,17 @@ enum Balance {
         return 1
     }
 
-    /// The active Supercharge XP-per-tap value for a given total level.
-    static func superchargeXPPerTap(forTotalLevel total: Int) -> Int {
-        var value = superchargeTiers.first?.xpPerTap ?? 2
+    /// The active Supercharge multiplier for a given total level.
+    static func superchargeMultiplier(forTotalLevel total: Int) -> Int {
+        var value = superchargeTiers.first?.multiplier ?? 2
         for tier in superchargeTiers where total >= tier.totalLevel {
-            value = tier.xpPerTap
+            value = tier.multiplier
         }
         return value
     }
 
     /// The total level at which the *next* Supercharge tier unlocks, or `nil` if maxed.
-    static func nextSuperchargeUnlock(forTotalLevel total: Int) -> (totalLevel: Int, xpPerTap: Int)? {
+    static func nextSuperchargeUnlock(forTotalLevel total: Int) -> (totalLevel: Int, multiplier: Int)? {
         superchargeTiers.first { $0.totalLevel > total }
     }
 }

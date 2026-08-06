@@ -41,6 +41,7 @@ struct SkillTrainingView: View {
     @State private var tapHaptic = 0
     @State private var superchargeHaptic = 0
     @State private var showSlotFull = false
+    @Environment(\.horizontalSizeClass) private var hSize
 
     var body: some View {
         let level = game.level(for: skill)
@@ -49,13 +50,15 @@ struct SkillTrainingView: View {
 
         return ZStack {
             GameBackground()
-            VStack(spacing: 0) {
-                header(level: level, xp: xp, supercharged: supercharged)
-                Spacer(minLength: 8)
-                objectArea(supercharged: supercharged)
-                Spacer(minLength: 8)
-                controlCard
+            Group {
+                if hSize == .regular {
+                    regularLayout(level: level, xp: xp, supercharged: supercharged)
+                } else {
+                    compactLayout(level: level, xp: xp, supercharged: supercharged)
+                }
             }
+            .frame(maxWidth: 1000)
+            .frame(maxWidth: .infinity)
         }
         .navigationTitle(skill.displayName)
         .navigationBarTitleDisplayMode(.inline)
@@ -66,6 +69,82 @@ struct SkillTrainingView: View {
         } message: {
             Text("Remove a skill from a slot, or raise your total level to unlock another slot.")
         }
+    }
+
+    // MARK: Layouts
+
+    /// iPhone / compact-width layout: a single vertical column.
+    private func compactLayout(level: Int, xp: Int, supercharged: Bool) -> some View {
+        VStack(spacing: 0) {
+            header(level: level, xp: xp, supercharged: supercharged)
+            methodBanner
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+            Spacer(minLength: 8)
+            objectArea(supercharged: supercharged, diameter: 250)
+            Spacer(minLength: 8)
+            controlCard
+        }
+    }
+
+    /// iPad / regular-width layout: object on the left, method + controls on the right.
+    private func regularLayout(level: Int, xp: Int, supercharged: Bool) -> some View {
+        VStack(spacing: 12) {
+            header(level: level, xp: xp, supercharged: supercharged)
+            Spacer(minLength: 0)
+            HStack(alignment: .center, spacing: 24) {
+                objectArea(supercharged: supercharged, diameter: 340)
+                    .frame(maxWidth: .infinity)
+                VStack(spacing: 16) {
+                    methodBanner
+                    controlCard
+                }
+                .frame(maxWidth: 400)
+            }
+            .padding(.horizontal, 8)
+            Spacer(minLength: 0)
+        }
+        .padding(.top, 4)
+    }
+
+    // MARK: Method banner
+
+    /// Shows the current thematic training method, its XP-per-tap, and the next unlock.
+    private var methodBanner: some View {
+        let method = game.currentMethod(for: skill)
+        let base = game.baseXPPerAction(for: skill)
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                Text(method.glyph).font(.title3)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Method").font(.caption2).foregroundStyle(.secondary)
+                    Text(method.name).font(.subheadline.weight(.semibold)).lineLimit(1)
+                }
+                Spacer()
+                Text("+\(base) / tap")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(skill.tint)
+                    .monospacedDigit()
+            }
+            if let next = game.nextMethodUnlock(for: skill) {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.caption2).foregroundStyle(.secondary)
+                    Text("Next: \(next.method.name) at Lv \(next.level)")
+                        .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                }
+            } else {
+                HStack(spacing: 4) {
+                    Image(systemName: "crown.fill").font(.caption2).foregroundStyle(.yellow)
+                    Text("Top-tier method unlocked")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity)
+        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.white.opacity(0.08)))
     }
 
     // MARK: Header
@@ -84,7 +163,7 @@ struct SkillTrainingView: View {
                         .font(.headline.weight(.bold)).foregroundStyle(Color.doubleXP)
                 }
                 if supercharged {
-                    Label("×\(game.superchargeXPPerTap) · \(Int(game.superchargeSeconds(for: skill).rounded()))s",
+                    Label("×\(game.superchargeMultiplier) · \(Int(game.superchargeSeconds(for: skill).rounded()))s",
                           systemImage: "flame.fill")
                         .font(.headline).foregroundStyle(.orange)
                 }
@@ -107,22 +186,23 @@ struct SkillTrainingView: View {
 
     // MARK: Tappable object
 
-    private func objectArea(supercharged: Bool) -> some View {
-        ZStack {
+    private func objectArea(supercharged: Bool, diameter: CGFloat) -> some View {
+        let method = game.currentMethod(for: skill)
+        return ZStack {
             Circle().fill(skill.tint.opacity(0.18))
-                .frame(width: 300, height: 300).blur(radius: 30)
+                .frame(width: diameter * 1.2, height: diameter * 1.2).blur(radius: 30)
 
             Button(action: handleTap) {
                 ZStack {
                     Circle().fill(RadialGradient(
                         colors: [skill.tint.opacity(0.55), skill.tint.opacity(0.18)],
-                        center: .center, startRadius: 8, endRadius: 150))
+                        center: .center, startRadius: 8, endRadius: diameter * 0.6))
                     Circle().strokeBorder(
                         supercharged ? Color.orange : skill.tint.opacity(0.7),
                         lineWidth: supercharged ? 6 : 3)
-                    Text(skill.glyph).font(.system(size: 128))
+                    Text(method.glyph).font(.system(size: diameter * 0.5))
                 }
-                .frame(width: 250, height: 250)
+                .frame(width: diameter, height: diameter)
                 .contentShape(Circle())
             }
             .buttonStyle(.plain)
@@ -134,9 +214,9 @@ struct SkillTrainingView: View {
                 PopView(pop: pop, tint: supercharged ? .orange : (game.isDoubleXPActive ? .doubleXP : skill.tint))
             }
         }
-        .frame(height: 330)
+        .frame(height: diameter * 1.15)
         .overlay(alignment: .bottom) {
-            Text(supercharged ? "SUPERCHARGED — tap fast!" : skill.actionVerb)
+            Text(supercharged ? "SUPERCHARGED — tap fast!" : "Tap to train")
                 .font(.callout.weight(.semibold))
                 .foregroundStyle(supercharged ? Color.orange : .secondary)
         }
@@ -232,7 +312,7 @@ struct SkillTrainingView: View {
             Button {
                 if game.supercharge(skill), game.hapticsEnabled { superchargeHaptic += 1 }
             } label: {
-                Text("Supercharge ×\(game.superchargeXPPerTap)")
+                Text("Supercharge ×\(game.superchargeMultiplier)")
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(enabled ? .black : .secondary)
                     .padding(.horizontal, 14).padding(.vertical, 8)

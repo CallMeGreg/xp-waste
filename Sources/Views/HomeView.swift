@@ -8,8 +8,7 @@ struct HomeView: View {
     @State private var showDoubleXP = false
     @State private var path: [SkillID] = []
 
-    private let columns = [GridItem(.flexible(), spacing: 14),
-                           GridItem(.flexible(), spacing: 14)]
+    private let columns = [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 14)]
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -19,7 +18,7 @@ struct HomeView: View {
                     DoubleXPCard(show: $showDoubleXP)
                     ForEach(SkillCategory.allCases) { category in
                         VStack(alignment: .leading, spacing: 12) {
-                            Text(category.rawValue.uppercased())
+                            Label(category.rawValue.uppercased(), systemImage: category.symbol)
                                 .font(.caption.weight(.bold))
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 4)
@@ -35,6 +34,8 @@ struct HomeView: View {
                     }
                 }
                 .padding(16)
+                .frame(maxWidth: 820)
+                .frame(maxWidth: .infinity)
             }
             .background(GameBackground())
             .navigationTitle("Idle Skiller")
@@ -91,7 +92,7 @@ private struct HeaderCard: View {
                     Label("\(game.slots.count) / \(game.maxSlots) slots", systemImage: "bolt.fill")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.yellow)
-                    Label("×\(game.superchargeXPPerTap) supercharge", systemImage: "flame.fill")
+                    Label("×\(game.superchargeMultiplier) supercharge", systemImage: "flame.fill")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.orange)
                 }

@@ -34,7 +34,7 @@ struct StatsView: View {
             statRow("Total XP", Format.abbrev(game.totalXP))
             statRow("Skills maxed", "\(game.maxedSkillCount) / \(SkillID.allCases.count)")
             statRow("Training slots", "\(game.slots.count) / \(game.maxSlots)")
-            statRow("Supercharge", "×\(game.superchargeXPPerTap) XP / tap")
+            statRow("Supercharge", "×\(game.superchargeMultiplier) tap XP")
             statRow("Double XP coupons", "\(game.doubleXPCoupons)")
         }
     }
@@ -72,9 +72,13 @@ struct StatsView: View {
                          done: SkillID.skills(in: .combat).allSatisfy { game.isMaxed($0) })
             milestoneRow("All gathering skills 99",
                          done: SkillID.skills(in: .gathering).allSatisfy { game.isMaxed($0) })
-            milestoneRow("Unlock 2nd training slot (total 50)",
+            milestoneRow("All artisan skills 99",
+                         done: SkillID.skills(in: .artisan).allSatisfy { game.isMaxed($0) })
+            milestoneRow("All support skills 99",
+                         done: SkillID.skills(in: .support).allSatisfy { game.isMaxed($0) })
+            milestoneRow("Unlock 2nd training slot (total \(Balance.slot2TotalLevel))",
                          done: game.totalLevel >= Balance.slot2TotalLevel)
-            milestoneRow("Unlock 3rd training slot (total 150)",
+            milestoneRow("Unlock 3rd training slot (total \(Balance.slot3TotalLevel))",
                          done: game.totalLevel >= Balance.slot3TotalLevel)
             milestoneRow("Supercharge ×5 (total 100)", done: game.totalLevel >= 100)
             milestoneRow("Supercharge ×10 (total 300)", done: game.totalLevel >= 300)

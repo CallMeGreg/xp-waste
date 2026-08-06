@@ -18,9 +18,9 @@ struct DoubleXPView: View {
                     legalFootnote
                 }
                 .padding(16)
+                .frame(maxWidth: 640)
+                .frame(maxWidth: .infinity)
             }
-            .background(GameBackground())
-            .navigationTitle("Double XP")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

@@ -4,16 +4,33 @@ import SwiftUI
 enum SkillCategory: String, Codable, CaseIterable, Identifiable {
     case combat = "Combat"
     case gathering = "Gathering"
+    case artisan = "Artisan"
+    case support = "Support"
 
     var id: String { rawValue }
+
+    /// SF Symbol shown on the category section header.
+    var symbol: String {
+        switch self {
+        case .combat: return "shield.lefthalf.filled"
+        case .gathering: return "leaf.fill"
+        case .artisan: return "hammer.fill"
+        case .support: return "figure.run"
+        }
+    }
 }
 
-/// The ten trainable skills, plus their v1 theming (glyph, tint, flavor text).
+/// Every trainable Old School RuneScape skill, plus its theming (emblem glyph, tint).
+/// Declaration order is grouped by category so `skills(in:)` reads top-to-bottom per section.
 enum SkillID: String, Codable, CaseIterable, Identifiable {
     // Combat
-    case attack, strength, defence, ranged, magic, hitpoints, prayer
+    case attack, strength, defence, hitpoints, ranged, prayer, magic
     // Gathering
-    case woodcutting, fishing, mining
+    case woodcutting, fishing, mining, farming, hunter
+    // Artisan
+    case cooking, firemaking, crafting, smithing, fletching, herblore, runecraft, construction
+    // Support
+    case agility, thieving, slayer
 
     var id: String { rawValue }
 
@@ -22,52 +39,70 @@ enum SkillID: String, Codable, CaseIterable, Identifiable {
         case .attack: return "Attack"
         case .strength: return "Strength"
         case .defence: return "Defence"
-        case .ranged: return "Ranged"
-        case .magic: return "Magic"
         case .hitpoints: return "Hitpoints"
+        case .ranged: return "Ranged"
         case .prayer: return "Prayer"
+        case .magic: return "Magic"
         case .woodcutting: return "Woodcutting"
         case .fishing: return "Fishing"
         case .mining: return "Mining"
+        case .farming: return "Farming"
+        case .hunter: return "Hunter"
+        case .cooking: return "Cooking"
+        case .firemaking: return "Firemaking"
+        case .crafting: return "Crafting"
+        case .smithing: return "Smithing"
+        case .fletching: return "Fletching"
+        case .herblore: return "Herblore"
+        case .runecraft: return "Runecraft"
+        case .construction: return "Construction"
+        case .agility: return "Agility"
+        case .thieving: return "Thieving"
+        case .slayer: return "Slayer"
         }
     }
 
     var category: SkillCategory {
         switch self {
-        case .woodcutting, .fishing, .mining: return .gathering
-        default: return .combat
+        case .attack, .strength, .defence, .hitpoints, .ranged, .prayer, .magic:
+            return .combat
+        case .woodcutting, .fishing, .mining, .farming, .hunter:
+            return .gathering
+        case .cooking, .firemaking, .crafting, .smithing, .fletching, .herblore, .runecraft, .construction:
+            return .artisan
+        case .agility, .thieving, .slayer:
+            return .support
         }
     }
 
-    /// Emoji glyph used as the trainable object in v1 (swap for custom art later).
+    /// Emblem glyph representing the skill's identity (used on stats rows & level-up toasts).
+    /// The big trainable object and Home tile instead show the *current method* glyph so the
+    /// object visibly upgrades as you level.
     var glyph: String {
         switch self {
         case .attack: return "⚔️"
-        case .strength: return "🪨"
+        case .strength: return "💪"
         case .defence: return "🛡️"
-        case .ranged: return "🏹"
-        case .magic: return "🔮"
         case .hitpoints: return "❤️"
+        case .ranged: return "🏹"
         case .prayer: return "🙏"
-        case .woodcutting: return "🌳"
+        case .magic: return "🔮"
+        case .woodcutting: return "🪓"
         case .fishing: return "🎣"
         case .mining: return "⛏️"
-        }
-    }
-
-    /// Short call-to-action shown on the training screen.
-    var actionVerb: String {
-        switch self {
-        case .attack: return "Strike the dummy"
-        case .strength: return "Heave the boulder"
-        case .defence: return "Brace the shield"
-        case .ranged: return "Loose an arrow"
-        case .magic: return "Channel the rune"
-        case .hitpoints: return "Steel your body"
-        case .prayer: return "Offer at the altar"
-        case .woodcutting: return "Chop the tree"
-        case .fishing: return "Cast your line"
-        case .mining: return "Swing the pickaxe"
+        case .farming: return "🌱"
+        case .hunter: return "🪤"
+        case .cooking: return "🍳"
+        case .firemaking: return "🔥"
+        case .crafting: return "🧵"
+        case .smithing: return "🔨"
+        case .fletching: return "🎯"
+        case .herblore: return "🧪"
+        case .runecraft: return "🌀"
+        case .construction: return "🏠"
+        case .agility: return "🏃"
+        case .thieving: return "🥷"
+        case .slayer: return "💀"
         }
     }
 
@@ -77,13 +112,26 @@ enum SkillID: String, Codable, CaseIterable, Identifiable {
         case .attack: return Color(red: 0.72, green: 0.20, blue: 0.18)
         case .strength: return Color(red: 0.24, green: 0.47, blue: 0.55)
         case .defence: return Color(red: 0.33, green: 0.47, blue: 0.82)
-        case .ranged: return Color(red: 0.33, green: 0.58, blue: 0.28)
-        case .magic: return Color(red: 0.49, green: 0.37, blue: 0.80)
         case .hitpoints: return Color(red: 0.83, green: 0.28, blue: 0.33)
+        case .ranged: return Color(red: 0.33, green: 0.58, blue: 0.28)
         case .prayer: return Color(red: 0.87, green: 0.76, blue: 0.36)
+        case .magic: return Color(red: 0.49, green: 0.37, blue: 0.80)
         case .woodcutting: return Color(red: 0.45, green: 0.33, blue: 0.18)
         case .fishing: return Color(red: 0.22, green: 0.57, blue: 0.68)
         case .mining: return Color(red: 0.50, green: 0.44, blue: 0.38)
+        case .farming: return Color(red: 0.40, green: 0.62, blue: 0.30)
+        case .hunter: return Color(red: 0.62, green: 0.49, blue: 0.28)
+        case .cooking: return Color(red: 0.82, green: 0.45, blue: 0.28)
+        case .firemaking: return Color(red: 0.86, green: 0.42, blue: 0.20)
+        case .crafting: return Color(red: 0.63, green: 0.45, blue: 0.34)
+        case .smithing: return Color(red: 0.42, green: 0.44, blue: 0.48)
+        case .fletching: return Color(red: 0.36, green: 0.55, blue: 0.40)
+        case .herblore: return Color(red: 0.30, green: 0.60, blue: 0.42)
+        case .runecraft: return Color(red: 0.28, green: 0.62, blue: 0.64)
+        case .construction: return Color(red: 0.55, green: 0.40, blue: 0.28)
+        case .agility: return Color(red: 0.30, green: 0.52, blue: 0.74)
+        case .thieving: return Color(red: 0.55, green: 0.35, blue: 0.66)
+        case .slayer: return Color(red: 0.40, green: 0.24, blue: 0.30)
         }
     }
 

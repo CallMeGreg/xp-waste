@@ -13,10 +13,10 @@ struct OnboardingView: View {
     }
 
     private let cards: [Card] = [
-        Card(icon: "🏆", title: "Train all 10 skills to 99",
-             body: "Attack, Strength, Defence, Ranged, Magic, Hitpoints, Prayer, Woodcutting, Fishing and Mining — on the real Old School RuneScape XP curve."),
+        Card(icon: "🏆", title: "Train all 23 skills to 99",
+             body: "Every Old School RuneScape skill — combat, gathering, artisan and support — on the real OSRS XP curve. The goal: a level-99 max cape in all of them."),
         Card(icon: "👆", title: "Tap to train",
-             body: "Open a skill and tap its object to earn XP. Simple, satisfying, and always available."),
+             body: "Open a skill and tap its object to earn XP. As you level up the method evolves — normal trees become oaks, willows, then magic trees."),
         Card(icon: "⚡️", title: "Slot skills & bank Energy",
              body: "Reach level 10 to slot a skill for passive XP. Slotted skills bank Energy in real time — even while the app is closed."),
         Card(icon: "🔥", title: "Supercharge for big bursts",
@@ -46,6 +46,8 @@ struct OnboardingView: View {
                         .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
                 }
                 .buttonStyle(PressableStyle())
+                .frame(maxWidth: 460)
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16)
             }
@@ -67,6 +69,7 @@ struct OnboardingView: View {
             Spacer()
             Spacer()
         }
+        .frame(maxWidth: 600)
         .frame(maxWidth: .infinity)
     }
 

@@ -12,6 +12,7 @@
 		263F3D8F5D42F28DCE9107FE /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88E8C41F1793F6D725F5C19F /* Store.swift */; };
 		28489519E5910F4463E3316F /* DoubleXPView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BBD9060B2BEE11DB5C3DACA /* DoubleXPView.swift */; };
 		3A294015622B57516978C4F8 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E3591D70C823A082F6036D /* RootView.swift */; };
+		3A2D03EBA29ABA798C6E9AAB /* TrainingMethod.swift in Sources */ = {isa = PBXBuildFile; fileRef = F49880904B2B127ABD11911A /* TrainingMethod.swift */; };
 		3D3A4FB88C6061CA43BC275A /* SkillTrainingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DD448D26D4B05BB94E4F48F /* SkillTrainingView.swift */; };
 		5D67CD489908F7E115C53FFB /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69A45BD2A51058022DFF5D4B /* GameState.swift */; };
 		66645B7DD0A53209342A91DB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B7EDA30551956F0BEF9FE1 /* SettingsView.swift */; };
@@ -43,6 +44,7 @@
 		C10A1062ACB20CFEE69C2F7F /* SkillID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillID.swift; sourceTree = "<group>"; };
 		DE88AFA3079D1FCAE044DB5D /* IdleSkillerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdleSkillerApp.swift; sourceTree = "<group>"; };
 		E9B7EDA30551956F0BEF9FE1 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		F49880904B2B127ABD11911A /* TrainingMethod.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingMethod.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -88,6 +90,7 @@
 				69A45BD2A51058022DFF5D4B /* GameState.swift */,
 				C10A1062ACB20CFEE69C2F7F /* SkillID.swift */,
 				88E8C41F1793F6D725F5C19F /* Store.swift */,
+				F49880904B2B127ABD11911A /* TrainingMethod.swift */,
 				5FC8A729DF91D2B0B653966B /* XPTable.swift */,
 			);
 			path = Models;
@@ -193,6 +196,7 @@
 				3D3A4FB88C6061CA43BC275A /* SkillTrainingView.swift in Sources */,
 				8CB85495584067B070572BA5 /* StatsView.swift in Sources */,
 				263F3D8F5D42F28DCE9107FE /* Store.swift in Sources */,
+				3A2D03EBA29ABA798C6E9AAB /* TrainingMethod.swift in Sources */,
 				8D4395AF65254D752E3251B6 /* XPTable.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -210,13 +214,14 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Idle Skiller";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations~ipad" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.callmegreg.idleskiller;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -291,13 +296,14 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Idle Skiller";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations~ipad" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.callmegreg.idleskiller;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};

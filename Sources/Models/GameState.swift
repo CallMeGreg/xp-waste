@@ -91,10 +91,35 @@ final class GameState: ObservableObject {
     var totalXP: Int { SkillID.allCases.reduce(0) { $0 + xp(for: $1) } }
     var maxTotalLevel: Int { SkillID.allCases.count * XPTable.maxLevel }
     var maxSlots: Int { Balance.maxSlots(forTotalLevel: totalLevel) }
-    var superchargeXPPerTap: Int { Balance.superchargeXPPerTap(forTotalLevel: totalLevel) }
+    var superchargeMultiplier: Int { Balance.superchargeMultiplier(forTotalLevel: totalLevel) }
     var maxedSkillCount: Int { SkillID.allCases.filter { isMaxed($0) }.count }
     var isFullyMaxed: Bool { maxedSkillCount == SkillID.allCases.count }
     var hasFreeSlot: Bool { slots.count < maxSlots }
+
+    // MARK: Training methods
+
+    /// Index into `Balance.trainingTiers` / `SkillID.trainingMethods` for a skill's current level.
+    func currentTierIndex(for skill: SkillID) -> Int {
+        Balance.trainingTierIndex(forSkillLevel: level(for: skill))
+    }
+
+    /// The active thematic training method for a skill at its current level.
+    func currentMethod(for skill: SkillID) -> TrainingMethod {
+        let methods = skill.trainingMethods
+        return methods[min(currentTierIndex(for: skill), methods.count - 1)]
+    }
+
+    /// Base XP per action (tap) at a skill's current tier, before Supercharge / Double XP.
+    func baseXPPerAction(for skill: SkillID) -> Int {
+        Balance.trainingTiers[currentTierIndex(for: skill)].xpPerAction
+    }
+
+    /// The next method a skill unlocks as (method, required level), or nil if on the top tier.
+    func nextMethodUnlock(for skill: SkillID) -> (method: TrainingMethod, level: Int)? {
+        let idx = currentTierIndex(for: skill)
+        guard idx + 1 < Balance.trainingTiers.count else { return nil }
+        return (skill.trainingMethods[idx + 1], Balance.trainingTiers[idx + 1].unlockLevel)
+    }
 
     // MARK: Double XP
 
@@ -110,10 +135,11 @@ final class GameState: ObservableObject {
     /// True when the player has a coupon to spend and no boost is already running.
     var canActivateDoubleXP: Bool { !isDoubleXPActive && doubleXPCoupons > 0 }
 
-    /// Effective XP earned per tap on `skill`, folding in Supercharge and Double XP.
+    /// Effective XP earned per tap on `skill`, folding in the current method, Supercharge, and Double XP.
     func tapGain(for skill: SkillID) -> Int {
-        let base = isSupercharged(skill) ? superchargeXPPerTap : 1
-        return Int((Double(base) * xpMultiplier).rounded())
+        let base = baseXPPerAction(for: skill)
+        let multiplier = isSupercharged(skill) ? superchargeMultiplier : 1
+        return Int((Double(base * multiplier) * xpMultiplier).rounded())
     }
 
     /// The next training-slot unlock as (slot number, required total level), or nil if all unlocked.
@@ -231,7 +257,8 @@ final class GameState: ObservableObject {
         lastTick = now
         guard dt > 0, dt < 3600 else { return } // ignore clock jumps
         for skill in slots {
-            addXP(Balance.passiveXPPerSecond * dt * xpMultiplier, to: skill)
+            let actionsXP = Double(baseXPPerAction(for: skill)) * Balance.passiveActionsPerSecond
+            addXP(actionsXP * dt * xpMultiplier, to: skill)
             addEnergy(dt, to: skill)
         }
         decaySupercharges(by: dt)
@@ -333,16 +360,24 @@ final class GameState: ObservableObject {
     private func applyDemoSeedIfRequested() {
         guard let variant = ProcessInfo.processInfo.environment["SEED_DEMO"] else { return }
         let levels: [SkillID: Int] = [
+            // Combat
             .attack: 34, .strength: 28, .defence: 22, .hitpoints: 25, .ranged: 15,
-            .magic: 13, .prayer: 11, .woodcutting: 30, .fishing: 20, .mining: 16
+            .prayer: 11, .magic: 32,
+            // Gathering
+            .woodcutting: 55, .fishing: 35, .mining: 30, .farming: 12, .hunter: 16,
+            // Artisan
+            .cooking: 20, .firemaking: 18, .crafting: 15, .smithing: 24, .fletching: 13,
+            .herblore: 9, .runecraft: 10, .construction: 8,
+            // Support
+            .agility: 16, .thieving: 14, .slayer: 11
         ]
         for (skill, lvl) in levels {
             let lo = XPTable.xp(toReach: lvl)
             let hi = XPTable.xp(toReach: lvl + 1)
             xpBySkill[skill] = Double(lo + (hi - lo) * 4 / 10)
         }
-        slots = [.attack, .woodcutting]
-        energyBySkill = [.attack: 18, .woodcutting: 9]
+        slots = [.attack, .woodcutting, .fishing]
+        energyBySkill = [.attack: 18, .woodcutting: 9, .fishing: 22]
         superchargeBySkill = [:]
         doubleXPCoupons = 3
         if variant == "super" {
