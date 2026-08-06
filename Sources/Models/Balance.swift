@@ -55,9 +55,13 @@ enum Balance {
     /// While supercharged, taps earn `method XP × multiplier`. Sorted ascending; highest applies.
     static let superchargeTiers: [(totalLevel: Int, multiplier: Int)] = [
         (0, 2),
-        (100, 5),
-        (300, 10),
-        (500, 20)
+        (50, 5),
+        (250, 10),
+        (450, 20),
+        (700, 30),
+        (1000, 50),
+        (1500, 75),
+        (2000, 100)
     ]
 
     // MARK: Double XP boost
