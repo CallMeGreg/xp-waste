@@ -41,7 +41,7 @@ struct SettingsView: View {
                         Spacer()
                         Text(version).foregroundStyle(.secondary)
                     }
-                    Text("Inspired by Old School RuneScape. Not affiliated with or endorsed by Jagex. Emoji art is placeholder for v1.")
+                    Text("Inspired by Old School RuneScape. Not affiliated with or endorsed by Jagex.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }

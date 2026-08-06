@@ -52,7 +52,7 @@ struct LevelUpToast: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text(event.skill.glyph).font(.title2)
+            ArtworkView(art: event.skill.art, size: 26, color: event.skill.tint)
             VStack(alignment: .leading, spacing: 1) {
                 Text("LEVEL UP")
                     .font(.caption2.weight(.bold))

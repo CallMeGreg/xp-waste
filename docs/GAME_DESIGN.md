@@ -108,7 +108,7 @@ Supercharge window. Passive XP keeps trickling during a Supercharge; only *taps*
    Supercharge. Energy/Supercharge detail is reinforced contextually on the first slot.
 3. **Home / Skills grid (hub)** — top bar with total level, max-cape progress, and slots
    used; an **adaptive** grid of skill tiles (2 columns on iPhone, more on iPad), grouped into
-   the four category sections. Each tile shows the skill's *current method* glyph, level, XP bar,
+   the four category sections. Each tile shows the skill's *current method* icon, level, XP bar,
    slot badge, Energy ring, and a "Supercharge ready" glow. Toolbar → Stats and Settings.
 4. **Skill Training (full screen, responsive)** — the big tappable object (which upgrades with
    your method tier); a header with level + XP-to-next bar; a **method banner** showing the
@@ -122,8 +122,9 @@ Supercharge window. Passive XP keeps trickling during a Supercharge; only *taps*
 
 ## 6. Visual & audio direction
 
-Dark, cozy "parchment + rune" palette. Each skill has a signature tint and an emoji glyph as
-its v1 trainable object (designed to be swapped for custom art later). Feedback is juicy:
+Dark, cozy "parchment + rune" palette. Each skill has a signature tint and a **vector icon**
+(SF Symbol or hand-authored path, via `Artwork.swift`) as its trainable object; the object keeps
+one motif per skill and upgrades by tint + size as the method tier advances. Feedback is juicy:
 floating XP numbers, object bounce, level-up flash, and haptics. Audio hooks are stubbed for
 v1 _(future: tap/level/supercharge SFX)_.
 

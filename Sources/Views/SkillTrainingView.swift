@@ -115,7 +115,7 @@ struct SkillTrainingView: View {
         let base = game.baseXPPerAction(for: skill)
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
-                Text(method.glyph).font(.title3)
+                ArtworkView(art: method.art, size: 24 * method.scale, color: method.tint ?? skill.tint)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Method").font(.caption2).foregroundStyle(.secondary)
                     Text(method.name).font(.subheadline.weight(.semibold)).lineLimit(1)
@@ -200,7 +200,8 @@ struct SkillTrainingView: View {
                     Circle().strokeBorder(
                         supercharged ? Color.orange : skill.tint.opacity(0.7),
                         lineWidth: supercharged ? 6 : 3)
-                    Text(method.glyph).font(.system(size: diameter * 0.5))
+                    ArtworkView(art: method.art, size: diameter * 0.46 * method.scale,
+                                color: method.tint ?? skill.tint, emphasized: true)
                 }
                 .frame(width: diameter, height: diameter)
                 .contentShape(Circle())
