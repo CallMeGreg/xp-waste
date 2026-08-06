@@ -12,6 +12,22 @@ enum Balance {
     /// that skill's *current method* XP-per-action, so passive scales as training methods improve.
     static let passiveActionsPerSecond: Double = 1.0
 
+    // MARK: Offline training (app closed)
+
+    /// Fraction of the foreground passive rate that *slotted* skills keep earning while the app
+    /// is closed. Mirrors the offline-Energy efficiency pattern: idle progress is real but
+    /// reduced so active play (taps + Supercharge) stays worthwhile.
+    static let offlineXPMultiplier: Double = 0.4
+
+    /// Maximum stretch of offline time (hours) that accrues XP. Time away beyond this is ignored,
+    /// so the game can't be finished by leaving it closed for days. The window resets every time
+    /// the player returns.
+    static let maxOfflineHours: Double = 10.0
+
+    /// Minimum time away (seconds) before the "welcome back" summary is presented, so brief app
+    /// switches don't pop a sheet. XP is still credited for shorter gaps.
+    static let minOfflineSecondsForSummary: TimeInterval = 60
+
     // MARK: Training method tiers
 
     /// A tier in a skill's training progression: unlocks at `unlockLevel` and grants

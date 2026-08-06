@@ -20,6 +20,19 @@ enum Format {
         let total = max(0, Int(seconds.rounded(.up)))
         return String(format: "%d:%02d", total / 60, total % 60)
     }
+
+    /// Formats a longer span in words (`2d 3h` · `8h 37m` · `45m` · `30s`) for the offline summary.
+    static func duration(_ seconds: TimeInterval) -> String {
+        let total = max(0, Int(seconds))
+        let days = total / 86_400
+        let hours = (total % 86_400) / 3_600
+        let minutes = (total % 3_600) / 60
+        let secs = total % 60
+        if days > 0 { return hours > 0 ? "\(days)d \(hours)h" : "\(days)d" }
+        if hours > 0 { return minutes > 0 ? "\(hours)h \(minutes)m" : "\(hours)h" }
+        if minutes > 0 { return secs > 0 ? "\(minutes)m \(secs)s" : "\(minutes)m" }
+        return "\(secs)s"
+    }
 }
 
 extension Color {
