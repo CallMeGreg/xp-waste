@@ -15,7 +15,7 @@ enum Balance {
     // MARK: Training method tiers
 
     /// A tier in a skill's training progression: unlocks at `unlockLevel` and grants
-    /// `xpPerAction` XP per tap. Each skill supplies thematic flavor (name + glyph) per tier
+    /// `xpPerAction` XP per tap. Each skill supplies thematic flavor (name + artwork) per tier
     /// in `SkillID.trainingMethods`.
     struct TrainingTier {
         let unlockLevel: Int

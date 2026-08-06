@@ -108,7 +108,9 @@ Pass them to the simulator via the `SIMCTL_CHILD_` prefix, e.g.
 
 ## Notes
 
-- Emoji glyphs are placeholder art for now (designed to be swapped for custom art later).
+- Skill and training-method art is drawn by `Artwork.swift` (`ArtworkView` renders a `SkillArt`
+  that is either an SF Symbol or a hand-authored `VectorIcon` path). Each skill uses one motif
+  across its six tiers, progressing by tint + a per-tier size ramp. No emoji art.
 - The save schema (`SaveData` in `GameState`) uses optional fields for additive changes so older
   saves keep decoding — preserve backward compatibility when adding persisted state.
 - Commit messages include:

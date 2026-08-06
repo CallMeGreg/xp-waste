@@ -55,8 +55,12 @@ requirement, not an afterthought.**
 - **`XPTable.swift`** encodes the exact OSRS XP curve (level 1 = 0 XP, level 99 = 13,034,431).
   Do not alter the formula.
 - **`SkillID.swift`** enumerates the 23 skills across 4 categories (Combat, Gathering, Artisan,
-  Support) with identity theming (emblem glyph, tint). **`TrainingMethod.swift`** holds each
+  Support) with identity theming (vector emblem, tint). **`TrainingMethod.swift`** holds each
   skill's six thematic, tiered training methods (basic → end-game, OSRS-faithful).
+- **`Artwork.swift`** is the rendering system for all skill/method art: a `SkillArt` value
+  (`.symbol` SF Symbol or `.vector` hand-authored `Path`) drawn by `ArtworkView`. There is **no
+  emoji art** — emblems and methods reference SF Symbols or the custom `VectorIcon` set. Add new
+  art here, not inline in views.
 - **`Store.swift`** wraps StoreKit 2 for consumable Double XP coupon packs.
 
 ## Training methods (core theming rule)
@@ -65,8 +69,11 @@ Each skill has **6 tiers** sharing the unlock ladder in `Balance.trainingTiers`
 (levels 1/15/30/50/70/90 → 1/3/6/12/25/50 XP per tap). The active method is chosen by the
 skill's level. As you level, the on-screen object **visibly upgrades** (e.g. Woodcutting:
 normal → oak → willow → maple → yew → magic tree). When adding/adjusting methods, keep them
-**thematically true to how that skill is trained in OSRS**, ordered basic → advanced, and give
-each tier its own emoji glyph.
+**thematically true to how that skill is trained in OSRS**, ordered basic → advanced. Each skill
+keeps **one cohesive motif** across all six tiers (e.g. Strength = dumbbells, Fishing = fish,
+Prayer = bones) and shows **clear progression** through the material/species in the method name
+plus a per-tier tint and size ramp (`TrainingMethod.tiered` sets `scale`). Assign art via
+`SkillArt` (SF Symbol or `VectorIcon`) in `Artwork.swift` — never emoji.
 
 ## Build & run
 

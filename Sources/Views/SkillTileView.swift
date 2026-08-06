@@ -10,14 +10,14 @@ struct SkillTileView: View {
         let slotted = game.isSlotted(skill)
         let supercharged = game.isSupercharged(skill)
         let ready = game.canSupercharge(skill)
+        let method = game.currentMethod(for: skill)
 
         return VStack(spacing: 10) {
             ZStack {
                 Circle()
                     .fill(skill.tint.opacity(0.22))
                     .frame(width: 62, height: 62)
-                Text(game.currentMethod(for: skill).glyph)
-                    .font(.system(size: 32))
+                ArtworkView(art: method.art, size: 30 * method.scale, color: method.tint ?? skill.tint)
                 if slotted {
                     EnergyRing(fraction: game.energyFraction(for: skill), ready: ready)
                         .frame(width: 70, height: 70)

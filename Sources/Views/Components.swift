@@ -59,7 +59,7 @@ struct XPProgressBar: View {
     }
 }
 
-/// A circular Energy meter drawn around a slotted skill's glyph.
+/// A circular Energy meter drawn around a slotted skill's icon.
 struct EnergyRing: View {
     var fraction: Double
     var ready: Bool

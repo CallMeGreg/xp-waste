@@ -20,7 +20,7 @@ enum SkillCategory: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-/// Every trainable Old School RuneScape skill, plus its theming (emblem glyph, tint).
+/// Every trainable Old School RuneScape skill, plus its theming (vector emblem, tint).
 /// Declaration order is grouped by category so `skills(in:)` reads top-to-bottom per section.
 enum SkillID: String, Codable, CaseIterable, Identifiable {
     // Combat
@@ -75,34 +75,34 @@ enum SkillID: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    /// Emblem glyph representing the skill's identity (used on stats rows & level-up toasts).
-    /// The big trainable object and Home tile instead show the *current method* glyph so the
-    /// object visibly upgrades as you level.
-    var glyph: String {
+    /// Vector emblem representing the skill's identity (used on stats rows & level-up toasts).
+    /// The big trainable object and Home tile instead show the *current method* artwork so the
+    /// object visibly upgrades as you level. Each emblem is intuitively tied to the skill.
+    var art: SkillArt {
         switch self {
-        case .attack: return "⚔️"
-        case .strength: return "💪"
-        case .defence: return "🛡️"
-        case .hitpoints: return "❤️"
-        case .ranged: return "🏹"
-        case .prayer: return "🙏"
-        case .magic: return "🔮"
-        case .woodcutting: return "🪓"
-        case .fishing: return "🎣"
-        case .mining: return "⛏️"
-        case .farming: return "🌱"
-        case .hunter: return "🪤"
-        case .cooking: return "🍳"
-        case .firemaking: return "🔥"
-        case .crafting: return "🧵"
-        case .smithing: return "🔨"
-        case .fletching: return "🎯"
-        case .herblore: return "🧪"
-        case .runecraft: return "🌀"
-        case .construction: return "🏠"
-        case .agility: return "🏃"
-        case .thieving: return "🥷"
-        case .slayer: return "💀"
+        case .attack: return .vector(.sword)
+        case .strength: return .symbol("dumbbell.fill")
+        case .defence: return .symbol("shield.lefthalf.filled")
+        case .hitpoints: return .symbol("heart.fill")
+        case .ranged: return .vector(.bow)
+        case .prayer: return .symbol("hands.and.sparkles.fill")
+        case .magic: return .symbol("wand.and.stars")
+        case .woodcutting: return .vector(.axe)
+        case .fishing: return .symbol("fish.fill")
+        case .mining: return .vector(.pickaxe)
+        case .farming: return .symbol("carrot.fill")
+        case .hunter: return .symbol("pawprint.fill")
+        case .cooking: return .symbol("fork.knife")
+        case .firemaking: return .symbol("flame.fill")
+        case .crafting: return .symbol("scissors")
+        case .smithing: return .symbol("hammer.fill")
+        case .fletching: return .vector(.arrow)
+        case .herblore: return .symbol("flask.fill")
+        case .runecraft: return .symbol("seal.fill")
+        case .construction: return .symbol("house.fill")
+        case .agility: return .symbol("figure.run")
+        case .thieving: return .symbol("bag.fill")
+        case .slayer: return .vector(.skull)
         }
     }
 

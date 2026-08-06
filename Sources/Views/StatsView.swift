@@ -46,7 +46,7 @@ struct StatsView: View {
         let buff = game.buffValues(for: skill)
         return VStack(spacing: 6) {
             HStack(spacing: 8) {
-                Text(skill.glyph)
+                ArtworkView(art: skill.art, size: 22, color: skill.tint)
                 Text(skill.displayName).font(.subheadline.weight(.semibold))
                 Spacer()
                 Text("Lv \(level)").font(.subheadline.weight(.bold)).monospacedDigit()
