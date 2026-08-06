@@ -43,6 +43,7 @@ struct SkillTrainingView: View {
     @State private var tapScale: CGFloat = 1
     @State private var tapHaptic = 0
     @State private var superchargeHaptic = 0
+    @State private var energyCellHaptic = 0
     @State private var showSlotFull = false
     @State private var autoTapAccumulator: Double = 0
     @Environment(\.horizontalSizeClass) private var hSize
@@ -71,6 +72,7 @@ struct SkillTrainingView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sensoryFeedback(.impact(weight: .light), trigger: tapHaptic)
         .sensoryFeedback(.success, trigger: superchargeHaptic)
+        .sensoryFeedback(.impact, trigger: energyCellHaptic)
         .onReceive(autoTapTimer) { _ in stepAutoTap(0.1) }
         .alert("All slots are full", isPresented: $showSlotFull) {
             Button("OK", role: .cancel) {}
@@ -200,11 +202,11 @@ struct SkillTrainingView: View {
                 Text("/ 99").font(.subheadline).foregroundStyle(.secondary)
                 Spacer()
                 if game.isDoubleXPActive {
-                    Label("2×", systemImage: "sparkles")
+                    Label(multText(game.xpMultiplier), systemImage: "sparkles")
                         .font(.headline.weight(.bold)).foregroundStyle(Color.doubleXP)
                 }
                 if supercharged {
-                    Label("×\(game.superchargeMultiplier) · \(Int(game.superchargeSeconds(for: skill).rounded()))s",
+                    Label("×\(game.effectiveSuperchargeMultiplier) · \(Int(game.superchargeSeconds(for: skill).rounded()))s",
                           systemImage: "flame.fill")
                         .font(.headline).foregroundStyle(.orange)
                 }
@@ -330,7 +332,26 @@ struct SkillTrainingView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
+            if game.energyCells > 0 && game.isSlotted(skill) && banked < game.energyCapSeconds {
+                Button {
+                    if game.useEnergyCell(), game.hapticsEnabled { energyCellHaptic += 1 }
+                } label: {
+                    Label("Use Cell", systemImage: "bolt.batteryblock.fill")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.orange)
+                        .padding(.horizontal, 10).padding(.vertical, 7)
+                        .background(Color.orange.opacity(0.15), in: Capsule())
+                        .overlay(Capsule().strokeBorder(Color.orange.opacity(0.5), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
             superchargeButton(supercharged: supercharged)
+        }
+
+        if game.energyCells > 0 && game.isSlotted(skill) && banked < game.energyCapSeconds {
+            Text("🔋 \(game.energyCells) Energy Cell\(game.energyCells == 1 ? "" : "s") — instantly recharge every slot to full.")
+                .font(.caption2).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
 
         if !game.isSlotted(skill) && banked < Balance.minEnergyToSupercharge {
@@ -353,7 +374,7 @@ struct SkillTrainingView: View {
             Button {
                 if game.supercharge(skill), game.hapticsEnabled { superchargeHaptic += 1 }
             } label: {
-                Text("Supercharge ×\(game.superchargeMultiplier)")
+                Text("Supercharge ×\(game.effectiveSuperchargeMultiplier)")
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(enabled ? .black : .secondary)
                     .padding(.horizontal, 14).padding(.vertical, 8)
@@ -409,5 +430,9 @@ struct SkillTrainingView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             pops.removeAll { $0.id == id }
         }
+    }
+
+    private func multText(_ v: Double) -> String {
+        v == v.rounded() ? String(format: "×%.0f", v) : String(format: "×%.1f", v)
     }
 }

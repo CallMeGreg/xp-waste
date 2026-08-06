@@ -21,6 +21,8 @@ private struct SaveData: Codable {
     var doubleXPCoupons: Int?
     var doubleXPExpiry: Date?
     var lastFreeCouponDay: String?
+    // Added in v1.2 — optional for backward-compatible decoding of older saves.
+    var energyCells: Int?
 }
 
 /// The single source of truth for all game state and rules.
@@ -38,8 +40,12 @@ final class GameState: ObservableObject {
 
     /// Double XP coupons the player owns (free daily + in-app purchases).
     @Published private(set) var doubleXPCoupons: Int = 0
+    /// Energy Cells the player owns — each instantly recharges every slotted skill to its cap.
+    @Published private(set) var energyCells: Int = 0
     /// When the current Double XP boost ends, or `nil` if no boost is active.
     @Published private(set) var doubleXPExpiry: Date?
+    /// Total duration of the currently-running boost, so the UI can draw an accurate countdown bar.
+    @Published private(set) var doubleXPActiveDuration: TimeInterval = Balance.doubleXPDurationSeconds
 
     /// Most recent level-up, consumed by the UI for a celebratory toast.
     @Published var levelUpEvent: LevelUpEvent?
@@ -96,6 +102,8 @@ final class GameState: ObservableObject {
     var maxTotalLevel: Int { SkillID.allCases.count * XPTable.maxLevel }
     var maxSlots: Int { Balance.maxSlots(forTotalLevel: totalLevel) + extraTrainingSlots }
     var superchargeMultiplier: Int { Balance.superchargeMultiplier(forTotalLevel: totalLevel) }
+    /// The Supercharge multiplier actually applied to taps, including Prayer's flat bonus.
+    var effectiveSuperchargeMultiplier: Int { superchargeMultiplier + superchargeBonus }
     var maxedSkillCount: Int { SkillID.allCases.filter { isMaxed($0) }.count }
     var isFullyMaxed: Bool { maxedSkillCount == SkillID.allCases.count }
     var hasFreeSlot: Bool { slots.count < maxSlots }
@@ -133,11 +141,21 @@ final class GameState: ObservableObject {
     /// Seconds left on the active Double XP boost (0 when inactive).
     var doubleXPRemaining: TimeInterval { max(0, (doubleXPExpiry ?? Date()).timeIntervalSinceNow) }
 
+    /// Progress (0...1) of the active Double XP boost, measured against its *actual* duration
+    /// (which Herblore can extend) so the countdown bar stays accurate.
+    var doubleXPFraction: Double {
+        guard doubleXPActiveDuration > 0 else { return 0 }
+        return min(max(doubleXPRemaining / doubleXPActiveDuration, 0), 1)
+    }
+
     /// The current global XP multiplier (Magic-boosted Double XP while active, otherwise 1×).
     var xpMultiplier: Double { isDoubleXPActive ? doubleXPPotency : 1 }
 
     /// True when the player has a coupon to spend and no boost is already running.
     var canActivateDoubleXP: Bool { !isDoubleXPActive && doubleXPCoupons > 0 }
+
+    /// True when the player owns an Energy Cell and has at least one slotted skill to recharge.
+    var canUseEnergyCell: Bool { energyCells > 0 && !slots.isEmpty }
 
     // MARK: - Skill perks (account-wide buffs)
 
@@ -367,12 +385,15 @@ final class GameState: ObservableObject {
 
     // MARK: - Double XP actions
 
-    /// Spend one coupon to start a 10-minute, 2× XP boost across every skill.
+    /// Spend one coupon to start a Double XP boost across every skill. Duration is the base
+    /// 10 minutes plus any Herblore extension; potency (2×+) comes from Magic.
     @discardableResult
     func activateDoubleXP() -> Bool {
         guard canActivateDoubleXP else { return false }
         doubleXPCoupons -= 1
-        doubleXPExpiry = Date().addingTimeInterval(Balance.doubleXPDurationSeconds + doubleXPBonusDuration)
+        let duration = Balance.doubleXPDurationSeconds + doubleXPBonusDuration
+        doubleXPActiveDuration = duration
+        doubleXPExpiry = Date().addingTimeInterval(duration)
         save()
         return true
     }
@@ -385,6 +406,29 @@ final class GameState: ObservableObject {
             notice = "🎟️ +\(count) Double XP coupon\(count == 1 ? "" : "s")"
         }
         save()
+    }
+
+    // MARK: - Energy Cell actions
+
+    /// Add Energy Cells to the player's balance (from a completed purchase).
+    func addEnergyCells(_ count: Int, announce: Bool = true) {
+        guard count > 0 else { return }
+        energyCells += count
+        if announce {
+            notice = "🔋 +\(count) Energy Cell\(count == 1 ? "" : "s")"
+        }
+        save()
+    }
+
+    /// Spend one Energy Cell to instantly recharge every slotted skill to its (perk-adjusted) cap.
+    @discardableResult
+    func useEnergyCell() -> Bool {
+        guard canUseEnergyCell else { return false }
+        energyCells -= 1
+        for skill in slots { energyBySkill[skill] = energyCapSeconds }
+        notice = "🔋 Energy Cell used — slots recharged to full."
+        save()
+        return true
     }
 
     /// Grants the free daily coupon the first time the app is opened each calendar day.
@@ -544,6 +588,7 @@ final class GameState: ObservableObject {
         doubleXPCoupons = saved.doubleXPCoupons ?? 0
         doubleXPExpiry = saved.doubleXPExpiry
         lastFreeCouponDay = saved.lastFreeCouponDay
+        energyCells = saved.energyCells ?? 0
         if let expiry = doubleXPExpiry, expiry <= Date() { doubleXPExpiry = nil }
     }
 
@@ -573,6 +618,7 @@ final class GameState: ObservableObject {
         energyBySkill = [.attack: 18, .woodcutting: 9, .fishing: 22]
         superchargeBySkill = [:]
         doubleXPCoupons = 3
+        energyCells = 2
         if variant == "super" {
             superchargeBySkill = [.attack: 26]
             energyBySkill[.attack] = 0
@@ -597,7 +643,8 @@ final class GameState: ObservableObject {
             lastActive: lastActive,
             doubleXPCoupons: doubleXPCoupons,
             doubleXPExpiry: doubleXPExpiry,
-            lastFreeCouponDay: lastFreeCouponDay
+            lastFreeCouponDay: lastFreeCouponDay,
+            energyCells: energyCells
         )
         if let data = try? JSONEncoder().encode(snapshot) {
             UserDefaults.standard.set(data, forKey: Self.saveKey)

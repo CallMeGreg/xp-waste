@@ -1,42 +1,70 @@
 import Foundation
 import StoreKit
 
-/// A purchasable pack of Double XP coupons, presented in the store UI.
+/// Which consumable family a store product belongs to.
+enum ProductKind: Equatable {
+    case coupons   // Double XP coupons (an XP multiplier)
+    case energy    // Energy Cells (instant Supercharge Energy)
+}
+
+/// A purchasable pack of consumables, presented in the store UI.
 ///
 /// This is a lightweight view-model over a StoreKit `Product`, so the UI can render
 /// (and be previewed/tested) without depending on live App Store connectivity.
-struct CouponPack: Identifiable, Equatable {
+struct StorePack: Identifiable, Equatable {
     let id: String
+    let kind: ProductKind
     let title: String
-    let coupons: Int
+    /// Number of coupons (or Energy Cells) granted by this pack.
+    let amount: Int
     let priceText: String
     var bestValue: Bool = false
 }
 
-/// Wraps StoreKit 2 to sell consumable Double XP coupon packs.
+/// Wraps StoreKit 2 to sell two families of consumables: Double XP coupons and Energy Cells.
 ///
 /// Products are defined in `Config/Products.storekit` for local testing (wired into the
 /// scheme) and would map to App Store Connect products in production. Successful, verified
-/// purchases call `onGrant` with the number of coupons to credit.
+/// purchases call `onGrant` with the product family and the amount to credit.
 @MainActor
 final class Store: ObservableObject {
 
-    static let smallID = "com.callmegreg.xpwaste.coupons.small"
-    static let mediumID = "com.callmegreg.xpwaste.coupons.medium"
-    static let largeID = "com.callmegreg.xpwaste.coupons.large"
-    static let productIDs = [smallID, mediumID, largeID]
+    // Double XP coupon packs (an XP multiplier).
+    static let couponSmallID = "com.callmegreg.xpwaste.coupons.small"
+    static let couponMediumID = "com.callmegreg.xpwaste.coupons.medium"
+    static let couponLargeID = "com.callmegreg.xpwaste.coupons.large"
 
-    /// Coupons granted per product id. Keep in sync with `Config/Products.storekit`.
-    static let couponGrants: [String: Int] = [smallID: 5, mediumID: 25, largeID: 100]
+    // Energy Cell packs (instant Supercharge Energy).
+    static let energySmallID = "com.callmegreg.xpwaste.energy.small"
+    static let energyMediumID = "com.callmegreg.xpwaste.energy.medium"
+    static let energyLargeID = "com.callmegreg.xpwaste.energy.large"
 
-    @Published private(set) var packs: [CouponPack] = []
+    static let productIDs = [couponSmallID, couponMediumID, couponLargeID,
+                             energySmallID, energyMediumID, energyLargeID]
+
+    /// What each product grants: its family and amount. Keep in sync with `Config/Products.storekit`.
+    static let grants: [String: (kind: ProductKind, amount: Int)] = [
+        couponSmallID:  (.coupons, 5),
+        couponMediumID: (.coupons, 25),
+        couponLargeID:  (.coupons, 100),
+        energySmallID:  (.energy, 3),
+        energyMediumID: (.energy, 10),
+        energyLargeID:  (.energy, 30)
+    ]
+
+    @Published private(set) var packs: [StorePack] = []
     @Published private(set) var storeAvailable = false
     @Published private(set) var isLoading = false
     @Published var purchasingID: String?
     @Published var statusMessage: String?
 
-    /// Invoked with the number of coupons to credit after a verified purchase.
-    var onGrant: ((Int) -> Void)?
+    /// Invoked with the product family and amount to credit after a verified purchase.
+    var onGrant: ((ProductKind, Int) -> Void)?
+
+    /// Packs in the Double XP coupon family, in catalog order.
+    var couponPacks: [StorePack] { packs.filter { $0.kind == .coupons } }
+    /// Packs in the Energy Cell family, in catalog order.
+    var energyPacks: [StorePack] { packs.filter { $0.kind == .energy } }
 
     private var products: [String: Product] = [:]
     private var updatesTask: Task<Void, Never>?
@@ -59,13 +87,14 @@ final class Store: ObservableObject {
             let loaded = try await Product.products(for: Self.productIDs)
             products = Dictionary(uniqueKeysWithValues: loaded.map { ($0.id, $0) })
 
-            let built: [CouponPack] = Self.productIDs.compactMap { id in
-                guard let product = products[id] else { return nil }
-                return CouponPack(id: id,
-                                  title: product.displayName,
-                                  coupons: Self.couponGrants[id] ?? 0,
-                                  priceText: product.displayPrice,
-                                  bestValue: id == Self.largeID)
+            let built: [StorePack] = Self.productIDs.compactMap { id in
+                guard let product = products[id], let grant = Self.grants[id] else { return nil }
+                return StorePack(id: id,
+                                 kind: grant.kind,
+                                 title: product.displayName,
+                                 amount: grant.amount,
+                                 priceText: product.displayPrice,
+                                 bestValue: id == Self.couponLargeID || id == Self.energyLargeID)
             }
 
             if !built.isEmpty {
@@ -85,16 +114,16 @@ final class Store: ObservableObject {
         #endif
     }
 
-    /// Purchase a pack. On success, coupons are credited via `onGrant`.
-    func purchase(_ pack: CouponPack) async {
+    /// Purchase a pack. On success, the grant is credited via `onGrant`.
+    func purchase(_ pack: StorePack) async {
         statusMessage = nil
         purchasingID = pack.id
         defer { purchasingID = nil }
 
         guard storeAvailable, let product = products[pack.id] else {
             #if DEBUG
-            onGrant?(pack.coupons)
-            statusMessage = "Test purchase — added \(pack.coupons) coupons."
+            onGrant?(pack.kind, pack.amount)
+            statusMessage = "Test purchase — added \(pack.amount) \(pack.kind == .coupons ? "coupons" : "Energy Cells")."
             #else
             statusMessage = "The Store is unavailable right now. Please try again later."
             #endif
@@ -106,7 +135,7 @@ final class Store: ObservableObject {
             switch result {
             case .success(let verification):
                 let transaction = try checkVerified(verification)
-                onGrant?(Self.couponGrants[transaction.productID] ?? pack.coupons)
+                grant(for: transaction.productID, fallback: pack)
                 statusMessage = "Purchase complete."
                 await transaction.finish()
             case .userCancelled:
@@ -131,8 +160,17 @@ final class Store: ObservableObject {
 
     private func handle(_ result: VerificationResult<Transaction>) async {
         guard let transaction = try? checkVerified(result) else { return }
-        onGrant?(Self.couponGrants[transaction.productID] ?? 0)
+        grant(for: transaction.productID, fallback: nil)
         await transaction.finish()
+    }
+
+    /// Credits the grant for a verified product id (falling back to the tapped pack if unknown).
+    private func grant(for productID: String, fallback: StorePack?) {
+        if let grant = Self.grants[productID] {
+            onGrant?(grant.kind, grant.amount)
+        } else if let fallback {
+            onGrant?(fallback.kind, fallback.amount)
+        }
     }
 
     private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
@@ -145,10 +183,13 @@ final class Store: ObservableObject {
     #if DEBUG
     /// Placeholder catalog so the store UI renders when no live products are available
     /// (e.g. running from the command line without the scheme's StoreKit configuration).
-    static let mockPacks: [CouponPack] = [
-        CouponPack(id: smallID, title: "Pouch of Coupons", coupons: 5, priceText: "$0.99"),
-        CouponPack(id: mediumID, title: "Sack of Coupons", coupons: 25, priceText: "$3.99"),
-        CouponPack(id: largeID, title: "Chest of Coupons", coupons: 100, priceText: "$9.99", bestValue: true)
+    static let mockPacks: [StorePack] = [
+        StorePack(id: couponSmallID, kind: .coupons, title: "Pouch of Coupons", amount: 5, priceText: "$0.99"),
+        StorePack(id: couponMediumID, kind: .coupons, title: "Sack of Coupons", amount: 25, priceText: "$3.99"),
+        StorePack(id: couponLargeID, kind: .coupons, title: "Chest of Coupons", amount: 100, priceText: "$9.99", bestValue: true),
+        StorePack(id: energySmallID, kind: .energy, title: "Spark Cells", amount: 3, priceText: "$0.99"),
+        StorePack(id: energyMediumID, kind: .energy, title: "Charged Cells", amount: 10, priceText: "$2.99"),
+        StorePack(id: energyLargeID, kind: .energy, title: "Power Core", amount: 30, priceText: "$6.99", bestValue: true)
     ]
     #endif
 }

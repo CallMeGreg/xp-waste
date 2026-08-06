@@ -14,7 +14,12 @@ struct XPWasteApp: App {
                 .preferredColorScheme(.dark)
                 .tint(.accentColor)
                 .task {
-                    store.onGrant = { [weak game] coupons in game?.addCoupons(coupons) }
+                    store.onGrant = { [weak game] kind, amount in
+                        switch kind {
+                        case .coupons: game?.addCoupons(amount)
+                        case .energy:  game?.addEnergyCells(amount)
+                        }
+                    }
                     store.start()
                 }
         }

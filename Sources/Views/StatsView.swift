@@ -34,8 +34,9 @@ struct StatsView: View {
             statRow("Total XP", Format.abbrev(game.totalXP))
             statRow("Skills maxed", "\(game.maxedSkillCount) / \(SkillID.allCases.count)")
             statRow("Training slots", "\(game.slots.count) / \(game.maxSlots)")
-            statRow("Supercharge", "×\(game.superchargeMultiplier) tap XP")
+            statRow("Supercharge", "×\(game.effectiveSuperchargeMultiplier) tap XP")
             statRow("Double XP coupons", "\(game.doubleXPCoupons)")
+            statRow("Energy Cells", "\(game.energyCells)")
         }
     }
 

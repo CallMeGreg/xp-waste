@@ -46,12 +46,16 @@ more as your **total level** climbs. Juggle your slots to grow the skills you ca
 Every skill quietly charges **Energy** — while you play *and* while the app is closed. Spend a
 skill's full Energy bar to **Supercharge** it: a burst of multiplied XP per tap (×2, and up to
 ×20 at high total levels) for a short window. The more you're away, the bigger the payoff when
-you come back.
+you come back. In a hurry? An **Energy Cell** instantly refills every slotted skill so you can
+Supercharge right now — earn them as you play or grab a pack as an optional in-app purchase.
 
 ### ✨ Double XP
 Once a day you can activate a **Double XP** boost that doubles all experience for 10 minutes —
 stack it with a Supercharge for an enormous burst. Want more? Double XP coupons are available as
 an optional in-app purchase.
+
+Both boosts get stronger as you level up: certain skills grant perks that raise your Double XP
+multiplier, extend it, hand out extra daily coupons, and make every Energy Cell charge bigger.
 
 ## Your goal 🏆
 
