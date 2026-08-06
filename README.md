@@ -71,5 +71,3 @@ taps wide. It's your account.
 *XP Waste is an unofficial fan project inspired by Old School RuneScape. It is not affiliated
 with, endorsed by, or associated with Jagex Ltd. "RuneScape" and "Old School RuneScape" are
 trademarks of Jagex Ltd.*
-
-*Developers: build instructions, design docs, and contributor guidance live in [`docs/`](docs/README.md).*
