@@ -207,9 +207,11 @@ private struct BowIcon: View {
     var body: some View {
         GeometryReader { geo in
             let s = min(geo.size.width, geo.size.height)
-            let c = CGPoint(x: 0.82 * s, y: 0.50 * s)
+            // Bow opens toward the arrowhead: the limb's convex (front) side faces
+            // right so the nocked arrow is loosed forward, not out the string side.
+            let c = CGPoint(x: 0.18 * s, y: 0.50 * s)
             let r = 0.40 * s
-            let a0 = Angle.degrees(118), a1 = Angle.degrees(242)
+            let a0 = Angle.degrees(-62), a1 = Angle.degrees(62)
             let tip0 = CGPoint(x: c.x + r * cos(a0.radians), y: c.y + r * sin(a0.radians))
             let tip1 = CGPoint(x: c.x + r * cos(a1.radians), y: c.y + r * sin(a1.radians))
             ZStack {
