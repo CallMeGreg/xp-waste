@@ -5,8 +5,8 @@ import UIKit
 ///
 /// Every icon is a tintable, resolution-independent vector so it renders crisply at any
 /// size on iPhone and iPad. Most concepts map to an SF Symbol; the handful of RuneScape
-/// objects SF Symbols lacks (sword, axe, pickaxe, bow, arrow, ore, ingot, bone, skull, warhammer)
-/// are drawn as custom `VectorIcon` paths below.
+/// objects SF Symbols lacks (sword, axe, pickaxe, bow, arrow, quiver, ore, ingot, bone, skull,
+/// warhammer) are drawn as custom `VectorIcon` paths below.
 enum SkillArt {
     /// An SF Symbol, referenced by name.
     case symbol(String)
@@ -21,7 +21,7 @@ enum SkillArt {
 /// near the navigation bar. Drawn vector paths don't trigger that bug, so the control-bar
 /// glyphs use these instead.
 enum VectorIcon {
-    case sword, axe, pickaxe, bow, arrow, ore, ingot, bone, skull, warhammer, bolt, flame, lock
+    case sword, axe, pickaxe, bow, arrow, quiver, ore, ingot, bone, skull, warhammer, bolt, flame, lock
 }
 
 // MARK: - Rendering
@@ -74,6 +74,8 @@ extension VectorIcon {
             BowIcon(color: color)
         case .arrow:
             ArrowIcon(color: color)
+        case .quiver:
+            QuiverIcon(color: color)
         case .lock:
             LockIcon(color: color)
         }
@@ -232,7 +234,7 @@ private struct BowIcon: View {
     }
 }
 
-/// A fletched arrow pointing up — used for arrow/bow fletching.
+/// A fletched arrow pointing up — the Fletching skill emblem.
 private struct ArrowIcon: View {
     let color: Color
     var body: some View {
@@ -255,6 +257,73 @@ private struct ArrowIcon: View {
                     p.addLine(to: CGPoint(x: 0.36 * s, y: 0.86 * s))
                     p.addLine(to: CGPoint(x: 0.50 * s, y: 0.80 * s))
                     p.addLine(to: CGPoint(x: 0.64 * s, y: 0.86 * s))
+                    p.closeSubpath()
+                }.fill(color)
+            }
+        }
+    }
+}
+
+/// A quiver holding three fletched arrows — the Fletching training object. Deliberately distinct
+/// from Ranged's `BowIcon` so the two skills read differently at a glance. Arrowheads point up
+/// (matching the single-arrow emblem) and the tapered tube reads as a quiver at any size.
+private struct QuiverIcon: View {
+    let color: Color
+
+    /// Precomputed geometry for one arrow in normalized 0…1 space scaled to `s`.
+    private struct Arrow {
+        let shaftA, shaftB, headTip, headL, headR, fletchApex, fletchL, fletchR: CGPoint
+    }
+
+    /// Three arrows fanning out of the quiver mouth: base sits under the rim, tip above it.
+    private func arrows(_ s: CGFloat) -> [Arrow] {
+        func pt(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: x * Double(s), y: y * Double(s)) }
+        let specs: [(bx: Double, by: Double, tx: Double, ty: Double)] = [
+            (0.44, 0.50, 0.29, 0.15),   // left, leaning out
+            (0.50, 0.50, 0.50, 0.07),   // centre, tallest
+            (0.56, 0.50, 0.71, 0.15)    // right, leaning out
+        ]
+        return specs.map { sp in
+            let dx = sp.tx - sp.bx, dy = sp.ty - sp.by
+            let len = max(0.0001, (dx * dx + dy * dy).squareRoot())
+            let ux = dx / len, uy = dy / len          // unit along the shaft (base → tip)
+            let px = -uy, py = ux                      // unit perpendicular to the shaft
+            let hbx = sp.tx - ux * 0.12, hby = sp.ty - uy * 0.12   // arrowhead back edge
+            return Arrow(
+                shaftA: pt(sp.bx, sp.by),
+                shaftB: pt(sp.tx, sp.ty),
+                headTip: pt(sp.tx, sp.ty),
+                headL: pt(hbx + px * 0.055, hby + py * 0.055),
+                headR: pt(hbx - px * 0.055, hby - py * 0.055),
+                fletchApex: pt(sp.bx + ux * 0.22, sp.by + uy * 0.22),
+                fletchL: pt(sp.bx + ux * 0.10 + px * 0.06, sp.by + uy * 0.10 + py * 0.06),
+                fletchR: pt(sp.bx + ux * 0.10 - px * 0.06, sp.by + uy * 0.10 - py * 0.06)
+            )
+        }
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let s = min(geo.size.width, geo.size.height)
+            let list = arrows(s)
+            ZStack {
+                // Arrows first so the quiver body overlaps their bases (they emerge from inside).
+                ForEach(0..<list.count, id: \.self) { i in
+                    let a = list[i]
+                    Path { p in p.move(to: a.shaftA); p.addLine(to: a.shaftB) }
+                        .stroke(color, style: StrokeStyle(lineWidth: 0.045 * s, lineCap: .round))
+                    Path { p in
+                        p.move(to: a.headTip); p.addLine(to: a.headL); p.addLine(to: a.headR); p.closeSubpath()
+                    }.fill(color)
+                    Path { p in p.move(to: a.fletchL); p.addLine(to: a.fletchApex); p.addLine(to: a.fletchR) }
+                        .stroke(color, style: StrokeStyle(lineWidth: 0.03 * s, lineCap: .round, lineJoin: .round))
+                }
+                // Quiver body: a tapered tube with a rounded base, covering the arrow bases.
+                Path { p in
+                    p.move(to: CGPoint(x: 0.32 * s, y: 0.47 * s))
+                    p.addLine(to: CGPoint(x: 0.68 * s, y: 0.47 * s))
+                    p.addLine(to: CGPoint(x: 0.62 * s, y: 0.87 * s))
+                    p.addQuadCurve(to: CGPoint(x: 0.38 * s, y: 0.87 * s), control: CGPoint(x: 0.50 * s, y: 0.99 * s))
                     p.closeSubpath()
                 }.fill(color)
             }

@@ -202,14 +202,15 @@ extension SkillID {
                 TrainingMethod(name: "Smith rune bars", art: .vector(.ingot), tint: Palette.metal[5], shortName: "Rune bars")
             ])
         case .fletching:
-            // One bow, shortbow → magic.
+            // Bow-making ladder (shortbow → magic), but shown as a quiver of arrows so Fletching
+            // reads distinctly from Ranged's bow at a glance.
             return tiered([
-                TrainingMethod(name: "Fletch shortbows", art: .vector(.bow), tint: Palette.wood[0], shortName: "Shortbows"),
-                TrainingMethod(name: "Fletch oak bows", art: .vector(.bow), tint: Palette.wood[1], shortName: "Oak bows"),
-                TrainingMethod(name: "Fletch willow bows", art: .vector(.bow), tint: Palette.wood[2], shortName: "Willow bows"),
-                TrainingMethod(name: "Fletch maple bows", art: .vector(.bow), tint: Palette.wood[3], shortName: "Maple bows"),
-                TrainingMethod(name: "Fletch yew bows", art: .vector(.bow), tint: Palette.wood[4], shortName: "Yew bows"),
-                TrainingMethod(name: "Fletch magic bows", art: .vector(.bow), tint: Palette.wood[5], shortName: "Magic bows")
+                TrainingMethod(name: "Fletch shortbows", art: .vector(.quiver), tint: Palette.wood[0], shortName: "Shortbows"),
+                TrainingMethod(name: "Fletch oak bows", art: .vector(.quiver), tint: Palette.wood[1], shortName: "Oak bows"),
+                TrainingMethod(name: "Fletch willow bows", art: .vector(.quiver), tint: Palette.wood[2], shortName: "Willow bows"),
+                TrainingMethod(name: "Fletch maple bows", art: .vector(.quiver), tint: Palette.wood[3], shortName: "Maple bows"),
+                TrainingMethod(name: "Fletch yew bows", art: .vector(.quiver), tint: Palette.wood[4], shortName: "Yew bows"),
+                TrainingMethod(name: "Fletch magic bows", art: .vector(.quiver), tint: Palette.wood[5], shortName: "Magic bows")
             ])
         case .herblore:
             // One potion, attack → super combat.
