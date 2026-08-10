@@ -357,6 +357,9 @@ enum Palette {
         rgb(0.28, 0.74, 0.80)  // runite
     ]
 
+    // Dragon-tier equipment (deep crimson) — end-game weapons/armour for Attack, Strength, Defence.
+    static let dragon = rgb(0.72, 0.22, 0.20)
+
     // Log / bow woods (normal → magic).
     static let wood: [Color] = [
         rgb(0.62, 0.45, 0.26), // normal
