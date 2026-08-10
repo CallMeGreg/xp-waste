@@ -89,10 +89,6 @@ struct StatsView: View {
                 milestoneRow("Unlock \(slotOrdinal(i + 2)) AFK slot (total \(threshold))",
                              done: game.totalLevel >= threshold)
             }
-            ForEach(Balance.superchargeTiers.dropFirst(), id: \.totalLevel) { tier in
-                milestoneRow("Supercharge ×\(tier.multiplier) (total \(tier.totalLevel))",
-                             done: game.totalLevel >= tier.totalLevel)
-            }
             milestoneRow("Max cape — every skill 99", done: game.isFullyMaxed)
         }
     }

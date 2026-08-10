@@ -67,18 +67,11 @@ enum Balance {
     /// Minimum banked Energy (seconds) required to trigger a Supercharge.
     static let minEnergyToSupercharge: Double = 1.0
 
-    /// Supercharge multiplier tiers, keyed by the total level required to unlock them.
-    /// While supercharged, taps earn `method XP × multiplier`. Sorted ascending; highest applies.
-    static let superchargeTiers: [(totalLevel: Int, multiplier: Int)] = [
-        (0, 2),
-        (50, 5),
-        (250, 10),
-        (450, 20),
-        (700, 30),
-        (1000, 50),
-        (1500, 75),
-        (2000, 100)
-    ]
+    /// Flat Supercharge multiplier: while supercharged, taps earn `method XP × multiplier`.
+    /// This no longer ramps with total level — per-tap payout already scales as a skill's
+    /// training method upgrades with level, so the burst stays a constant multiplier on top of
+    /// that. Prayer's perk can still add a flat bonus (see `superchargeBonus`).
+    static let superchargeMultiplier: Int = 2
 
     // MARK: Daily Boost (formerly "Double XP")
 
@@ -105,20 +98,6 @@ enum Balance {
     /// Number of training slots unlocked for a given total level (1 base + each threshold met).
     static func maxSlots(forTotalLevel total: Int) -> Int {
         1 + slotUnlockTotalLevels.filter { total >= $0 }.count
-    }
-
-    /// The active Supercharge multiplier for a given total level.
-    static func superchargeMultiplier(forTotalLevel total: Int) -> Int {
-        var value = superchargeTiers.first?.multiplier ?? 2
-        for tier in superchargeTiers where total >= tier.totalLevel {
-            value = tier.multiplier
-        }
-        return value
-    }
-
-    /// The total level at which the *next* Supercharge tier unlocks, or `nil` if maxed.
-    static func nextSuperchargeUnlock(forTotalLevel total: Int) -> (totalLevel: Int, multiplier: Int)? {
-        superchargeTiers.first { $0.totalLevel > total }
     }
 
     // MARK: Skill perks (per-skill account-wide buffs)
