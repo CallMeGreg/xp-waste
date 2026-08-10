@@ -1,12 +1,13 @@
 import SwiftUI
 
-/// A single floating indicator spawned on tap. `crit`/`special` change its styling.
+/// A single floating indicator spawned on tap. `crit`/`special`/`idle` change its styling.
 struct TapPop: Identifiable {
     let id = UUID()
     let text: String
     let x: CGFloat
     var crit: Bool = false
     var special: Bool = false
+    var idle: Bool = false
 }
 
 /// Animates a `TapPop` upward and fades it out.
@@ -16,17 +17,29 @@ struct PopView: View {
     @State private var offsetY: CGFloat = 0
     @State private var opacity: Double = 1
 
+    private var fontSize: CGFloat {
+        if pop.crit { return 34 }
+        if pop.idle { return 16 }
+        return pop.special ? 20 : 26
+    }
+
+    private var color: Color {
+        if pop.crit { return .yellow }
+        if pop.idle { return .secondary }
+        return pop.special ? .orange : tint
+    }
+
     var body: some View {
         Text(pop.text)
-            .font(.system(size: pop.crit ? 34 : (pop.special ? 20 : 26),
-                          weight: .heavy, design: .rounded))
-            .foregroundStyle(pop.crit ? Color.yellow : (pop.special ? Color.orange : tint))
+            .font(.system(size: fontSize, weight: pop.idle ? .semibold : .heavy, design: .rounded))
+            .foregroundStyle(color)
+            .opacity(pop.idle ? 0.9 : 1)
             .shadow(color: .black.opacity(0.45), radius: 2, y: 1)
             .offset(x: pop.x, y: offsetY)
             .opacity(opacity)
             .onAppear {
                 withAnimation(.easeOut(duration: 1.0)) {
-                    offsetY = pop.crit ? -160 : -130
+                    offsetY = pop.crit ? -160 : (pop.idle ? -80 : -130)
                     opacity = 0
                 }
             }
@@ -44,13 +57,16 @@ struct SkillTrainingView: View {
     @State private var tapHaptic = 0
     @State private var superchargeHaptic = 0
     @State private var energyCellHaptic = 0
-    @State private var showSlotFull = false
+    @State private var showSlotManager = false
     @State private var showDetails = false
     @State private var autoTapAccumulator: Double = 0
+    @State private var idleAccumulator: Double = 0
     @Environment(\.horizontalSizeClass) private var hSize
 
     /// Drives Runecraft's auto-tap perk while this screen is open.
     private let autoTapTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+    /// Spawns display-only "+N idle" pops for the passive XP a slotted skill earns each second.
+    private let idleTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         let level = game.level(for: skill)
@@ -78,25 +94,22 @@ struct SkillTrainingView: View {
         .sensoryFeedback(.success, trigger: superchargeHaptic)
         .sensoryFeedback(.impact, trigger: energyCellHaptic)
         .onReceive(autoTapTimer) { _ in stepAutoTap(0.1) }
-        .alert("All slots are full", isPresented: $showSlotFull) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Remove a skill from a slot, or raise your total level to unlock another slot.")
-        }
+        .onReceive(idleTimer) { _ in stepIdlePop() }
+        .sheet(isPresented: $showSlotManager) { slotManagerSheet }
         .sheet(isPresented: $showDetails) { detailsSheet }
     }
 
     // MARK: Header + method/perk chip
 
-    /// Slim level + XP header. Active Double XP is flagged inline; Supercharge status lives in the
+    /// Slim level + XP header. Active Daily Boost is flagged inline; Supercharge status lives in the
     /// control bar and on the object itself, keeping this strip minimal.
     private func slimHeader(level: Int, xp: Int, supercharged: Bool) -> some View {
         VStack(spacing: 7) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 5) {
+                Text("lv.").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
                 Text("\(level)")
                     .font(.system(size: 30, weight: .heavy, design: .rounded))
                     .foregroundStyle(skill.tint)
-                Text("/ 99").font(.subheadline).foregroundStyle(.secondary)
                 Spacer()
                 if game.isDoubleXPActive {
                     Label(multText(game.xpMultiplier), systemImage: "sparkles")
@@ -116,7 +129,7 @@ struct SkillTrainingView: View {
         return Button { showDetails = true } label: {
             HStack(spacing: 9) {
                 ArtworkView(art: method.art, size: 22 * method.scale, color: method.tint ?? skill.tint)
-                Text(method.name).font(.caption.weight(.semibold))
+                Text(method.tag).font(.caption.weight(.semibold))
                     .foregroundStyle(.primary)
                     .lineLimit(1).minimumScaleFactor(0.85)
                 Text("+\(game.baseXPPerAction(for: skill))/tap")
@@ -164,25 +177,25 @@ struct SkillTrainingView: View {
             .buttonStyle(PressableStyle())
         } else if game.isEligibleForSlot(skill) {
             Button {
-                if !game.toggleSlot(skill) { showSlotFull = true }
+                if !game.toggleSlot(skill) { showSlotManager = true }
             } label: {
                 controlPill {
                     controlGlyph(.bolt, .secondary)
-                    Text("Add slot").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    Text("Add AFK").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 }
             }
             .buttonStyle(PressableStyle())
         } else {
             controlPill {
                 controlGlyph(.lock, .secondary)
-                Text("Lv \(Balance.slotEligibilityLevel)").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Text("lv. \(Balance.slotEligibilityLevel)").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             }
         }
     }
 
     private var slotLabel: String {
-        if let idx = game.slotIndex(of: skill) { return "Slot \(idx + 1)" }
-        return "Slotted"
+        if let idx = game.slotIndex(of: skill) { return "AFK \(idx + 1)" }
+        return "AFK'ing"
     }
 
     @ViewBuilder
@@ -215,14 +228,20 @@ struct SkillTrainingView: View {
     @ViewBuilder
     private func superchargeControlButton(supercharged: Bool, ready: Bool) -> some View {
         if supercharged {
-            HStack(spacing: 6) {
-                controlGlyph(.flame, .orange)
-                Text("\(Int(game.superchargeSeconds(for: skill).rounded()))s")
-                    .font(.subheadline.weight(.bold)).foregroundStyle(.orange)
+            // A wall-clock TimelineView so the countdown keeps ticking down every second even while
+            // the player spams taps (the old per-second decrement froze under a busy main thread).
+            TimelineView(.periodic(from: .now, by: 1)) { _ in
+                let remaining = game.superchargeSeconds(for: skill)
+                HStack(spacing: 6) {
+                    controlGlyph(.flame, .orange)
+                    Text("\(Int(remaining.rounded()))s")
+                        .font(.subheadline.weight(.bold)).foregroundStyle(.orange)
+                        .monospacedDigit()
+                }
+                .frame(maxWidth: .infinity).padding(.vertical, 12)
+                .background(Color.orange.opacity(0.18), in: RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.orange.opacity(0.5)))
             }
-            .frame(maxWidth: .infinity).padding(.vertical, 12)
-            .background(Color.orange.opacity(0.18), in: RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.orange.opacity(0.5)))
         } else {
             Button {
                 if game.supercharge(skill), game.hapticsEnabled { superchargeHaptic += 1 }
@@ -255,6 +274,63 @@ struct SkillTrainingView: View {
         icon.view(color: color).frame(width: size, height: size)
     }
 
+    // MARK: Slot manager sheet (item 7 — swap a full AFK slot instead of a dead-end alert)
+
+    /// Shown when every AFK slot is full and the player tries to slot this skill. Lists the
+    /// currently-slotted skills and lets the player swap one out for this one in a single tap.
+    private var slotManagerSheet: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("All \(game.maxSlots) AFK slots are full")
+                        .font(.headline)
+                    Text("Swap one out to AFK **\(skill.displayName)** instead, or raise your total level to unlock another slot.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    ForEach(Array(game.slots.enumerated()), id: \.element) { index, slotted in
+                        Button {
+                            if game.swapSlot(remove: slotted, add: skill), game.hapticsEnabled {
+                                superchargeHaptic += 1
+                            }
+                            showSlotManager = false
+                        } label: {
+                            HStack(spacing: 12) {
+                                ArtworkView(art: slotted.art, size: 26, color: slotted.tint)
+                                    .frame(width: 30, height: 30)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(slotted.displayName).font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(.primary)
+                                    Text("AFK \(index + 1) · lv. \(game.level(for: slotted))")
+                                        .font(.caption2).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Label("Swap out", systemImage: "arrow.left.arrow.right")
+                                    .font(.caption.weight(.semibold)).foregroundStyle(skill.tint)
+                                    .labelStyle(.titleAndIcon)
+                            }
+                            .padding(12)
+                            .frame(maxWidth: .infinity)
+                            .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+                            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.white.opacity(0.08)))
+                        }
+                        .buttonStyle(PressableStyle(scale: 0.98))
+                    }
+                }
+                .padding(20)
+                .frame(maxWidth: 640).frame(maxWidth: .infinity)
+            }
+            .background(GameBackground())
+            .navigationTitle("AFK slots")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Cancel") { showSlotManager = false }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
     // MARK: Details sheet (full method + perk info, one tap from the chip)
 
     private var detailsSheet: some View {
@@ -263,6 +339,7 @@ struct SkillTrainingView: View {
                 VStack(spacing: 16) {
                     methodBanner
                     buffBanner
+                    accountWideEffectsBanner
                 }
                 .padding(20)
                 .frame(maxWidth: 640).frame(maxWidth: .infinity)
@@ -302,7 +379,7 @@ struct SkillTrainingView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.caption2).foregroundStyle(.secondary)
-                    Text("Next: \(next.method.name) at Lv \(next.level)")
+                    Text("Next: \(next.method.name) at lv. \(next.level)")
                         .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                 }
             } else {
@@ -321,16 +398,18 @@ struct SkillTrainingView: View {
 
     // MARK: Perk banner
 
-    /// Shows this skill's unique, account-wide perk, its current magnitude, and the next-level value.
+    /// Shows this skill's unique, account-wide perk, its current magnitude, and the next level at
+    /// which that magnitude actually changes (some perks read the same across several levels).
     private var buffBanner: some View {
         let info = skill.buff
-        let values = game.buffValues(for: skill)
+        let current = game.buffValues(for: skill).current
+        let change = game.nextBuffChange(for: skill)
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
                 Image(systemName: info.icon).font(.title3).foregroundStyle(skill.tint)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Perk · \(info.name)").font(.caption2).foregroundStyle(.secondary)
-                    Text(values.current)
+                    Text(current)
                         .font(.subheadline.weight(.semibold)).foregroundStyle(skill.tint)
                         .lineLimit(1).minimumScaleFactor(0.7)
                 }
@@ -339,10 +418,11 @@ struct SkillTrainingView: View {
             Text(info.blurb)
                 .font(.caption2).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            if let next = values.next {
+            if let change {
                 HStack(spacing: 4) {
                     Image(systemName: "arrow.up.circle.fill").font(.caption2).foregroundStyle(.secondary)
-                    Text("Next level: \(next)").font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                    Text("At lv. \(change.level): \(change.value)")
+                        .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                 }
             }
         }
@@ -350,6 +430,48 @@ struct SkillTrainingView: View {
         .frame(maxWidth: .infinity)
         .background(skill.tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(skill.tint.opacity(0.20)))
+    }
+
+    // MARK: Account-wide effects banner (item 1 — makes the "perks apply everywhere" rule visible)
+
+    /// Lists every *other* skill's leveled-up perk that is affecting this training session right
+    /// now, so players can see that perks are account-wide (e.g. Strength's max-hit boost applies
+    /// while training anything, not just Strength).
+    @ViewBuilder
+    private var accountWideEffectsBanner: some View {
+        let effects = game.activeAccountWideEffects(excluding: skill)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "wand.and.rays").font(.caption).foregroundStyle(.secondary)
+                Text("Active account-wide effects").font(.caption.weight(.semibold)).foregroundStyle(.primary)
+            }
+            if effects.isEmpty {
+                Text("Level up other skills to stack account-wide perks that apply while you train anything.")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text("These apply while training \(skill.displayName):")
+                    .font(.caption2).foregroundStyle(.secondary)
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 108), spacing: 6)], alignment: .leading, spacing: 6) {
+                    ForEach(effects) { effect in
+                        HStack(spacing: 4) {
+                            Image(systemName: effect.icon).font(.caption2)
+                            Text(effect.value).font(.caption2.weight(.semibold)).monospacedDigit()
+                                .lineLimit(1).minimumScaleFactor(0.75)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 8).padding(.vertical, 5)
+                        .background(Color.white.opacity(0.06), in: Capsule())
+                        .overlay(Capsule().strokeBorder(Color.white.opacity(0.10)))
+                        .foregroundStyle(.primary)
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.white.opacity(0.08)))
     }
 
     // MARK: Tappable object
@@ -412,6 +534,19 @@ struct SkillTrainingView: View {
             spawnPops(for: game.tap(skill))
             fired += 1
         }
+    }
+
+    /// Spawns a display-only "+N idle" pop for the passive XP a slotted skill banks each second,
+    /// so AFK progress is visible on the training screen. The XP itself is credited by
+    /// `GameState.foregroundTick`; this only surfaces it (no double-credit).
+    private func stepIdlePop() {
+        guard game.isSlotted(skill) else { idleAccumulator = 0; return }
+        idleAccumulator += game.expectedIdleGainPerSecond(for: skill)
+        guard idleAccumulator >= 1 else { return }
+        let gain = Int(idleAccumulator.rounded(.down))
+        idleAccumulator -= Double(gain)
+        guard gain > 0 else { return }
+        addPop(TapPop(text: "+\(gain) idle", x: .random(in: -52...52), idle: true))
     }
 
     /// Spawns floating indicators for a tap, calling out crits, extra hits, caches, and Energy procs.

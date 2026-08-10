@@ -51,7 +51,7 @@ Sources/
             Store.swift                 # StoreKit 2 in-app purchases (coupon + Energy Cell packs)
   Views/    RootView / Onboarding / Home / SkillTile
             SkillTrainingView / StatsView / SettingsView / Components
-            BoostsView                  # activate Double XP, use/buy Energy Cells, both stores
+            BoostsView                  # activate Daily Boost, use/buy Energy Cells, both stores
   Assets.xcassets                       # app icon + accent color
 Config/     Products.storekit           # local StoreKit config for testing IAP (2 families)
 project.yml                             # XcodeGen project definition (universal: iPhone + iPad)
@@ -75,13 +75,13 @@ docs/       GAME_DESIGN.md, DEVELOPMENT.md, SKILL_BUFFS.md
 ## Tuning
 
 All balance lives in `Sources/Models/Balance.swift` — training-method tiers, passive rate,
-offline XP rate/cap, Energy cap, slot thresholds, Supercharge multipliers, Double XP timing, and
+offline XP rate/cap, Energy cap, slot thresholds, Supercharge multipliers, Daily Boost timing, and
 the **per-skill perk scaling** (`buffScaling` — every perk's neutral level-1 and fully-trained
 level-99 value). Re-balancing the game is a one-file change.
 
 ## Testing in-app purchases
 
-`Config/Products.storekit` defines two families of consumables — **Double XP coupon** packs
+`Config/Products.storekit` defines two families of consumables — **Daily Boost coupon** packs
 (`…coupons.small/medium/large`) and **Energy Cell** packs (`…energy.small/medium/large`) — and is
 wired into the `XPWaste` scheme's Run action, so purchases work locally in the simulator when you
 run from **Xcode** (no App Store Connect needed). In production these map to real App Store Connect
@@ -99,9 +99,9 @@ sync with `Products.storekit`, and route grants in `XPWasteApp` (`onGrant`) to `
 Used for deterministic screenshots / UI checks:
 
 - `SEED_DEMO=ready|super` — seeds representative levels, slots, energy, coupons, and Energy Cells
-  (and, for `super`, an active Supercharge + Double XP boost).
+  (and, for `super`, an active Supercharge + Daily Boost).
 - `OPEN_SKILL=<rawValue>` — deep-links Home straight into a skill's training screen.
-- `OPEN_SHEET=doublexp` — auto-presents the Boosts sheet (Double XP + Energy Cells).
+- `OPEN_SHEET=doublexp` — auto-presents the Boosts sheet (Daily Boost + Energy Cells).
 - `OFFLINE_DEMO=1` — seeds a representative **"welcome back"** offline-earnings summary (per-skill
   XP + level-ups) so the sheet can be screenshotted deterministically.
 

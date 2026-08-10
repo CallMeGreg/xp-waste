@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Sheet where the player activates a Double XP boost, uses/stocks Energy Cells, and buys
+/// Sheet where the player activates a Daily Boost, uses/stocks Energy Cells, and buys
 /// more of either via in-app purchase. Both consumables remain purchasable so players can
 /// always buy an XP multiplier *or* Energy; skill perks make each one stronger over time.
 struct BoostsView: View {
@@ -39,7 +39,7 @@ struct BoostsView: View {
         }
     }
 
-    // MARK: Double XP status / activation
+    // MARK: Daily Boost status / activation
 
     private func multText(_ v: Double) -> String {
         v == v.rounded() ? String(format: "×%.0f", v) : String(format: "×%.1f", v)
@@ -60,7 +60,7 @@ struct BoostsView: View {
 
     private var activeCard: some View {
         VStack(spacing: 12) {
-            Label("\(multText(game.xpMultiplier)) XP ACTIVE", systemImage: "sparkles")
+            Label("\(multText(game.xpMultiplier)) BOOST ACTIVE", systemImage: "sparkles")
                 .font(.headline.weight(.heavy))
                 .foregroundStyle(Color.doubleXP)
             Text(Format.clock(game.doubleXPRemaining))
@@ -80,7 +80,7 @@ struct BoostsView: View {
     private var idleCard: some View {
         VStack(spacing: 14) {
             Text("✨").font(.system(size: 54))
-            Text("Double XP")
+            Text("Daily Boost")
                 .font(.title2.bold())
             Text("Activate a coupon for **\(boostMinutes) minutes** of \(multText(game.doubleXPPotency)) XP on every skill — taps and passive training alike. It even stacks with Supercharge.")
                 .font(.subheadline)
@@ -89,7 +89,7 @@ struct BoostsView: View {
                 .padding(.horizontal, 8)
 
             Button(action: activate) {
-                Text(game.doubleXPCoupons > 0 ? "Activate Double XP" : "Out of coupons")
+                Text(game.doubleXPCoupons > 0 ? "Activate Daily Boost" : "Out of coupons")
                     .font(.headline)
                     .foregroundStyle(game.canActivateDoubleXP ? .black : .secondary)
                     .frame(maxWidth: .infinity)
@@ -174,7 +174,7 @@ struct BoostsView: View {
 
     private var energyHint: String {
         if game.slots.isEmpty {
-            return "Slot a skill first — a cell recharges all your slotted skills at once."
+            return "AFK a skill first — a cell recharges all your AFK skills at once."
         }
         return "Each cell fills all \(game.slots.count) slotted skill\(game.slots.count == 1 ? "" : "s") to full Energy, ready to Supercharge. Mining, Firemaking and Prayer make every charge stronger."
     }

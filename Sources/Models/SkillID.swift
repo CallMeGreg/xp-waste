@@ -81,7 +81,7 @@ enum SkillID: String, Codable, CaseIterable, Identifiable {
     var art: SkillArt {
         switch self {
         case .attack: return .vector(.sword)
-        case .strength: return .symbol("dumbbell.fill")
+        case .strength: return .vector(.warhammer)
         case .defence: return .symbol("shield.lefthalf.filled")
         case .hitpoints: return .symbol("heart.fill")
         case .ranged: return .vector(.bow)

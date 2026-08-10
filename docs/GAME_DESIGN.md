@@ -73,9 +73,9 @@ and, at a reduced rate, while it's closed.
   return, capped by **Construction** (Workshop) at **10 h** of away time by default (up to **48 h**
   at level 99; the window **resets each return**, so it can't be banked). A **"welcome back"**
   summary shows the per-skill XP earned and any level-ups. Boosts are consumed in real time, so
-  Supercharge / Double XP don't apply to offline gains. Only *slotted* skills earn offline.
+  Supercharge / Daily Boost don't apply to offline gains. Only *slotted* skills earn offline.
 - **Foreground idle** is a distinct lever: **Smithing** (Foundry) multiplies passive XP while the
-  app is *open* (Double XP still applies), so the app-open and app-closed rates are tuned
+  app is *open* (Daily Boost still applies), so the app-open and app-closed rates are tuned
   independently.
 - **Slots unlock with total level:** 1 slot at the start → **2nd at total 100** → **3rd at
   total 300** → **4th at total 500** → **5th at total 1000** (tuned for the 23-skill roster).
@@ -100,7 +100,7 @@ Each slotted skill accumulates **Energy** in real time — whether the app is op
   | VIII | **×100** | 2000 |
 
 The multiplier applies to the **current method's** XP-per-tap (e.g. a tier-4 method at +12/tap,
-supercharged ×10, under 2× Double XP = 240 XP per tap). This creates the signature
+supercharged ×10, under 1.5× Daily Boost = 180 XP per tap). This creates the signature
 **return-and-burst loop**: idle to bank Energy, come back, and tap furiously during the
 Supercharge window. Passive XP keeps trickling during a Supercharge; only *taps* get the multiplier.
 
@@ -120,7 +120,7 @@ Runecraft literally auto-taps for you, and so on across all 23.
 - **The active tap is a "hit".** Combat perks reshape each tap into a rolled range: Strength sets
   the ceiling, Defence the floor, Attack biases toward the top, Ranged adds extra hits, and
   Slayer × Crafting land the occasional crit. Non-combat perks feed the idle engine (Energy,
-  foreground idle rate, offline rate/cap), the boost economy (Double XP potency/duration, Supercharge
+  foreground idle rate, offline rate/cap), the boost economy (Daily Boost potency/duration, Supercharge
   power/duration, coupon/Energy refund), or account tempo (combo, auto-tap).
 
 The full per-skill lever table, designed synergies, and the exact tap pipeline order live in
@@ -201,7 +201,7 @@ v1 _(future: tap/level/supercharge SFX)_.
 | Slot eligibility | skill level ≥ 10 |
 | Slot 2 / Slot 3 unlock | total level 100 / 300 |
 | Supercharge tiers | ×2 / ×5 / ×10 / ×20 / ×30 / ×50 / ×75 / ×100 tap multiplier at total 0 / 50 / 250 / 450 / 700 / 1000 / 1500 / 2000 |
-| Double XP boost | 2× all XP for 10 min (base; Magic/Herblore perks scale ×/duration); 1 free coupon/day; IAP packs of 5 / 25 / 100 |
+| Daily Boost | 1.5× all XP for 5 min (base; Magic/Herblore perks scale ×/duration); 1 free coupon/day; IAP packs of 5 / 25 / 100 |
 | Energy Cells | Consumable that instantly refills every slotted skill to its Energy cap; IAP packs of 3 / 10 / 30 |
 | Skill perks | 23 unique account-wide buffs, each neutral at level 1 and scaling to its level-99 value (`Balance.buffScaling`) — see [SKILL_BUFFS.md](SKILL_BUFFS.md) |
 
@@ -216,7 +216,7 @@ v1 _(future: tap/level/supercharge SFX)_.
 **Risks & mitigations**
 1. **Endgame pacing is still the biggest risk.** The OSRS tail is punishing and a full 23-skill
    max is a very long haul. *Mitigation:* the **tiered training methods** now scale XP-per-tap up
-   to 50× (plus Supercharge ×20 and Double XP ×2) so late-game taps are far more rewarding than
+   to 50× (plus Supercharge ×20 and Daily Boost ×1.5) so late-game taps are far more rewarding than
    v1's flat +1; treat further yield-scaling as a balance patch — trivial because all constants
    are centralized. More skills also means more parallel goals and more frequent method-upgrade
    dopamine hits.
@@ -240,19 +240,19 @@ constants; the first post-launch pass is pure balancing.
 - iCloud sync; Game Center leaderboards for total level.
 - Skill interactions (e.g., gathering feeds a crafting loop).
 
-## 12. Boosts: Double XP, Energy Cells & monetization _(v1.1, energy added v1.2)_
+## 12. Boosts: Daily Boost, Energy Cells & monetization _(v1.1, energy added v1.2)_
 
 **Concept.** Two consumable "boost" families let players spend for *time and multipliers*, never
 for permanent power (permanent power comes from the skill perks in [§4](#4-skill-perks-account-wide-passive-buffs)):
 
-- **Double XP coupons** — activate one to earn **2× XP on every skill for 10 minutes** (base
+- **Daily Boost coupons** — activate one to earn **1.5× XP on every skill for 5 minutes** (base
   values) — taps, Supercharge taps, and passive slot XP alike. The multiplier stacks
-  *multiplicatively* with Supercharge (e.g. ×5 tap → ×10 while boosted).
+  *multiplicatively* with Supercharge (e.g. ×5 tap → ×7.5 while boosted).
 - **Energy Cells** — spend one to **instantly refill every slotted skill to its Energy cap**, so
   you can Supercharge on demand instead of waiting out the real-time charge.
 
-Skill perks feed both economies rather than competing with them: **Magic** raises the Double XP
-multiplier above 2×, **Herblore** extends the duration past 10 minutes, **Thieving** grants more
+Skill perks feed both economies rather than competing with them: **Magic** raises the Daily Boost
+multiplier above 1.5×, **Herblore** extends the duration past 5 minutes, **Thieving** grants more
 free coupons per day, and **Mining / Firemaking / Prayer** make each Energy Cell charge bigger,
 longer-lasting, and more powerful. Perks make purchases *stronger*, so IAP and progression
 synergize instead of one obsoleting the other.
@@ -274,23 +274,23 @@ synergize instead of one obsoleting the other.
   multiplier *or* Energy.
 
 **UX.**
-- A violet **Double XP & Energy card** on the Home hub shows either "Tap to activate" (+ coupon
+- A violet **Daily Boost & Energy card** on the Home hub shows either "Tap to activate" (+ coupon
   count) or a live **×N XP ACTIVE · M:SS** countdown (the multiplier reflects the player's live
-  Magic-perk value, not a hard-coded 2×).
-- The training screen shows a live **×N** Double XP badge next to the Supercharge badge (which
+  Magic-perk value, not a hard-coded 1.5×).
+- The training screen shows a live **×N** Daily Boost badge next to the Supercharge badge (which
   itself shows the Prayer-inclusive effective multiplier) so the stacked multiplier is legible,
   and tap "+X" pops reflect the true per-tap amount. When you hold Energy Cells, a **Use Cell**
   quick action appears right in the Energy control to recharge on the spot.
-- A dedicated **Boosts sheet** handles Double XP activation, coupon balance, Energy Cell use, and
+- A dedicated **Boosts sheet** handles Daily Boost activation, coupon balance, Energy Cell use, and
   both storefronts.
 - Daily rewards, purchases, and cell use surface a top toast.
 
 **Monetization critique (indie-dev self-review).**
 - *Strength:* both boosts are **fun-first and non-coercive** — a free daily coupon means F2P
-  players always taste the Double XP mechanic, and purchases buy *more of a good time*, not power
+  players always taste the Daily Boost mechanic, and purchases buy *more of a good time*, not power
   gates. Consumables suit a long grind and stack naturally with the existing Supercharge hook.
 - *Agnostic vs. perks (v1.2 rebalance):* the agnostic systems (Energy cap/rate, Supercharge tiers,
-  Double XP ×/duration, daily coupons) are deliberately set so their **base value equals each
+  Daily Boost ×/duration, daily coupons) are deliberately set so their **base value equals each
   related perk at level 1** — at a fresh account the game plays exactly as it did pre-perks, and
   perks only ever add on top. This keeps defaults sensible and stops perks from silently
   redefining the paid systems.
@@ -300,7 +300,7 @@ synergize instead of one obsoleting the other.
   are likewise a *skip-the-wait* convenience, capped by your existing Energy cap.
 - *Risk — real-time expiry can feel punishing* if the player is interrupted mid-boost.
   *Mitigation (future):* consider pausing the timer on backgrounding, or a "boost only counts
-  foreground seconds" model. V1 keeps wall-clock expiry for simplicity and honesty ("10 min").
+  foreground seconds" model. V1 keeps wall-clock expiry for simplicity and honesty ("5 min").
 - *Risk — App Review / ethics:* consumables must be clearly described and restore-exempt;
   the store copy states coupons and Energy Cells are consumable and prices are region-dependent.
   No loot boxes, no randomized rewards. Consumables are **not** wiped by a progress reset (paid

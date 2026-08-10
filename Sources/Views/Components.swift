@@ -36,7 +36,7 @@ enum Format {
 }
 
 extension Color {
-    /// Accent used across the Double XP boost UI (a vivid violet, distinct from the
+    /// Accent used across the Daily Boost UI (a vivid violet, distinct from the
     /// yellow slot / orange Supercharge colors).
     static let doubleXP = Color(red: 0.60, green: 0.36, blue: 0.98)
 }

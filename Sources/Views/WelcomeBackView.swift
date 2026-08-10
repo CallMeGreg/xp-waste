@@ -127,7 +127,7 @@ private struct OfflineSkillRow: View {
     @ViewBuilder private var levelBadge: some View {
         if entry.leveledUp {
             HStack(spacing: 4) {
-                Text("Lv \(entry.fromLevel)").foregroundStyle(.secondary)
+                Text("lv. \(entry.fromLevel)").foregroundStyle(.secondary)
                 Image(systemName: "arrow.right").font(.caption2).foregroundStyle(.secondary)
                 Text("\(entry.toLevel)").fontWeight(.bold).foregroundStyle(.yellow)
             }
@@ -137,7 +137,7 @@ private struct OfflineSkillRow: View {
             .background(Color.yellow.opacity(0.14), in: Capsule())
             .overlay(Capsule().strokeBorder(Color.yellow.opacity(0.4)))
         } else {
-            Text("Lv \(entry.toLevel)")
+            Text("lv. \(entry.toLevel)")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 10)

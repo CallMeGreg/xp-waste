@@ -30,9 +30,8 @@ struct SkillTileView: View {
                 .lineLimit(1)
 
             HStack(spacing: 3) {
-                Text("Lv").font(.caption2).foregroundStyle(.secondary)
+                Text("lv.").font(.caption2).foregroundStyle(.secondary)
                 Text("\(level)").font(.caption.weight(.bold)).monospacedDigit()
-                Text("/ 99").font(.caption2).foregroundStyle(.secondary)
             }
 
             XPProgressBar(progress: XPTable.progressToNextLevel(forXP: game.xp(for: skill)),
@@ -62,7 +61,7 @@ struct SkillTileView: View {
                 Label("Ready", systemImage: "flame")
                     .font(.caption2.weight(.semibold)).foregroundStyle(.orange)
             } else if slotted, let idx = game.slotIndex(of: skill) {
-                Label("Slot \(idx + 1)", systemImage: "bolt.fill")
+                Label("AFK \(idx + 1)", systemImage: "bolt.fill")
                     .font(.caption2.weight(.semibold)).foregroundStyle(.yellow)
             } else if game.isMaxed(skill) {
                 Label("Maxed", systemImage: "checkmark.seal.fill")

@@ -10,7 +10,7 @@ enum BuffKind {
     case energyRate          // Hitpoints: banks Supercharge Energy faster
     case extraHit            // Ranged: chance for a tap to land an extra hit
     case superchargeBonus    // Prayer: +flat to the active Supercharge multiplier
-    case doubleXPPotency     // Magic: raises the Double XP multiplier above 2×
+    case doubleXPPotency     // Magic: raises the Daily Boost multiplier above 1.5×
     // Gathering — feeds the idle engine
     case cache               // Woodcutting: chance per tap for a bonus-XP windfall
     case energyProc          // Fishing: chance per tap to bank bonus Energy
@@ -23,7 +23,7 @@ enum BuffKind {
     case critMagnitude       // Crafting: critical taps hit harder
     case foregroundRate      // Smithing: multiplies FOREGROUND idle XP (app open)
     case flatTap             // Fletching: +flat XP added to every tap
-    case doubleXPDuration    // Herblore: Double XP boosts last longer
+    case doubleXPDuration    // Herblore: Daily Boosts last longer
     case autoTap             // Runecraft: auto-taps the open skill
     case offlineCap          // Construction: raises the OFFLINE accrual cap (hours)
     // Support — tempo & meta
@@ -66,7 +66,7 @@ extension SkillID {
                                  blurb: "Adds to your active Supercharge multiplier.")
         case .magic:
             return SkillBuffInfo(kind: .doubleXPPotency, name: "Enchantment", icon: "wand.and.stars",
-                                 blurb: "Empowers Double XP beyond 2×.")
+                                 blurb: "Empowers the Daily Boost beyond 1.5×.")
 
         // MARK: Gathering
         case .woodcutting:
@@ -103,7 +103,7 @@ extension SkillID {
                                  blurb: "Adds flat bonus XP to every tap.")
         case .herblore:
             return SkillBuffInfo(kind: .doubleXPDuration, name: "Alchemist", icon: "hourglass",
-                                 blurb: "Double XP boosts last longer.")
+                                 blurb: "Daily Boosts last longer.")
         case .runecraft:
             return SkillBuffInfo(kind: .autoTap, name: "Runic Automaton", icon: "cpu.fill",
                                  blurb: "Auto-taps the skill you're training.")
