@@ -8,7 +8,7 @@
       "internalID" : "6001000001",
       "localizations" : [
         {
-          "description" : "5 Daily Boost coupons",
+          "description" : "1 Daily Boost coupon",
           "displayName" : "Pouch of Coupons",
           "locale" : "en_US"
         }
@@ -23,7 +23,7 @@
       "internalID" : "6001000002",
       "localizations" : [
         {
-          "description" : "25 Daily Boost coupons",
+          "description" : "5 Daily Boost coupons",
           "displayName" : "Sack of Coupons",
           "locale" : "en_US"
         }
@@ -38,7 +38,7 @@
       "internalID" : "6001000003",
       "localizations" : [
         {
-          "description" : "100 Daily Boost coupons",
+          "description" : "20 Daily Boost coupons",
           "displayName" : "Chest of Coupons",
           "locale" : "en_US"
         }

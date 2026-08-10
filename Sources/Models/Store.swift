@@ -44,9 +44,9 @@ final class Store: ObservableObject {
 
     /// What each product grants: its family and amount. Keep in sync with `Config/Products.storekit`.
     static let grants: [String: (kind: ProductKind, amount: Int)] = [
-        couponSmallID:  (.coupons, 5),
-        couponMediumID: (.coupons, 25),
-        couponLargeID:  (.coupons, 100),
+        couponSmallID:  (.coupons, 1),
+        couponMediumID: (.coupons, 5),
+        couponLargeID:  (.coupons, 20),
         energySmallID:  (.energy, 3),
         energyMediumID: (.energy, 10),
         energyLargeID:  (.energy, 30)
@@ -184,9 +184,9 @@ final class Store: ObservableObject {
     /// Placeholder catalog so the store UI renders when no live products are available
     /// (e.g. running from the command line without the scheme's StoreKit configuration).
     static let mockPacks: [StorePack] = [
-        StorePack(id: couponSmallID, kind: .coupons, title: "Pouch of Coupons", amount: 5, priceText: "$0.99"),
-        StorePack(id: couponMediumID, kind: .coupons, title: "Sack of Coupons", amount: 25, priceText: "$3.99"),
-        StorePack(id: couponLargeID, kind: .coupons, title: "Chest of Coupons", amount: 100, priceText: "$9.99", bestValue: true),
+        StorePack(id: couponSmallID, kind: .coupons, title: "Pouch of Coupons", amount: 1, priceText: "$0.99"),
+        StorePack(id: couponMediumID, kind: .coupons, title: "Sack of Coupons", amount: 5, priceText: "$3.99"),
+        StorePack(id: couponLargeID, kind: .coupons, title: "Chest of Coupons", amount: 20, priceText: "$9.99", bestValue: true),
         StorePack(id: energySmallID, kind: .energy, title: "Spark Cells", amount: 3, priceText: "$0.99"),
         StorePack(id: energyMediumID, kind: .energy, title: "Charged Cells", amount: 10, priceText: "$2.99"),
         StorePack(id: energyLargeID, kind: .energy, title: "Power Core", amount: 30, priceText: "$6.99", bestValue: true)
