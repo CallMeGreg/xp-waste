@@ -15,6 +15,11 @@ struct RootView: View {
             }
         }
         .onReceive(ticker) { _ in game.foregroundTick() }
+        .onChange(of: game.levelUpEvent) { _, event in
+            if event != nil {
+                SoundManager.shared.play(.levelUp, enabled: game.soundEnabled)
+            }
+        }
         .overlay(alignment: .top) {
             if let event = game.levelUpEvent {
                 LevelUpToast(event: event)

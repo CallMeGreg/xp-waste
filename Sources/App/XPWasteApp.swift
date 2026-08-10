@@ -14,10 +14,14 @@ struct XPWasteApp: App {
                 .preferredColorScheme(.dark)
                 .tint(.accentColor)
                 .task {
+                    SoundManager.shared.prepare()
                     store.onGrant = { [weak game] kind, amount in
                         switch kind {
                         case .coupons: game?.addCoupons(amount)
                         case .energy:  game?.addEnergyCells(amount)
+                        }
+                        if let game {
+                            SoundManager.shared.play(.purchase, enabled: game.soundEnabled)
                         }
                     }
                     store.start()

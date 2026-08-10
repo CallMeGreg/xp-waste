@@ -12,3 +12,6 @@ xcuserdata/
 *.ipa
 *.dSYM.zip
 *.dSYM
+
+# Audition output from Tools/sound_synth.py (only Sources/Resources/Sounds/ is shipped)
+Tools/sounds/
