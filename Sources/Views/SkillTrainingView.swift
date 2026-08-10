@@ -332,7 +332,7 @@ struct SkillTrainingView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Instantly fills Supercharge charge to full on all \(game.slots.count) of your AFK skill\(game.slots.count == 1 ? "" : "s"). You own \(game.energyCells) cell\(game.energyCells == 1 ? "" : "s").")
+            Text("Instantly fills Supercharge to full on all \(game.slots.count) of your AFK skill\(game.slots.count == 1 ? "" : "s").")
         }
     }
 
@@ -557,9 +557,9 @@ struct SkillTrainingView: View {
         }
         .frame(height: diameter * 1.15)
         .overlay(alignment: .bottom) {
-            Text(supercharged ? "SUPERCHARGED — tap fast!" : "Tap to train")
+            Text("Tap to train")
                 .font(.callout.weight(.semibold))
-                .foregroundStyle(supercharged ? Color.orange : .secondary)
+                .foregroundStyle(.secondary)
         }
     }
 
