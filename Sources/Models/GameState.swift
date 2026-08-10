@@ -365,27 +365,6 @@ final class GameState: ObservableObject {
             * xpMultiplier
     }
 
-    /// A single account-wide effect currently in force, for the "these apply no matter what you're
-    /// training" list on the details sheet.
-    struct AccountWideEffect: Identifiable {
-        let id: SkillID
-        let name: String
-        let icon: String
-        let value: String
-    }
-
-    /// Every leveled-up skill perk that measurably affects the skill you're *currently* training,
-    /// so players can see that e.g. Strength's max-hit boost applies while training anything. Skips
-    /// perks still sitting at their level-1 (neutral) magnitude, and the skill being trained itself.
-    func activeAccountWideEffects(excluding trained: SkillID? = nil) -> [AccountWideEffect] {
-        SkillID.allCases.compactMap { skill in
-            guard skill != trained, level(for: skill) > 1 else { return nil }
-            return AccountWideEffect(id: skill, name: skill.buff.name,
-                                     icon: skill.buff.icon,
-                                     value: formattedBuff(skill, atLevel: level(for: skill)))
-        }
-    }
-
     private func formattedBuff(_ skill: SkillID, atLevel lvl: Int) -> String {
         guard let scaling = Balance.buffScaling[skill] else { return "—" }
         let v = Balance.buffValue(level: lvl, scaling: scaling)

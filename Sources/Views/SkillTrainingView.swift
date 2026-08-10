@@ -339,7 +339,6 @@ struct SkillTrainingView: View {
                 VStack(spacing: 16) {
                     methodBanner
                     buffBanner
-                    accountWideEffectsBanner
                 }
                 .padding(20)
                 .frame(maxWidth: 640).frame(maxWidth: .infinity)
@@ -430,48 +429,6 @@ struct SkillTrainingView: View {
         .frame(maxWidth: .infinity)
         .background(skill.tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(skill.tint.opacity(0.20)))
-    }
-
-    // MARK: Account-wide effects banner (item 1 — makes the "perks apply everywhere" rule visible)
-
-    /// Lists every *other* skill's leveled-up perk that is affecting this training session right
-    /// now, so players can see that perks are account-wide (e.g. Strength's max-hit boost applies
-    /// while training anything, not just Strength).
-    @ViewBuilder
-    private var accountWideEffectsBanner: some View {
-        let effects = game.activeAccountWideEffects(excluding: skill)
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: "wand.and.rays").font(.caption).foregroundStyle(.secondary)
-                Text("Active account-wide effects").font(.caption.weight(.semibold)).foregroundStyle(.primary)
-            }
-            if effects.isEmpty {
-                Text("Level up other skills to stack account-wide perks that apply while you train anything.")
-                    .font(.caption2).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else {
-                Text("These apply while training \(skill.displayName):")
-                    .font(.caption2).foregroundStyle(.secondary)
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 108), spacing: 6)], alignment: .leading, spacing: 6) {
-                    ForEach(effects) { effect in
-                        HStack(spacing: 4) {
-                            Image(systemName: effect.icon).font(.caption2)
-                            Text(effect.value).font(.caption2.weight(.semibold)).monospacedDigit()
-                                .lineLimit(1).minimumScaleFactor(0.75)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 8).padding(.vertical, 5)
-                        .background(Color.white.opacity(0.06), in: Capsule())
-                        .overlay(Capsule().strokeBorder(Color.white.opacity(0.10)))
-                        .foregroundStyle(.primary)
-                    }
-                }
-            }
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.white.opacity(0.08)))
     }
 
     // MARK: Tappable object
