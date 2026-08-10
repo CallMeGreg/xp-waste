@@ -37,27 +37,27 @@ reserves, Crafting and Slayer team up for critical taps, Runecraft even **auto-t
 you're training. No two perks do the same thing, so there's always a reason to spread your taps —
 maxing everything makes you strongest of all.
 
-### 🎰 Training slots (passive XP)
-Slot a skill into a **training slot** and it earns experience passively — while the app is open
+### 🎰 AFK slots (passive XP)
+Add a skill to an **AFK slot** and it earns experience passively — while the app is open
 *and* while it's closed, so you can tap one skill while others train themselves. Come back after a
-break and a **welcome-back summary** shows the XP (and any level-ups) your slots earned while you
-were away; offline training runs at a gentler rate, so active tapping still pays off best. You
-start with a single slot and unlock more as your **total level** climbs. Juggle your slots to grow
-the skills you care about.
+break and a **welcome-back summary** shows the XP (and any level-ups) your AFK skills earned while
+you were away; offline training runs at a gentler rate, so active tapping still pays off best. You
+start with a single slot and unlock more as your **total level** climbs. Juggle your AFK slots to
+grow the skills you care about.
 
 ### ⚡ Energy & Supercharge
 Every skill quietly charges **Energy** — while you play *and* while the app is closed. Spend a
 skill's full Energy bar to **Supercharge** it: a burst of multiplied XP per tap (×2, and up to
 ×20 at high total levels) for a short window. The more you're away, the bigger the payoff when
-you come back. In a hurry? An **Energy Cell** instantly refills every slotted skill so you can
+you come back. In a hurry? An **Energy Cell** instantly refills every AFK skill so you can
 Supercharge right now — earn them as you play or grab a pack as an optional in-app purchase.
 
-### ✨ Double XP
-Once a day you can activate a **Double XP** boost that doubles all experience for 10 minutes —
-stack it with a Supercharge for an enormous burst. Want more? Double XP coupons are available as
+### ✨ Daily Boost
+Once a day you can activate a **Daily Boost** that multiplies all experience by 1.5× for 5 minutes —
+stack it with a Supercharge for an enormous burst. Want more? Daily Boost coupons are available as
 an optional in-app purchase.
 
-Both boosts get stronger as you level up: certain skills grant perks that raise your Double XP
+Both boosts get stronger as you level up: certain skills grant perks that raise your Daily Boost
 multiplier, extend it, hand out extra daily coupons, and make every Energy Cell charge bigger.
 
 ## Your goal 🏆

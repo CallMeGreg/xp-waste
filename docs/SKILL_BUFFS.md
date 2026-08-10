@@ -15,7 +15,7 @@ realized at level 99 — so training is always paying into a permanent buff on t
 ## Non-regression guarantee
 
 Every perk's **level-1 value is neutral** — `0`, `×1`, or the exact prior constant (e.g. Magic's
-Double XP starts at `2.0×`, Mining's Energy cap starts at `maxEnergySeconds`). On a brand-new
+Daily Boost starts at `1.5×`, Mining's Energy cap starts at `maxEnergySeconds`). On a brand-new
 account (level 1 in everything) the tap range collapses to a single value and no procs can fire,
 so the game plays **identically to before the perk system existed**. Perks are strictly additive
 as you level.
@@ -48,7 +48,7 @@ Values below are **level 1 → level 99** (the full envelope). "Kind" is the `Bu
 | Hitpoints ❤️ | Vitality | `energyRate` | `×1.0 → ×2.0` | Banks **Supercharge Energy faster** on every slot. |
 | Ranged 🏹 | Rapid Fire | `extraHit` | `0 → 60%` | Chance for a tap to land an **extra hit** (100%+ guarantees one and rolls again). |
 | Prayer 🙏 | Blessing | `superchargeBonus` | `+0 → +5` | **Adds flat** to the active Supercharge multiplier. |
-| Magic 🔮 | Enchantment | `doubleXPPotency` | `2.0 → 3.0×` | Empowers **Double XP beyond 2×**. |
+| Magic 🔮 | Enchantment | `doubleXPPotency` | `1.5 → 3.0×` | Empowers **the Daily Boost beyond 1.5×**. |
 
 ### Gathering — feed the idle engine
 
@@ -69,7 +69,7 @@ Values below are **level 1 → level 99** (the full envelope). "Kind" is the `Bu
 | Crafting 🧵 | Masterwork | `critMagnitude` | `×2.0 → ×4.0` | **Critical taps hit harder** (crit chance comes from Slayer). |
 | Smithing 🔨 | Foundry | `foregroundRate` | `×1.0 → ×10.0` | Multiplies **foreground idle** XP (app *open*). |
 | Fletching 🎯 | Extra Ammo | `flatTap` | `+0 → +8` | Adds **flat bonus XP** to every tap. |
-| Herblore 🧪 | Alchemist | `doubleXPDuration` | `+0 → +300s` | **Double XP boosts last longer.** |
+| Herblore 🧪 | Alchemist | `doubleXPDuration` | `+0 → +300s` | **Daily Boosts last longer.** |
 | Runecraft 🌀 | Runic Automaton | `autoTap` | `0 → 3 / s` | **Auto-taps** the skill you're currently training. |
 | Construction 🏠 | Workshop | `offlineCap` | `10h → 48h` | Raises the **offline accrual cap** — bank more hours of away-time XP. |
 
@@ -90,7 +90,7 @@ Some perks intentionally pair across skills so leveling two things compounds:
   at `×2`, so your first crit is already meaty.
 - **Supercharge power = Prayer, duration = Firemaking, cap = Mining, rate = Hitpoints, refund =
   Thieving.** The whole Energy/Supercharge loop is levered by five different skills.
-- **Double XP = Magic (potency) × Herblore (duration) × Thieving (refund).** The boost economy is
+- **Daily Boost = Magic (potency) × Herblore (duration) × Thieving (refund).** The boost economy is
   levered by three skills — Thieving can even hand the spent coupon straight back.
 - **Idle engine = Hunter (rate) × Smithing (+% XP) × Construction (workshop ×).** Slotted passive
   training is levered by three skills that stack multiplicatively.
@@ -113,7 +113,7 @@ Resolved in `GameState.rollTap(for:)`. Each tap:
 3. Sum the hits.
 4. On a **Woodcutting** cache proc, add a `15×` base windfall.
 5. If supercharged, `× (Supercharge multiplier + Prayer bonus)`.
-6. If Double XP is active, `× Magic` Double XP potency.
+6. If Daily Boost is active, `× Magic` Daily Boost potency.
 7. Side-effect: on a **Fishing** proc, bank bonus Energy to the tapped skill.
 
 `GameState.expectedTapGain(for:)` computes the deterministic *average* of this pipeline for

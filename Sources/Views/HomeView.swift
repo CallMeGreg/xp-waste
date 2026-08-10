@@ -85,7 +85,7 @@ private struct TotalLevelHeader: View {
 
     private var subtitle: String {
         if game.isFullyMaxed { return "Maxed — level 99 in every skill" }
-        return "\(game.slots.count)/\(game.maxSlots) slots · ×\(game.effectiveSuperchargeMultiplier) supercharge"
+        return "\(game.slots.count)/\(game.maxSlots) AFK slots · ×\(game.effectiveSuperchargeMultiplier) supercharge"
     }
 }
 
@@ -138,12 +138,11 @@ private struct SkillStatRow: View {
                         Label("Ready", systemImage: "flame.fill")
                             .font(.caption2.weight(.bold)).foregroundStyle(.orange)
                     } else if slotted, let i = game.slotIndex(of: skill) {
-                        Label("Slot \(i + 1)", systemImage: "bolt.fill")
+                        Label("AFK \(i + 1)", systemImage: "bolt.fill")
                             .font(.caption2.weight(.semibold)).foregroundStyle(.yellow)
                     }
-                    Text("\(level)")
+                    Text("lv. \(level)")
                         .font(.subheadline.weight(.bold)).monospacedDigit().foregroundStyle(.primary)
-                    Text("/99").font(.caption2).foregroundStyle(.secondary)
                 }
                 XPProgressBar(progress: XPTable.progressToNextLevel(forXP: game.xp(for: skill)),
                               tint: skill.tint, height: 5)
@@ -154,7 +153,7 @@ private struct SkillStatRow: View {
     }
 }
 
-/// Two compact top-bar chips — Double XP (coupon count, or a live countdown while active) and
+/// Two compact top-bar chips — Daily Boost (coupon count, or a live countdown while active) and
 /// Energy Cells — that open the Boosts sheet. Split for at-a-glance status.
 private struct BoostsIcons: View {
     @EnvironmentObject private var game: GameState

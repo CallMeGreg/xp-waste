@@ -80,16 +80,16 @@ enum Balance {
         (2000, 100)
     ]
 
-    // MARK: Double XP boost
+    // MARK: Daily Boost (formerly "Double XP")
 
-    /// Multiplier applied to *all* XP (taps + passive) while a Double XP boost is active.
-    /// Stacks multiplicatively with Supercharge.
-    static let doubleXPMultiplier: Double = 2.0
+    /// Base multiplier applied to *all* XP (taps + passive) while a Daily Boost is active.
+    /// Magic's perk raises it further; it stacks multiplicatively with Supercharge.
+    static let doubleXPMultiplier: Double = 1.5
 
-    /// How long a single Double XP coupon lasts once activated, in seconds (10 minutes).
-    static let doubleXPDurationSeconds: TimeInterval = 600
+    /// How long a single Daily Boost coupon lasts once activated, in seconds (5 minutes).
+    static let doubleXPDurationSeconds: TimeInterval = 300
 
-    /// Free Double XP coupons granted the first time the app is opened on a new calendar day.
+    /// Free Daily Boost coupons granted the first time the app is opened on a new calendar day.
     static let dailyFreeCoupons: Int = 1
 
     // MARK: Training slots
@@ -167,7 +167,7 @@ enum Balance {
         .hitpoints:    BuffScaling(at1: 1.0,   at99: 2.0),    // vitality: Energy bank-rate multiplier
         .ranged:       BuffScaling(at1: 0.0,   at99: 0.60),   // rapid fire: chance for an extra hit
         .prayer:       BuffScaling(at1: 0.0,   at99: 5.0),    // blessing: +flat to Supercharge multiplier
-        .magic:        BuffScaling(at1: doubleXPMultiplier, at99: 3.0),    // enchantment: Double XP multiplier value
+        .magic:        BuffScaling(at1: doubleXPMultiplier, at99: 3.0),    // enchantment: Daily Boost multiplier value
         // Gathering — feeds the idle engine
         .woodcutting:  BuffScaling(at1: 0.0,   at99: 0.12),   // bird's nests: bonus-XP cache chance
         .fishing:      BuffScaling(at1: 0.0,   at99: 0.15),   // big catch: bonus-Energy chance
@@ -180,7 +180,7 @@ enum Balance {
         .crafting:     BuffScaling(at1: 2.0,   at99: 4.0),    // masterwork: crit magnitude ×
         .smithing:     BuffScaling(at1: 1.0,   at99: 10.0),   // foundry: FOREGROUND idle XP rate × (app open)
         .fletching:    BuffScaling(at1: 0.0,   at99: 8.0),    // extra ammo: +flat XP per tap
-        .herblore:     BuffScaling(at1: 0.0,   at99: 300.0),  // alchemist: +seconds to Double XP duration
+        .herblore:     BuffScaling(at1: 0.0,   at99: 300.0),  // alchemist: +seconds to Daily Boost duration
         .runecraft:    BuffScaling(at1: 0.0,   at99: 3.0),    // runic automaton: auto-taps per second
         .construction: BuffScaling(at1: maxOfflineHours, at99: 48.0), // workshop: OFFLINE accrual cap (hours), neutral at the base cap
         // Support — tempo & meta

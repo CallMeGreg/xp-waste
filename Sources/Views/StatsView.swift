@@ -33,9 +33,9 @@ struct StatsView: View {
             statRow("Total level", "\(game.totalLevel) / \(game.maxTotalLevel)")
             statRow("Total XP", Format.abbrev(game.totalXP))
             statRow("Skills maxed", "\(game.maxedSkillCount) / \(SkillID.allCases.count)")
-            statRow("Training slots", "\(game.slots.count) / \(game.maxSlots)")
+            statRow("AFK slots", "\(game.slots.count) / \(game.maxSlots)")
             statRow("Supercharge", "×\(game.effectiveSuperchargeMultiplier) tap XP")
-            statRow("Double XP coupons", "\(game.doubleXPCoupons)")
+            statRow("Daily Boost coupons", "\(game.doubleXPCoupons)")
             statRow("Energy Cells", "\(game.energyCells)")
         }
     }
@@ -49,7 +49,7 @@ struct StatsView: View {
                 ArtworkView(art: skill.art, size: 22, color: skill.tint)
                 Text(skill.displayName).font(.subheadline.weight(.semibold))
                 Spacer()
-                Text("Lv \(level)").font(.subheadline.weight(.bold)).monospacedDigit()
+                Text("lv. \(level)").font(.subheadline.weight(.bold)).monospacedDigit()
                 if game.isMaxed(skill) {
                     Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
                 }
@@ -86,7 +86,7 @@ struct StatsView: View {
             milestoneRow("All support skills 99",
                          done: SkillID.skills(in: .support).allSatisfy { game.isMaxed($0) })
             ForEach(Array(Balance.slotUnlockTotalLevels.enumerated()), id: \.offset) { i, threshold in
-                milestoneRow("Unlock \(slotOrdinal(i + 2)) training slot (total \(threshold))",
+                milestoneRow("Unlock \(slotOrdinal(i + 2)) AFK slot (total \(threshold))",
                              done: game.totalLevel >= threshold)
             }
             ForEach(Balance.superchargeTiers.dropFirst(), id: \.totalLevel) { tier in

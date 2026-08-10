@@ -3,7 +3,7 @@ import StoreKit
 
 /// Which consumable family a store product belongs to.
 enum ProductKind: Equatable {
-    case coupons   // Double XP coupons (an XP multiplier)
+    case coupons   // Daily Boost coupons (an XP multiplier)
     case energy    // Energy Cells (instant Supercharge Energy)
 }
 
@@ -21,7 +21,7 @@ struct StorePack: Identifiable, Equatable {
     var bestValue: Bool = false
 }
 
-/// Wraps StoreKit 2 to sell two families of consumables: Double XP coupons and Energy Cells.
+/// Wraps StoreKit 2 to sell two families of consumables: Daily Boost coupons and Energy Cells.
 ///
 /// Products are defined in `Config/Products.storekit` for local testing (wired into the
 /// scheme) and would map to App Store Connect products in production. Successful, verified
@@ -29,7 +29,7 @@ struct StorePack: Identifiable, Equatable {
 @MainActor
 final class Store: ObservableObject {
 
-    // Double XP coupon packs (an XP multiplier).
+    // Daily Boost coupon packs (an XP multiplier).
     static let couponSmallID = "com.callmegreg.xpwaste.coupons.small"
     static let couponMediumID = "com.callmegreg.xpwaste.coupons.medium"
     static let couponLargeID = "com.callmegreg.xpwaste.coupons.large"
@@ -61,7 +61,7 @@ final class Store: ObservableObject {
     /// Invoked with the product family and amount to credit after a verified purchase.
     var onGrant: ((ProductKind, Int) -> Void)?
 
-    /// Packs in the Double XP coupon family, in catalog order.
+    /// Packs in the Daily Boost coupon family, in catalog order.
     var couponPacks: [StorePack] { packs.filter { $0.kind == .coupons } }
     /// Packs in the Energy Cell family, in catalog order.
     var energyPacks: [StorePack] { packs.filter { $0.kind == .energy } }

@@ -5,8 +5,8 @@ import UIKit
 ///
 /// Every icon is a tintable, resolution-independent vector so it renders crisply at any
 /// size on iPhone and iPad. Most concepts map to an SF Symbol; the handful of RuneScape
-/// objects SF Symbols lacks (sword, axe, pickaxe, bow, arrow, ore, ingot, bone, skull) are
-/// drawn as custom `VectorIcon` paths below.
+/// objects SF Symbols lacks (sword, axe, pickaxe, bow, arrow, ore, ingot, bone, skull, warhammer)
+/// are drawn as custom `VectorIcon` paths below.
 enum SkillArt {
     /// An SF Symbol, referenced by name.
     case symbol(String)
@@ -21,7 +21,7 @@ enum SkillArt {
 /// near the navigation bar. Drawn vector paths don't trigger that bug, so the control-bar
 /// glyphs use these instead.
 enum VectorIcon {
-    case sword, axe, pickaxe, bow, arrow, ore, ingot, bone, skull, bolt, flame, lock
+    case sword, axe, pickaxe, bow, arrow, ore, ingot, bone, skull, warhammer, bolt, flame, lock
 }
 
 // MARK: - Rendering
@@ -62,7 +62,7 @@ extension VectorIcon {
     @ViewBuilder
     func view(color: Color) -> some View {
         switch self {
-        case .sword, .axe, .pickaxe, .bone, .bolt, .flame:
+        case .sword, .axe, .pickaxe, .bone, .warhammer, .bolt, .flame:
             SolidIconShape(icon: self).fill(color)
         case .skull:
             SolidIconShape(icon: self).fill(color, style: FillStyle(eoFill: true))
@@ -126,6 +126,13 @@ private struct SolidIconShape: Shape {
             rectSub(0.42, 0.20, 0.58, 0.34, into: &path)   // center boss
             poly([(0.50, 0.19), (0.10, 0.40), (0.15, 0.46), (0.50, 0.31)], into: &path) // left spike
             poly([(0.50, 0.19), (0.90, 0.40), (0.85, 0.46), (0.50, 0.31)], into: &path) // right spike
+        case .warhammer:
+            // A heavy two-faced maul: a long vertical handle capped by a bold hexagonal head, so
+            // it reads as a crush weapon (not the pickaxe's spikes or the axe's single blade).
+            rectSub(0.455, 0.32, 0.545, 0.93, into: &path)  // handle
+            rectSub(0.44, 0.28, 0.56, 0.36, into: &path)    // collar under the head
+            poly([(0.24, 0.15), (0.76, 0.15), (0.82, 0.24), (0.76, 0.33),
+                  (0.24, 0.33), (0.18, 0.24)], into: &path) // barrel head
         case .bone:
             rectSub(0.44, 0.27, 0.56, 0.73, into: &path)
             ellipse(0.40, 0.28, 0.11, 0.10, into: &path)
