@@ -49,13 +49,16 @@ Sources/
             GameState.swift             # source of truth: XP, slots, energy, supercharge, coupons, energy cells
             SkillBuff.swift             # per-skill unique account-wide perks (BuffKind + theming)
             Store.swift                 # StoreKit 2 in-app purchases (coupon + Energy Cell packs)
+            SoundManager.swift          # SFX engine: pooled AVAudioPlayers, one cue per game moment
   Views/    RootView / Onboarding / Home / SkillTile
             SkillTrainingView / StatsView / SettingsView / Components
             BoostsView                  # activate Daily Boost, use/buy Energy Cells, both stores
+  Resources/Sounds/                     # bundled OSRS-inspired SFX (sfx_*.wav) — see SOUND_DESIGN.md
   Assets.xcassets                       # app icon + accent color
 Config/     Products.storekit           # local StoreKit config for testing IAP (2 families)
+Tools/      sound_synth.py              # deterministic generator for the SFX (regenerate/re-pick)
 project.yml                             # XcodeGen project definition (universal: iPhone + iPad)
-docs/       GAME_DESIGN.md, DEVELOPMENT.md, SKILL_BUFFS.md
+docs/       GAME_DESIGN.md, DEVELOPMENT.md, SKILL_BUFFS.md, SOUND_DESIGN.md
 ```
 
 ## Architecture at a glance

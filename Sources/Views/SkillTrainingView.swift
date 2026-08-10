@@ -217,7 +217,10 @@ struct SkillTrainingView: View {
 
         if canUseCell {
             Button {
-                if game.useEnergyCell(), game.hapticsEnabled { energyCellHaptic += 1 }
+                if game.useEnergyCell() {
+                    if game.hapticsEnabled { energyCellHaptic += 1 }
+                    SoundManager.shared.play(.energyCell, enabled: game.soundEnabled)
+                }
             } label: { content }
             .buttonStyle(PressableStyle())
         } else {
@@ -244,7 +247,10 @@ struct SkillTrainingView: View {
             }
         } else {
             Button {
-                if game.supercharge(skill), game.hapticsEnabled { superchargeHaptic += 1 }
+                if game.supercharge(skill) {
+                    if game.hapticsEnabled { superchargeHaptic += 1 }
+                    SoundManager.shared.play(.supercharge, enabled: game.soundEnabled)
+                }
             } label: {
                 Text("Supercharge ×\(game.effectiveSuperchargeMultiplier)")
                     .font(.caption.weight(.bold))
@@ -478,6 +484,7 @@ struct SkillTrainingView: View {
         tapScale = 0.9
         withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) { tapScale = 1.0 }
         if game.hapticsEnabled { tapHaptic += 1 }
+        SoundManager.shared.play(.tap, enabled: game.soundEnabled)
     }
 
     /// Advances Runecraft's auto-tap perk; fires whole taps accumulated over `dt`.
