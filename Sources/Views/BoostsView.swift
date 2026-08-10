@@ -133,33 +133,23 @@ struct BoostsView: View {
     // MARK: Energy Cells
 
     private var energyCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                Text("🔋").font(.title2)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Energy Cells")
-                        .font(.subheadline.weight(.semibold))
-                    Text("Instantly fill one skill's Supercharge charge")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                Spacer()
-                Text("\(game.energyCells)")
-                    .font(.system(size: 30, weight: .heavy, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(.orange)
+        HStack(spacing: 12) {
+            Text("🔋").font(.title2)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Energy Cells")
+                    .font(.subheadline.weight(.semibold))
+                Text("Instantly fill one skill's Supercharge charge")
+                    .font(.caption).foregroundStyle(.secondary)
             }
-
-            Text(energyHint)
-                .font(.caption).foregroundStyle(.secondary)
+            Spacer()
+            Text("\(game.energyCells)")
+                .font(.system(size: 30, weight: .heavy, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(.orange)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(20)
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(Color.white.opacity(0.08)))
-    }
-
-    private var energyHint: String {
-        "Open a skill and tap Fill to charge it to full instantly, ready to Supercharge now — AFK slots keep banking charge on their own. Mining, Firemaking and Prayer make every charge stronger."
+        .padding(16)
+        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.white.opacity(0.08)))
     }
 
     // MARK: Store
