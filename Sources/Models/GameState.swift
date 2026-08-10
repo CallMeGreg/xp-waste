@@ -148,6 +148,13 @@ final class GameState: ObservableObject {
         !isSupercharged(skill) && energy(for: skill) >= Balance.minEnergyToSupercharge
     }
 
+    /// Seconds the *next* Supercharge burst would last if triggered right now — the banked Energy
+    /// stretched by Firemaking's duration perk. Surfaced in the UI so the player can see the payoff
+    /// (burst length) before spending their charge.
+    func superchargeBurstPreview(for skill: SkillID) -> Double {
+        energy(for: skill) * superchargeDurationMultiplier
+    }
+
     var totalLevel: Int { SkillID.allCases.reduce(0) { $0 + level(for: $1) } }
     var totalXP: Int { SkillID.allCases.reduce(0) { $0 + xp(for: $1) } }
     var maxTotalLevel: Int { SkillID.allCases.count * XPTable.maxLevel }

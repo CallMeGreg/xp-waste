@@ -21,7 +21,7 @@ enum SkillArt {
 /// near the navigation bar. Drawn vector paths don't trigger that bug, so the control-bar
 /// glyphs use these instead.
 enum VectorIcon {
-    case sword, axe, pickaxe, bow, arrow, ore, ingot, bone, skull, warhammer, bolt, flame, lock
+    case sword, axe, pickaxe, bow, arrow, ore, ingot, bone, skull, warhammer, bolt, flame, lock, battery
 }
 
 // MARK: - Rendering
@@ -76,6 +76,8 @@ extension VectorIcon {
             ArrowIcon(color: color)
         case .lock:
             LockIcon(color: color)
+        case .battery:
+            BatteryIcon(color: color)
         }
     }
 }
@@ -168,6 +170,34 @@ private struct SolidIconShape: Shape {
             break
         }
         return path
+    }
+}
+
+/// A battery cell with a lightning bolt — the Energy Cell "instant charge" glyph. Drawn (not an
+/// SF Symbol) so it doesn't phantom-render in the iPad control bar.
+private struct BatteryIcon: View {
+    let color: Color
+    var body: some View {
+        GeometryReader { geo in
+            let s = min(geo.size.width, geo.size.height)
+            ZStack {
+                // Terminal cap
+                RoundedRectangle(cornerRadius: 0.03 * s)
+                    .fill(color)
+                    .frame(width: 0.22 * s, height: 0.09 * s)
+                    .position(x: 0.50 * s, y: 0.14 * s)
+                // Cell body
+                RoundedRectangle(cornerRadius: 0.11 * s)
+                    .fill(color)
+                    .frame(width: 0.48 * s, height: 0.70 * s)
+                    .position(x: 0.50 * s, y: 0.56 * s)
+                // Bolt cut into the cell so it reads as stored charge
+                SolidIconShape(icon: .bolt)
+                    .fill(color.lightened(0.78))
+                    .frame(width: 0.34 * s, height: 0.34 * s)
+                    .position(x: 0.50 * s, y: 0.56 * s)
+            }
+        }
     }
 }
 

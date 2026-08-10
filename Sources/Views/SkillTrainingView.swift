@@ -59,6 +59,7 @@ struct SkillTrainingView: View {
     @State private var energyCellHaptic = 0
     @State private var showSlotManager = false
     @State private var showDetails = false
+    @State private var showEnergyCellConfirm = false
     @State private var autoTapAccumulator: Double = 0
     @State private var idleAccumulator: Double = 0
     @Environment(\.horizontalSizeClass) private var hSize
@@ -151,17 +152,78 @@ struct SkillTrainingView: View {
         .padding(.horizontal, 16)
     }
 
-    // MARK: Control bar (slot · energy · supercharge)
+    // MARK: Control area (AFK · charge · Supercharge)
 
+    /// The bottom station. A charge-status card teaches the AFK → bank charge → Supercharge flow,
+    /// and a clearly-separated action row makes Supercharge the primary button (with its payoff
+    /// spelled out) while Energy Cells get an explicit, labelled "Fill" action instead of hiding
+    /// inside the charge meter.
     private func focusControlBar(supercharged: Bool) -> some View {
-        let slotted = game.isSlotted(skill)
         let ready = game.canSupercharge(skill)
         let banked = game.energy(for: skill)
-        let canUseCell = game.energyCells > 0 && slotted && banked < game.energyCapSeconds
-        return HStack(spacing: 10) {
-            slotControlButton(slotted: slotted)
-            energyControlButton(ready: ready, banked: banked, canUseCell: canUseCell)
+        return VStack(spacing: 10) {
+            chargeStatusCard(supercharged: supercharged, ready: ready, banked: banked)
+            actionRow(supercharged: supercharged, ready: ready)
+        }
+    }
+
+    // MARK: Charge status card (fuel level + what it does)
+
+    private func chargeStatusCard(supercharged: Bool, ready: Bool, banked: Double) -> some View {
+        let cap = game.energyCapSeconds
+        return VStack(spacing: 7) {
+            HStack(spacing: 8) {
+                controlGlyph(ready || supercharged ? .flame : .bolt,
+                             ready || supercharged ? .orange : .yellow, size: 15)
+                Text("SUPERCHARGE")
+                    .font(.caption.weight(.bold)).foregroundStyle(.secondary)
+                Spacer()
+                if ready {
+                    Text("READY")
+                        .font(.caption2.weight(.heavy)).foregroundStyle(.black)
+                        .padding(.horizontal, 7).padding(.vertical, 2)
+                        .background(Color.orange, in: Capsule())
+                }
+                Text("\(Int(banked.rounded(.down)))/\(Int(cap))s charge")
+                    .font(.caption.weight(.bold)).monospacedDigit()
+                    .foregroundStyle(ready ? .orange : .primary)
+            }
+            XPProgressBar(progress: game.energyFraction(for: skill),
+                          tint: ready ? .orange : .yellow, height: 8)
+            Text(chargeSubtitle(supercharged: supercharged, ready: ready, banked: banked))
+                .font(.caption2).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 12)
+        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(
+            ready ? Color.orange.opacity(0.45) : Color.white.opacity(0.08)))
+    }
+
+    /// One-line explainer that adapts to state so the charge → Supercharge relationship is obvious.
+    private func chargeSubtitle(supercharged: Bool, ready: Bool, banked: Double) -> String {
+        if supercharged { return "Burst running — banking your next charge in the background." }
+        if ready {
+            let burst = Int(game.superchargeBurstPreview(for: skill).rounded())
+            return "Spend it for a \(burst)s burst at ×\(game.effectiveSuperchargeMultiplier) XP per tap."
+        }
+        if game.isSlotted(skill) {
+            return "Banking charge in real time while AFK — or fill it instantly with an Energy Cell."
+        }
+        if game.isEligibleForSlot(skill) {
+            return "AFK this skill (below) to bank Supercharge charge in real time."
+        }
+        return "Reach lv.\(Balance.slotEligibilityLevel) to AFK this skill and bank Supercharge charge."
+    }
+
+    // MARK: Action row (AFK toggle · Supercharge · Energy Cell)
+
+    private func actionRow(supercharged: Bool, ready: Bool) -> some View {
+        HStack(spacing: 10) {
+            slotControlButton(slotted: game.isSlotted(skill))
             superchargeControlButton(supercharged: supercharged, ready: ready)
+            if game.canUseEnergyCell { energyCellButton }
         }
     }
 
@@ -169,7 +231,7 @@ struct SkillTrainingView: View {
     private func slotControlButton(slotted: Bool) -> some View {
         if slotted {
             Button { game.toggleSlot(skill) } label: {
-                controlPill {
+                compactControl {
                     controlGlyph(.bolt, .yellow)
                     Text(slotLabel).font(.caption.weight(.semibold)).foregroundStyle(.primary)
                 }
@@ -179,16 +241,16 @@ struct SkillTrainingView: View {
             Button {
                 if !game.toggleSlot(skill) { showSlotManager = true }
             } label: {
-                controlPill {
+                compactControl {
                     controlGlyph(.bolt, .secondary)
-                    Text("Add AFK").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    Text("AFK").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 }
             }
             .buttonStyle(PressableStyle())
         } else {
-            controlPill {
+            compactControl {
                 controlGlyph(.lock, .secondary)
-                Text("lv. \(Balance.slotEligibilityLevel)").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Text("lv.\(Balance.slotEligibilityLevel)").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             }
         }
     }
@@ -198,33 +260,9 @@ struct SkillTrainingView: View {
         return "AFK'ing"
     }
 
-    @ViewBuilder
-    private func energyControlButton(ready: Bool, banked: Double, canUseCell: Bool) -> some View {
-        let content = HStack(spacing: 8) {
-            ZStack {
-                EnergyRing(fraction: game.energyFraction(for: skill), ready: ready, lineWidth: 4)
-                    .frame(width: 30, height: 30)
-                controlGlyph(canUseCell ? .bolt : .flame, .orange, size: 13)
-            }
-            Text("\(Int(banked.rounded(.down)))/\(Int(game.energyCapSeconds))s")
-                .font(.caption.weight(.semibold)).monospacedDigit().foregroundStyle(.primary)
-        }
-        .frame(maxWidth: .infinity).padding(.vertical, 12)
-        .background(canUseCell ? Color.orange.opacity(0.15) : Color.white.opacity(0.05),
-                    in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(
-            canUseCell ? Color.orange.opacity(0.5) : Color.white.opacity(0.08)))
-
-        if canUseCell {
-            Button {
-                if game.useEnergyCell(), game.hapticsEnabled { energyCellHaptic += 1 }
-            } label: { content }
-            .buttonStyle(PressableStyle())
-        } else {
-            content
-        }
-    }
-
+    /// The primary Supercharge action. Adapts across states: a big enabled CTA that names its
+    /// payoff (×N · Ns burst) when ready, a live countdown while a burst runs, and a disabled
+    /// button that explains *why* it's unavailable otherwise.
     @ViewBuilder
     private func superchargeControlButton(supercharged: Bool, ready: Bool) -> some View {
         if supercharged {
@@ -232,40 +270,89 @@ struct SkillTrainingView: View {
             // the player spams taps (the old per-second decrement froze under a busy main thread).
             TimelineView(.periodic(from: .now, by: 1)) { _ in
                 let remaining = game.superchargeSeconds(for: skill)
-                HStack(spacing: 6) {
-                    controlGlyph(.flame, .orange)
-                    Text("\(Int(remaining.rounded()))s")
-                        .font(.subheadline.weight(.bold)).foregroundStyle(.orange)
-                        .monospacedDigit()
-                }
-                .frame(maxWidth: .infinity).padding(.vertical, 12)
-                .background(Color.orange.opacity(0.18), in: RoundedRectangle(cornerRadius: 14))
-                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.orange.opacity(0.5)))
+                primaryLabel(title: "Supercharged ×\(game.activeSuperchargeMultiplier(for: skill))",
+                             subtitle: "\(Int(remaining.rounded()))s left · tap fast",
+                             fg: .orange, bg: Color.orange.opacity(0.18),
+                             stroke: Color.orange.opacity(0.5))
             }
-        } else {
+        } else if ready {
             Button {
                 if game.supercharge(skill), game.hapticsEnabled { superchargeHaptic += 1 }
             } label: {
-                Text("Supercharge ×\(game.effectiveSuperchargeMultiplier)")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(ready ? .black : .secondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity).padding(.vertical, 12)
-                    .background(ready ? Color.orange : Color.white.opacity(0.08),
-                                in: RoundedRectangle(cornerRadius: 14))
-                    .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(
-                        ready ? Color.clear : Color.white.opacity(0.08)))
+                let burst = Int(game.superchargeBurstPreview(for: skill).rounded())
+                primaryLabel(title: "Supercharge ×\(game.effectiveSuperchargeMultiplier)",
+                             subtitle: "\(burst)s burst",
+                             fg: .black, bg: Color.orange, stroke: .clear)
             }
             .buttonStyle(PressableStyle())
-            .disabled(!ready)
+        } else {
+            primaryLabel(title: "Supercharge ×\(game.effectiveSuperchargeMultiplier)",
+                         subtitle: superchargeDisabledReason,
+                         fg: .secondary, bg: Color.white.opacity(0.06),
+                         stroke: Color.white.opacity(0.08))
         }
     }
 
-    private func controlPill<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+    /// Why the Supercharge button is currently unavailable, phrased as the next step to take.
+    private var superchargeDisabledReason: String {
+        if game.isSlotted(skill) { return "Bank charge to use" }
+        if game.isEligibleForSlot(skill) { return "AFK to bank charge" }
+        return "Reach lv.\(Balance.slotEligibilityLevel)"
+    }
+
+    /// Explicit Energy Cell action: a labelled battery button with the owned count that opens a
+    /// confirmation making the global "fills every AFK skill" effect clear before spending a cell.
+    private var energyCellButton: some View {
+        Button { showEnergyCellConfirm = true } label: {
+            VStack(spacing: 3) {
+                controlGlyph(.battery, .orange, size: 18)
+                Text("Fill").font(.caption2.weight(.bold)).foregroundStyle(.orange)
+            }
+            .frame(minWidth: 52)
+            .padding(.vertical, 8).padding(.horizontal, 8)
+            .background(Color.orange.opacity(0.15), in: RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.orange.opacity(0.5)))
+            .overlay(alignment: .topTrailing) {
+                Text("\(game.energyCells)")
+                    .font(.system(size: 11, weight: .heavy, design: .rounded)).monospacedDigit()
+                    .foregroundStyle(.black)
+                    .frame(minWidth: 18, minHeight: 18)
+                    .background(Color.orange, in: Circle())
+                    .overlay(Circle().strokeBorder(Color.black.opacity(0.25)))
+                    .offset(x: 7, y: -7)
+            }
+        }
+        .buttonStyle(PressableStyle())
+        .confirmationDialog("Use an Energy Cell?", isPresented: $showEnergyCellConfirm,
+                            titleVisibility: .visible) {
+            Button("Fill \(game.slots.count) AFK skill\(game.slots.count == 1 ? "" : "s")") {
+                if game.useEnergyCell(), game.hapticsEnabled { energyCellHaptic += 1 }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Instantly fills Supercharge charge to full on all \(game.slots.count) of your AFK skill\(game.slots.count == 1 ? "" : "s"). You own \(game.energyCells) cell\(game.energyCells == 1 ? "" : "s").")
+        }
+    }
+
+    private func compactControl<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         HStack(spacing: 6) { content() }
-            .frame(maxWidth: .infinity).padding(.vertical, 12)
+            .padding(.horizontal, 14).padding(.vertical, 14)
             .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.white.opacity(0.08)))
+    }
+
+    /// The full-width primary button/label used by the Supercharge control across its states.
+    private func primaryLabel(title: String, subtitle: String,
+                              fg: Color, bg: Color, stroke: Color) -> some View {
+        VStack(spacing: 1) {
+            Text(title).font(.subheadline.weight(.bold))
+            Text(subtitle).font(.caption2.weight(.semibold)).opacity(0.9)
+        }
+        .foregroundStyle(fg)
+        .lineLimit(1).minimumScaleFactor(0.8)
+        .frame(maxWidth: .infinity).padding(.vertical, 9)
+        .background(bg, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(stroke))
     }
 
     /// A small drawn control-bar glyph. Uses `VectorIcon` paths rather than `Image(systemName:)`

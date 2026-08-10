@@ -9,6 +9,7 @@ struct BoostsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var activateHaptic = 0
     @State private var energyHaptic = 0
+    @State private var showEnergyConfirm = false
 
     var body: some View {
         NavigationStack {
@@ -141,7 +142,7 @@ struct BoostsView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Energy Cells")
                         .font(.subheadline.weight(.semibold))
-                    Text("Instantly recharge every slotted skill to full")
+                    Text("Instantly fill Supercharge charge on every AFK skill")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -151,7 +152,7 @@ struct BoostsView: View {
                     .foregroundStyle(.orange)
             }
 
-            Button(action: useEnergyCell) {
+            Button { showEnergyConfirm = true } label: {
                 Text(game.energyCells > 0 ? "Use Energy Cell" : "Out of Energy Cells")
                     .font(.headline)
                     .foregroundStyle(game.canUseEnergyCell ? .black : .secondary)
@@ -162,6 +163,15 @@ struct BoostsView: View {
             }
             .buttonStyle(PressableStyle())
             .disabled(!game.canUseEnergyCell)
+            .confirmationDialog("Use an Energy Cell?", isPresented: $showEnergyConfirm,
+                                titleVisibility: .visible) {
+                Button("Fill \(game.slots.count) AFK skill\(game.slots.count == 1 ? "" : "s")") {
+                    useEnergyCell()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Instantly fills Supercharge charge to full on all \(game.slots.count) of your AFK skill\(game.slots.count == 1 ? "" : "s"), ready to Supercharge.")
+            }
 
             Text(energyHint)
                 .font(.caption).foregroundStyle(.secondary)
@@ -174,9 +184,9 @@ struct BoostsView: View {
 
     private var energyHint: String {
         if game.slots.isEmpty {
-            return "AFK a skill first — a cell recharges all your AFK skills at once."
+            return "AFK a skill first — a cell fills charge on all your AFK skills at once."
         }
-        return "Each cell fills all \(game.slots.count) slotted skill\(game.slots.count == 1 ? "" : "s") to full Energy, ready to Supercharge. Mining, Firemaking and Prayer make every charge stronger."
+        return "Each cell fills all \(game.slots.count) AFK skill\(game.slots.count == 1 ? "" : "s") to full charge, ready to Supercharge. Mining, Firemaking and Prayer make every charge stronger."
     }
 
     // MARK: Store
