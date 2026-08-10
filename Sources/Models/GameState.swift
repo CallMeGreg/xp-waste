@@ -51,6 +51,10 @@ private struct SaveData: Codable {
     // saves (which only had `supercharge` remaining-seconds) still decode; `supercharge` is kept
     // in sync as remaining seconds for forward/backward compatibility.
     var superchargeExpiry: [String: Date]?
+    // Added in v1.4 — the Supercharge multiplier locked in when each active burst was triggered,
+    // so a mid-burst level-up can't retroactively change it. Optional so older saves still decode;
+    // a burst without a snapshot falls back to the live multiplier.
+    var superchargeMultiplier: [String: Int]?
 }
 
 /// The single source of truth for all game state and rules.
@@ -64,6 +68,12 @@ final class GameState: ObservableObject {
     /// Wall-clock expiry (rather than a decrementing counter) keeps the burst honest: rapid
     /// tapping can't stall the timer, and the countdown is derived straight from the clock.
     @Published private(set) var superchargeExpiryBySkill: [SkillID: Date] = [:]
+    /// The effective Supercharge multiplier locked in when each active burst was triggered.
+    /// Snapshotting it here (instead of recomputing from total level on every tap) keeps an
+    /// in-progress burst at the value it started with, so leveling up mid-burst — Mining or any
+    /// other skill crossing a Supercharge tier, or Prayer's bonus — can't retroactively pump the
+    /// boost that's already running. The *next* Supercharge picks up the new, higher value.
+    @Published private(set) var superchargeMultiplierBySkill: [SkillID: Int] = [:]
     @Published private(set) var slots: [SkillID] = []
     @Published var hasSeenOnboarding: Bool = false
     @Published var soundEnabled: Bool = true
@@ -145,6 +155,13 @@ final class GameState: ObservableObject {
     var superchargeMultiplier: Int { Balance.superchargeMultiplier(forTotalLevel: totalLevel) }
     /// The Supercharge multiplier actually applied to taps, including Prayer's flat bonus.
     var effectiveSuperchargeMultiplier: Int { superchargeMultiplier + superchargeBonus }
+
+    /// The Supercharge multiplier applied to a skill's *active* burst — the value locked in when it
+    /// was triggered, so leveling up mid-burst doesn't change the boost already running. Falls back
+    /// to the live value for a burst with no snapshot (e.g. an older save that was mid-Supercharge).
+    func activeSuperchargeMultiplier(for skill: SkillID) -> Int {
+        superchargeMultiplierBySkill[skill] ?? effectiveSuperchargeMultiplier
+    }
     var maxedSkillCount: Int { SkillID.allCases.filter { isMaxed($0) }.count }
     var isFullyMaxed: Bool { maxedSkillCount == SkillID.allCases.count }
     var hasFreeSlot: Bool { slots.count < maxSlots }
@@ -304,7 +321,7 @@ final class GameState: ObservableObject {
             total += base * Balance.woodcuttingCacheMultiple
             gotCache = true
         }
-        if isSupercharged(skill) { total *= Double(superchargeMultiplier + superchargeBonus) } // + Prayer
+        if isSupercharged(skill) { total *= Double(activeSuperchargeMultiplier(for: skill)) } // locked at activation
         if isDoubleXPActive { total *= doubleXPPotency }                 // Magic-boosted Daily Boost
         var gotEnergy = false
         if energyProcChance > 0, Double.random(in: 0..<1) < energyProcChance {  // Fishing
@@ -327,7 +344,7 @@ final class GameState: ObservableObject {
         hit *= 1 + critChance * (critMagnitude - 1)               // expected crit uplift
         var total = hit * (1 + extraHitChance)                    // expected extra hits
         total += cacheChance * base * Balance.woodcuttingCacheMultiple
-        if isSupercharged(skill) { total *= Double(superchargeMultiplier + superchargeBonus) }
+        if isSupercharged(skill) { total *= Double(activeSuperchargeMultiplier(for: skill)) }
         if isDoubleXPActive { total *= doubleXPPotency }
         return max(1, Int(total.rounded()))
     }
@@ -458,6 +475,7 @@ final class GameState: ObservableObject {
         guard banked >= Balance.minEnergyToSupercharge else { return false }
         let duration = banked * superchargeDurationMultiplier                // Firemaking extends the burst
         superchargeExpiryBySkill[skill] = Date().addingTimeInterval(duration)
+        superchargeMultiplierBySkill[skill] = effectiveSuperchargeMultiplier // lock the boost so mid-burst level-ups don't change it
         if refundChance > 0, Double.random(in: 0..<1) < refundChance {       // Thieving "Pickpocket": keep the banked Energy
             notice = "🥷 Pickpocket! Energy refunded."
         } else {
@@ -551,6 +569,7 @@ final class GameState: ObservableObject {
         xpBySkill = Dictionary(uniqueKeysWithValues: SkillID.allCases.map { ($0, 0.0) })
         energyBySkill = [:]
         superchargeExpiryBySkill = [:]
+        superchargeMultiplierBySkill = [:]
         slots = []
         levelUpEvent = nil
         doubleXPExpiry = nil
@@ -690,6 +709,7 @@ final class GameState: ObservableObject {
         let now = Date()
         for (skill, expiry) in superchargeExpiryBySkill where expiry <= now {
             superchargeExpiryBySkill[skill] = nil
+            superchargeMultiplierBySkill[skill] = nil   // drop the locked boost when the burst ends
         }
     }
 
@@ -715,7 +735,13 @@ final class GameState: ObservableObject {
             xpBySkill[skill] = saved.xp[skill.rawValue] ?? 0
             if let e = saved.energy[skill.rawValue] { energyBySkill[skill] = e }
             if let expiry = saved.superchargeExpiry?[skill.rawValue] {
-                if expiry > now { superchargeExpiryBySkill[skill] = expiry }
+                if expiry > now {
+                    superchargeExpiryBySkill[skill] = expiry
+                    // Restore the boost that was locked in for this burst, if the save has one.
+                    if let mult = saved.superchargeMultiplier?[skill.rawValue] {
+                        superchargeMultiplierBySkill[skill] = mult
+                    }
+                }
             } else if let seconds = saved.supercharge[skill.rawValue], seconds > 0 {
                 // Migrate a legacy save (remaining-seconds) to the wall-clock expiry model.
                 superchargeExpiryBySkill[skill] = now.addingTimeInterval(seconds)
@@ -758,10 +784,12 @@ final class GameState: ObservableObject {
         slots = [.attack, .woodcutting, .fishing]
         energyBySkill = [.attack: 18, .woodcutting: 9, .fishing: 22]
         superchargeExpiryBySkill = [:]
+        superchargeMultiplierBySkill = [:]
         doubleXPCoupons = 3
         energyCells = 2
         if variant == "super" {
             superchargeExpiryBySkill = [.attack: Date().addingTimeInterval(26)]
+            superchargeMultiplierBySkill = [.attack: effectiveSuperchargeMultiplier]
             energyBySkill[.attack] = 0
             doubleXPExpiry = Date().addingTimeInterval(210) // 3:30 remaining
         }
@@ -821,6 +849,9 @@ final class GameState: ObservableObject {
             energyCells: energyCells,
             superchargeExpiry: Dictionary(uniqueKeysWithValues: futureExpiries.map {
                 ($0.key.rawValue, $0.value)
+            }),
+            superchargeMultiplier: Dictionary(uniqueKeysWithValues: futureExpiries.compactMap { entry in
+                superchargeMultiplierBySkill[entry.key].map { (entry.key.rawValue, $0) }
             })
         )
         if let data = try? JSONEncoder().encode(snapshot) {
