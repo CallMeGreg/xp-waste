@@ -225,7 +225,7 @@ struct SkillTrainingView: View {
         HStack(spacing: 10) {
             slotControlButton(slotted: game.isSlotted(skill))
             superchargeControlButton(supercharged: supercharged, ready: ready)
-            if game.canUseEnergyCell { energyCellButton }
+            if game.canUseEnergyCell(on: skill) { energyCellButton }
         }
     }
 
@@ -303,7 +303,7 @@ struct SkillTrainingView: View {
     }
 
     /// Explicit Energy Cell action: a labelled battery button with the owned count that opens a
-    /// confirmation making the global "fills every AFK skill" effect clear before spending a cell.
+    /// confirmation before spending a cell to instantly fill *this* skill's Supercharge charge.
     private var energyCellButton: some View {
         Button { showEnergyCellConfirm = true } label: {
             VStack(spacing: 3) {
@@ -327,12 +327,12 @@ struct SkillTrainingView: View {
         .buttonStyle(PressableStyle())
         .confirmationDialog("Use an Energy Cell?", isPresented: $showEnergyCellConfirm,
                             titleVisibility: .visible) {
-            Button("Fill \(game.slots.count) AFK skill\(game.slots.count == 1 ? "" : "s")") {
-                if game.useEnergyCell(), game.hapticsEnabled { energyCellHaptic += 1 }
+            Button("Fill \(skill.displayName)") {
+                if game.useEnergyCell(on: skill), game.hapticsEnabled { energyCellHaptic += 1 }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Instantly fills Supercharge to full on all \(game.slots.count) of your AFK skill\(game.slots.count == 1 ? "" : "s").")
+            Text("Instantly fills Supercharge to full on \(skill.displayName).")
         }
     }
 

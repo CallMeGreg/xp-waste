@@ -81,7 +81,7 @@ final class GameState: ObservableObject {
 
     /// Daily Boost coupons the player owns (free daily + in-app purchases).
     @Published private(set) var doubleXPCoupons: Int = 0
-    /// Energy Cells the player owns — each instantly recharges every slotted skill to its cap.
+    /// Energy Cells the player owns — each instantly fills one skill's Supercharge charge to its cap.
     @Published private(set) var energyCells: Int = 0
     /// When the current Daily Boost ends, or `nil` if no boost is active.
     @Published private(set) var doubleXPExpiry: Date?
@@ -219,8 +219,14 @@ final class GameState: ObservableObject {
     /// True when the player has a coupon to spend and no boost is already running.
     var canActivateDoubleXP: Bool { !isDoubleXPActive && doubleXPCoupons > 0 }
 
-    /// True when the player owns an Energy Cell and has at least one slotted skill to recharge.
-    var canUseEnergyCell: Bool { energyCells > 0 && !slots.isEmpty }
+    /// True when the player owns an Energy Cell and the given skill can accept an instant fill: it's
+    /// eligible to hold Supercharge charge, isn't already bursting, and isn't already full.
+    func canUseEnergyCell(on skill: SkillID) -> Bool {
+        energyCells > 0
+            && isEligibleForSlot(skill)
+            && !isSupercharged(skill)
+            && energy(for: skill) < energyCapSeconds
+    }
 
     // MARK: - Skill perks (account-wide buffs)
 
@@ -533,13 +539,15 @@ final class GameState: ObservableObject {
         save()
     }
 
-    /// Spend one Energy Cell to instantly recharge every slotted skill to its (perk-adjusted) cap.
+    /// Spend one Energy Cell to instantly fill a single skill's Supercharge charge to its
+    /// (perk-adjusted) cap — the skill the player is currently training. AFK slots keep banking
+    /// charge passively; this is just the on-demand, targeted top-up.
     @discardableResult
-    func useEnergyCell() -> Bool {
-        guard canUseEnergyCell else { return false }
+    func useEnergyCell(on skill: SkillID) -> Bool {
+        guard canUseEnergyCell(on: skill) else { return false }
         energyCells -= 1
-        for skill in slots { energyBySkill[skill] = energyCapSeconds }
-        notice = "🔋 Energy Cell used — slots recharged to full."
+        energyBySkill[skill] = energyCapSeconds
+        notice = "🔋 Energy Cell used — \(skill.displayName) charged to full."
         save()
         return true
     }

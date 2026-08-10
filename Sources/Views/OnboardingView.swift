@@ -20,7 +20,7 @@ struct OnboardingView: View {
         Card(icon: "⚡️", title: "AFK skills & bank charge",
              body: "Reach level 10 to put a skill in an AFK slot for passive XP. AFK skills bank Supercharge charge in real time — even while you're away."),
         Card(icon: "🔥", title: "Supercharge for big bursts",
-             body: "Spend a skill's banked charge to Supercharge it — a timed burst of big bonus XP on every tap. The more charge you spend, the longer the burst. In a hurry? One Energy Cell fills charge on all your AFK skills at once."),
+             body: "Spend a skill's banked charge to Supercharge it — a timed burst of big bonus XP on every tap. The more charge you spend, the longer the burst. In a hurry? Use an Energy Cell to fill the skill you're training instantly."),
         Card(icon: "🎟️", title: "Daily Boost coupons",
              body: "Activate a coupon for a timed burst of multiplied XP across every skill — it even stacks with Supercharge. Claim a free one daily, or grab more anytime."),
         Card(icon: "🌟", title: "Every skill grants a perk",

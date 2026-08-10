@@ -8,8 +8,6 @@ struct BoostsView: View {
     @EnvironmentObject private var store: Store
     @Environment(\.dismiss) private var dismiss
     @State private var activateHaptic = 0
-    @State private var energyHaptic = 0
-    @State private var showEnergyConfirm = false
 
     var body: some View {
         NavigationStack {
@@ -36,7 +34,6 @@ struct BoostsView: View {
                 }
             }
             .sensoryFeedback(.success, trigger: activateHaptic)
-            .sensoryFeedback(.impact, trigger: energyHaptic)
         }
     }
 
@@ -142,7 +139,7 @@ struct BoostsView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Energy Cells")
                         .font(.subheadline.weight(.semibold))
-                    Text("Instantly fill Supercharge charge on every AFK skill")
+                    Text("Instantly fill one skill's Supercharge charge")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -150,27 +147,6 @@ struct BoostsView: View {
                     .font(.system(size: 30, weight: .heavy, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(.orange)
-            }
-
-            Button { showEnergyConfirm = true } label: {
-                Text(game.energyCells > 0 ? "Use Energy Cell" : "Out of Energy Cells")
-                    .font(.headline)
-                    .foregroundStyle(game.canUseEnergyCell ? .black : .secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(game.canUseEnergyCell ? Color.orange : Color.white.opacity(0.1),
-                                in: RoundedRectangle(cornerRadius: 14))
-            }
-            .buttonStyle(PressableStyle())
-            .disabled(!game.canUseEnergyCell)
-            .confirmationDialog("Use an Energy Cell?", isPresented: $showEnergyConfirm,
-                                titleVisibility: .visible) {
-                Button("Fill \(game.slots.count) AFK skill\(game.slots.count == 1 ? "" : "s")") {
-                    useEnergyCell()
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("Instantly fills Supercharge charge to full on all \(game.slots.count) of your AFK skill\(game.slots.count == 1 ? "" : "s"), ready to Supercharge.")
             }
 
             Text(energyHint)
@@ -183,10 +159,7 @@ struct BoostsView: View {
     }
 
     private var energyHint: String {
-        if game.slots.isEmpty {
-            return "AFK a skill first — a cell fills charge on all your AFK skills at once."
-        }
-        return "Each cell fills all \(game.slots.count) AFK skill\(game.slots.count == 1 ? "" : "s") to full charge, ready to Supercharge. Mining, Firemaking and Prayer make every charge stronger."
+        "Open a skill and tap Fill to charge it to full instantly, ready to Supercharge now — AFK slots keep banking charge on their own. Mining, Firemaking and Prayer make every charge stronger."
     }
 
     // MARK: Store
@@ -275,12 +248,6 @@ struct BoostsView: View {
     private func activate() {
         if game.activateDoubleXP(), game.hapticsEnabled {
             activateHaptic += 1
-        }
-    }
-
-    private func useEnergyCell() {
-        if game.useEnergyCell(), game.hapticsEnabled {
-            energyHaptic += 1
         }
     }
 }
