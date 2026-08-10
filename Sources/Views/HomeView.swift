@@ -23,7 +23,7 @@ struct HomeView: View {
                 .frame(maxWidth: .infinity)
             }
             .background(GameBackground())
-            .navigationTitle("XP Waste")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: SkillID.self) { skill in
                 SkillTrainingView(skill: skill)
@@ -37,18 +37,18 @@ struct HomeView: View {
                         Image(systemName: "chart.bar.fill")
                     }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    BoostsIcons {
-                        SoundManager.shared.play(.ui, enabled: game.soundEnabled)
-                        showBoosts = true
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button {
                         SoundManager.shared.play(.ui, enabled: game.soundEnabled)
                         showSettings = true
                     } label: {
                         Image(systemName: "gearshape.fill")
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    BoostsIcons {
+                        SoundManager.shared.play(.ui, enabled: game.soundEnabled)
+                        showBoosts = true
                     }
                 }
             }
