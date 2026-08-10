@@ -47,8 +47,8 @@ grow the skills you care about.
 
 ### ⚡ Energy & Supercharge
 Every skill quietly charges **Energy** — while you play *and* while the app is closed. Spend a
-skill's full Energy bar to **Supercharge** it: a burst of multiplied XP per tap (×2, and up to
-×20 at high total levels) for a short window. The more you're away, the bigger the payoff when
+skill's full Energy bar to **Supercharge** it: a burst of multiplied XP per tap (×2) for a short
+window. The more you're away, the bigger the payoff when
 you come back. In a hurry? An **Energy Cell** instantly refills every AFK skill so you can
 Supercharge right now — earn them as you play or grab a pack as an optional in-app purchase.
 

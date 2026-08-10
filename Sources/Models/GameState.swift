@@ -152,7 +152,7 @@ final class GameState: ObservableObject {
     var totalXP: Int { SkillID.allCases.reduce(0) { $0 + xp(for: $1) } }
     var maxTotalLevel: Int { SkillID.allCases.count * XPTable.maxLevel }
     var maxSlots: Int { Balance.maxSlots(forTotalLevel: totalLevel) }
-    var superchargeMultiplier: Int { Balance.superchargeMultiplier(forTotalLevel: totalLevel) }
+    var superchargeMultiplier: Int { Balance.superchargeMultiplier }
     /// The Supercharge multiplier actually applied to taps, including Prayer's flat bonus.
     var effectiveSuperchargeMultiplier: Int { superchargeMultiplier + superchargeBonus }
 
