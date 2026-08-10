@@ -156,8 +156,12 @@ re-balancing a perk is a one-line change that never touches gameplay or view cod
 Dark, cozy "parchment + rune" palette. Each skill has a signature tint and a **vector icon**
 (SF Symbol or hand-authored path, via `Artwork.swift`) as its trainable object; the object keeps
 one motif per skill and upgrades by tint + size as the method tier advances. Feedback is juicy:
-floating XP numbers, object bounce, level-up flash, and haptics. Audio hooks are stubbed for
-v1 _(future: tap/level/supercharge SFX)_.
+floating XP numbers, object bounce, level-up flash, and haptics. **Sound effects** add an
+OSRS-flavoured audio layer — a tap cue on every train, a level-up chime, and cues for Supercharge,
+Energy Cells, Daily Boosts, purchases, and interface navigation — all original, OSRS-*inspired*
+synth cues (no sampled Jagex audio), gated by the Settings **Sound effects** toggle. See
+[SOUND_DESIGN.md](SOUND_DESIGN.md) for the palette, the option-by-option picks, and how to
+regenerate or re-pick the cues.
 
 ## 8. Technical architecture
 

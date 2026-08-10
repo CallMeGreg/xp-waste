@@ -30,17 +30,26 @@ struct HomeView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button { showStats = true } label: {
+                    Button {
+                        SoundManager.shared.play(.ui, enabled: game.soundEnabled)
+                        showStats = true
+                    } label: {
                         Image(systemName: "chart.bar.fill")
                     }
                 }
                 ToolbarItem(placement: .topBarLeading) {
-                    Button { showSettings = true } label: {
+                    Button {
+                        SoundManager.shared.play(.ui, enabled: game.soundEnabled)
+                        showSettings = true
+                    } label: {
                         Image(systemName: "gearshape.fill")
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    BoostsIcons { showBoosts = true }
+                    BoostsIcons {
+                        SoundManager.shared.play(.ui, enabled: game.soundEnabled)
+                        showBoosts = true
+                    }
                 }
             }
             .sheet(isPresented: $showStats) { StatsView() }

@@ -16,9 +16,11 @@ struct SettingsView: View {
                 Section("Feedback") {
                     Toggle("Haptics", isOn: $game.hapticsEnabled)
                         .onChange(of: game.hapticsEnabled) { _, _ in game.persist() }
-                    Toggle("Sound (coming soon)", isOn: $game.soundEnabled)
-                        .onChange(of: game.soundEnabled) { _, _ in game.persist() }
-                        .disabled(true)
+                    Toggle("Sound effects", isOn: $game.soundEnabled)
+                        .onChange(of: game.soundEnabled) { _, on in
+                            game.persist()
+                            if on { SoundManager.shared.play(.ui, enabled: true) }
+                        }
                 }
 
                 Section("How to play") {

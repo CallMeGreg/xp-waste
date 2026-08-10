@@ -279,7 +279,10 @@ struct SkillTrainingView: View {
             }
         } else if ready {
             Button {
-                if game.supercharge(skill), game.hapticsEnabled { superchargeHaptic += 1 }
+                if game.supercharge(skill) {
+                    if game.hapticsEnabled { superchargeHaptic += 1 }
+                    SoundManager.shared.play(.supercharge, enabled: game.soundEnabled)
+                }
             } label: {
                 // Burst length lives in the charge pill above, so the CTA stays a single clean line.
                 primaryLabel(title: "Supercharge (×\(game.effectiveSuperchargeMultiplier) XP)",
@@ -328,7 +331,10 @@ struct SkillTrainingView: View {
         .confirmationDialog("Use an Energy Cell?", isPresented: $showEnergyCellConfirm,
                             titleVisibility: .visible) {
             Button("Fill \(skill.displayName)") {
-                if game.useEnergyCell(on: skill), game.hapticsEnabled { energyCellHaptic += 1 }
+                if game.useEnergyCell(on: skill) {
+                    if game.hapticsEnabled { energyCellHaptic += 1 }
+                    SoundManager.shared.play(.energyCell, enabled: game.soundEnabled)
+                }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -571,6 +577,7 @@ struct SkillTrainingView: View {
         tapScale = 0.9
         withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) { tapScale = 1.0 }
         if game.hapticsEnabled { tapHaptic += 1 }
+        SoundManager.shared.play(.tap, enabled: game.soundEnabled)
     }
 
     /// Advances Runecraft's auto-tap perk; fires whole taps accumulated over `dt`.

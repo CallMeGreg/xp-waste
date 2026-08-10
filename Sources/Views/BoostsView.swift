@@ -246,8 +246,9 @@ struct BoostsView: View {
     }
 
     private func activate() {
-        if game.activateDoubleXP(), game.hapticsEnabled {
-            activateHaptic += 1
+        if game.activateDoubleXP() {
+            if game.hapticsEnabled { activateHaptic += 1 }
+            SoundManager.shared.play(.doubleXP, enabled: game.soundEnabled)
         }
     }
 }
