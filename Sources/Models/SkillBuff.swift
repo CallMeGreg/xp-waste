@@ -7,15 +7,15 @@ enum BuffKind {
     case accuracy            // Attack: skews each tap's XP roll toward its max hit
     case maxHit              // Strength: raises the ceiling of the tap XP range
     case minHit              // Defence: raises the guaranteed floor of the tap XP range
-    case energyRate          // Hitpoints: banks Supercharge Energy faster
+    case energyRate          // Hitpoints: banks more Supercharge Energy per tap-proc
     case extraHit            // Ranged: chance for a tap to land an extra hit
     case superchargeBonus    // Prayer: +flat to the active Supercharge multiplier
     case doubleXPPotency     // Magic: raises the Daily Boost multiplier above 1.5×
     // Gathering — feeds the idle engine
     case cache               // Woodcutting: chance per tap for a bonus-XP windfall
-    case energyProc          // Fishing: chance per tap to bank bonus Energy
+    case energyProc          // Fishing: raises the per-tap chance to bank Supercharge Energy
     case energyCap           // Mining: raises the maximum bankable Energy
-    case offline             // Farming: better Energy efficiency while the app is closed
+    case offline             // Farming: keeps more idle XP while the app is closed
     case offlineRate         // Hunter: multiplies OFFLINE passive XP (app closed)
     // Artisan — production & the boost economy
     case tapPercent          // Cooking: +% XP on every tap
@@ -57,7 +57,7 @@ extension SkillID {
                                  blurb: "Raises the guaranteed floor of every tap.")
         case .hitpoints:
             return SkillBuffInfo(kind: .energyRate, name: "Vitality", icon: "heart.fill",
-                                 blurb: "Banks Supercharge Energy faster on every slot.")
+                                 blurb: "Banks more Supercharge Energy each time a tap sparks a charge.")
         case .ranged:
             return SkillBuffInfo(kind: .extraHit, name: "Rapid Fire", icon: "arrow.up.forward.app.fill",
                                  blurb: "Chance for a tap to land an extra hit.")
@@ -80,7 +80,7 @@ extension SkillID {
                                  blurb: "Raises your Energy cap for longer Supercharges.")
         case .farming:
             return SkillBuffInfo(kind: .offline, name: "Patient Growth", icon: "moon.zzz.fill",
-                                 blurb: "Banks more Energy while the app is closed.")
+                                 blurb: "Keeps more idle XP while the app is closed.")
         case .hunter:
             return SkillBuffInfo(kind: .offlineRate, name: "Trapper", icon: "timer",
                                  blurb: "Traps keep working while you're away — faster offline XP.")

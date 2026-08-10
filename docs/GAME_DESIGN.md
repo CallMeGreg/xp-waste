@@ -69,30 +69,34 @@ and, at a reduced rate, while it's closed.
 - Passive rate: **~1 action / second** per slotted skill, valued at that skill's *current method*
   XP — so passive scales as methods improve, but stays a light trickle versus fast manual tapping.
 - **Offline progress:** slotted skills keep training while the app is closed at **40%** of the
-  base foreground passive rate — scaled by **Hunter** (Trapper, offline XP rate ×) and credited on
-  return, capped by **Construction** (Workshop) at **10 h** of away time by default (up to **48 h**
-  at level 99; the window **resets each return**, so it can't be banked). A **"welcome back"**
-  summary shows the per-skill XP earned and any level-ups. Boosts are consumed in real time, so
-  Supercharge / Daily Boost don't apply to offline gains. Only *slotted* skills earn offline.
+  base foreground passive rate — scaled by **Hunter** (Trapper, offline XP rate ×) and **Farming**
+  (Patient Growth, offline XP retention ×), credited on return, capped by **Construction**
+  (Workshop) at **10 h** of away time by default (up to **48 h** at level 99; the window
+  **resets each return**, so it can't be banked). A **"welcome back"** summary shows the per-skill
+  XP earned and any level-ups. Boosts are consumed in real time, so Supercharge / Daily Boost
+  don't apply to offline gains. Only *slotted* skills earn offline.
 - **Foreground idle** is a distinct lever: **Smithing** (Foundry) multiplies passive XP while the
   app is *open* (Daily Boost still applies), so the app-open and app-closed rates are tuned
   independently.
 - **Slots unlock with total level:** 1 slot at the start → **2nd at total 100** → **3rd at
   total 300** → **4th at total 500** → **5th at total 1000** (tuned for the 23-skill roster).
 
-### 3.4 Energy & Supercharge (idle, app open *and* closed)
-Each slotted skill accumulates **Energy** in real time — whether the app is open or closed.
+### 3.4 Energy & Supercharge (charge through active play)
+Every skill can bank **Energy** toward a Supercharge, earned through active tapping — not idle time.
 
-- Conversion: **1 minute of elapsed time = 1 second of Supercharge**, capped at **30
-  seconds** (so 30 minutes fully charges a skill).
+- Each tap has a small **base chance** (`Balance.baseEnergyTapChance`, ~2%) to bank a burst of
+  Energy. **Fishing's *Big Catch* perk raises that chance** and **Hitpoints' *Vitality* perk
+  raises the amount** banked per proc. Energy is capped at **30 seconds** (Mining's *Deep
+  Reserves* raises the cap).
 - Tap **Supercharge** to spend all banked Energy. For that many seconds, taps on that skill earn a
   flat **×2** multiplier. (Prayer's *Blessing* perk can add a flat bonus on top — see
   [§4](#4-skill-perks-account-wide-passive-buffs).)
 
 The multiplier applies to the **current method's** XP-per-tap (e.g. a tier-4 method at +12/tap,
 supercharged ×2, under 1.5× Daily Boost = 36 XP per tap). This creates the signature
-**return-and-burst loop**: idle to bank Energy, come back, and tap furiously during the
-Supercharge window. Passive XP keeps trickling during a Supercharge; only *taps* get the multiplier.
+**charge-and-burst loop**: tap to build Energy, then unleash a Supercharge and tap furiously
+during the window. Passive slot XP keeps trickling during a Supercharge; only *taps* get the
+multiplier. Supercharge is available from level 1 — no slot required.
 
 ## 4. Skill perks (account-wide passive buffs)
 
@@ -175,9 +179,8 @@ regenerate or re-pick the cues.
 - **Ticking:** a 1 Hz foreground timer applies passive XP + Energy and counts down active
   Supercharges using real elapsed `dt` (rate-correct regardless of tick jitter).
 - **Scene phase:** on background, persist state + timestamp; on foreground, credit **offline XP**
-  (40% base rate × Hunter, capped by Construction at 10–48 h) and **offline Energy** for slotted
-  skills, then reset the offline window. A "welcome back" summary is shown when the player was away
-  long enough.
+  (40% base rate × Hunter × Farming, capped by Construction at 10–48 h) for slotted skills, then
+  reset the offline window. A "welcome back" summary is shown when the player was away long enough.
 - **Persistence:** `Codable` snapshot in `UserDefaults`.
 - **Tuning:** every balance constant lives in `Balance.swift` so re-balancing is a one-file
   change.
@@ -189,8 +192,8 @@ regenerate or re-pick the cues.
 | Training method tiers | +1 / 3 / 6 / 12 / 25 / 50 XP-per-tap, unlocking at level 1 / 15 / 30 / 50 / 70 / 90 |
 | Passive rate | ~1 action / sec / slotted skill, valued at the skill's current method XP; **Smithing** multiplies the foreground (app-open) rate up to ×10 |
 | Offline passive XP | 40% base rate, scaled by **Hunter** (×1 → ×10) and capped by **Construction** at 10 h → 48 h of away time (window resets on return) |
-| Energy charge rate | 1 sec Supercharge per 60 sec real time |
-| Energy cap | 30 sec Supercharge (30 min real) |
+| Energy charge | ~2% base chance per tap to bank 1 sec (Fishing raises the chance, Hitpoints the amount) |
+| Energy cap | 30 sec Supercharge (Mining raises it) |
 | Slot eligibility | skill level ≥ 10 |
 | Slot 2 / Slot 3 unlock | total level 100 / 300 |
 | Supercharge multiplier | flat **×2** tap multiplier (Prayer's *Blessing* perk adds up to +5) |

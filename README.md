@@ -2,7 +2,7 @@
 
 **Level every skill to 99 — one tap at a time.** XP Waste is a cozy skilling game inspired by
 Old School RuneScape. Tap to train, unlock passive training that keeps going even while you're
-away, bank up energy for big bursts, and chase the max cape across **all 23 skills**.
+away, build up Energy for big bursts, and chase the max cape across **all 23 skills**.
 
 ---
 
@@ -46,11 +46,11 @@ start with a single slot and unlock more as your **total level** climbs. Juggle 
 grow the skills you care about.
 
 ### ⚡ Energy & Supercharge
-Every skill quietly charges **Energy** — while you play *and* while the app is closed. Spend a
-skill's full Energy bar to **Supercharge** it: a burst of multiplied XP per tap (×2) for a short
-window. The more you're away, the bigger the payoff when
-you come back. In a hurry? An **Energy Cell** instantly refills every AFK skill so you can
-Supercharge right now — earn them as you play or grab a pack as an optional in-app purchase.
+Tapping any skill has a **small chance to spark Energy** — and Fishing's perk raises those odds.
+Bank enough and you can **Supercharge** that skill: a burst of multiplied XP per tap (×2) for a
+short window, available from your very first level. In a hurry? An **Energy Cell** instantly fills
+the skill you're training so you can Supercharge right now — earn them as you play or grab a pack
+as an optional in-app purchase.
 
 ### ✨ Daily Boost
 Once a day you can activate a **Daily Boost** that multiplies all experience by 1.5× for 5 minutes —
