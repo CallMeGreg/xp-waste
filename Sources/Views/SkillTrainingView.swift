@@ -154,67 +154,69 @@ struct SkillTrainingView: View {
 
     // MARK: Control area (AFK · charge · Supercharge)
 
-    /// The bottom station. A charge-status card teaches the AFK → bank charge → Supercharge flow,
-    /// and a clearly-separated action row makes Supercharge the primary button (with its payoff
-    /// spelled out) while Energy Cells get an explicit, labelled "Fill" action instead of hiding
-    /// inside the charge meter.
+    /// The bottom station. A slim "charge → burst" pill teaches the payoff at a glance — spend
+    /// banked charge, get a timed high-multiplier burst — with no prose, while a separate action
+    /// row keeps Supercharge the primary button and makes AFK and the Energy-Cell "Fill" explicit
+    /// siblings rather than hidden behaviours of the meter.
     private func focusControlBar(supercharged: Bool) -> some View {
         let ready = game.canSupercharge(skill)
         let banked = game.energy(for: skill)
         return VStack(spacing: 10) {
-            chargeStatusCard(supercharged: supercharged, ready: ready, banked: banked)
+            chargePill(supercharged: supercharged, ready: ready, banked: banked)
             actionRow(supercharged: supercharged, ready: ready)
         }
     }
 
-    // MARK: Charge status card (fuel level + what it does)
+    // MARK: Charge → burst pill (teaches the payoff, no prose)
 
-    private func chargeStatusCard(supercharged: Bool, ready: Bool, banked: Double) -> some View {
-        let cap = game.energyCapSeconds
-        return VStack(spacing: 7) {
-            HStack(spacing: 8) {
-                controlGlyph(ready || supercharged ? .flame : .bolt,
-                             ready || supercharged ? .orange : .yellow, size: 15)
-                Text("SUPERCHARGE")
-                    .font(.caption.weight(.bold)).foregroundStyle(.secondary)
-                Spacer()
-                if ready {
-                    Text("READY")
-                        .font(.caption2.weight(.heavy)).foregroundStyle(.black)
-                        .padding(.horizontal, 7).padding(.vertical, 2)
-                        .background(Color.orange, in: Capsule())
-                }
-                Text("\(Int(banked.rounded(.down)))/\(Int(cap))s charge")
-                    .font(.caption.weight(.bold)).monospacedDigit()
-                    .foregroundStyle(ready ? .orange : .primary)
+    /// A single capsule reading `⚡ charge → 🔥 burst`. It shows the banked amount and the burst it
+    /// would buy (with a READY / ACTIVE badge), or a next-step hint when the skill isn't yet banking
+    /// charge. The numeric `banked/cap` doubles as the fill readout, so no separate progress bar is
+    /// needed — keeping the station compact.
+    @ViewBuilder
+    private func chargePill(supercharged: Bool, ready: Bool, banked: Double) -> some View {
+        let cap = Int(game.energyCapSeconds)
+        let burst = Int(game.superchargeBurstPreview(for: skill).rounded())
+        let banking = game.isSlotted(skill) || banked > 0 || supercharged
+        let hot = ready || supercharged
+        HStack(spacing: 8) {
+            if banking {
+                controlGlyph(.bolt, hot ? .orange : .yellow, size: 13)
+                Text("\(Int(banked.rounded(.down)))/\(cap)s")
+                    .font(.caption.weight(.bold)).monospacedDigit().foregroundStyle(.primary)
+                Text("→").font(.caption.weight(.bold)).foregroundStyle(.secondary)
+                controlGlyph(.flame, .orange, size: 13)
+                Text(burst > 0 ? "\(burst)s burst" : "burst")
+                    .font(.caption.weight(.bold)).monospacedDigit().foregroundStyle(.orange)
+            } else if game.isEligibleForSlot(skill) {
+                controlGlyph(.bolt, .secondary, size: 13)
+                Text("AFK to bank charge")
+                    .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                Text("→").font(.caption.weight(.bold)).foregroundStyle(.secondary)
+                controlGlyph(.flame, .orange, size: 13)
+                Text("burst").font(.caption.weight(.bold)).foregroundStyle(.orange)
+            } else {
+                controlGlyph(.lock, .secondary, size: 13)
+                Text("Reach lv.\(Balance.slotEligibilityLevel) to bank charge")
+                    .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
             }
-            XPProgressBar(progress: game.energyFraction(for: skill),
-                          tint: ready ? .orange : .yellow, height: 8)
-            Text(chargeSubtitle(supercharged: supercharged, ready: ready, banked: banked))
-                .font(.caption2).foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 4)
+            if supercharged { pillBadge("ACTIVE") }
+            else if ready { pillBadge("READY") }
         }
-        .padding(.horizontal, 14).padding(.vertical, 12)
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(
-            ready ? Color.orange.opacity(0.45) : Color.white.opacity(0.08)))
+        .padding(.horizontal, 14).padding(.vertical, 9)
+        .background(Color.white.opacity(0.05), in: Capsule())
+        .overlay(Capsule().strokeBorder(hot ? Color.orange.opacity(0.4) : Color.white.opacity(0.08)))
     }
 
-    /// One-line explainer that adapts to state so the charge → Supercharge relationship is obvious.
-    private func chargeSubtitle(supercharged: Bool, ready: Bool, banked: Double) -> String {
-        if supercharged { return "Burst running — banking your next charge in the background." }
-        if ready {
-            let burst = Int(game.superchargeBurstPreview(for: skill).rounded())
-            return "Spend it for a \(burst)s burst at ×\(game.effectiveSuperchargeMultiplier) XP per tap."
-        }
-        if game.isSlotted(skill) {
-            return "Banking charge in real time while AFK — or fill it instantly with an Energy Cell."
-        }
-        if game.isEligibleForSlot(skill) {
-            return "AFK this skill (below) to bank Supercharge charge in real time."
-        }
-        return "Reach lv.\(Balance.slotEligibilityLevel) to AFK this skill and bank Supercharge charge."
+    /// The orange status pip shown at the pill's trailing edge (READY to spend / burst ACTIVE).
+    private func pillBadge(_ text: String) -> some View {
+        Text(text)
+            .font(.caption2.weight(.heavy)).foregroundStyle(.black)
+            .padding(.horizontal, 7).padding(.vertical, 2)
+            .background(Color.orange, in: Capsule())
     }
 
     // MARK: Action row (AFK toggle · Supercharge · Energy Cell)
@@ -270,7 +272,7 @@ struct SkillTrainingView: View {
             // the player spams taps (the old per-second decrement froze under a busy main thread).
             TimelineView(.periodic(from: .now, by: 1)) { _ in
                 let remaining = game.superchargeSeconds(for: skill)
-                primaryLabel(title: "Supercharged ×\(game.activeSuperchargeMultiplier(for: skill))",
+                primaryLabel(title: "Supercharged (×\(game.activeSuperchargeMultiplier(for: skill)) XP)",
                              subtitle: "\(Int(remaining.rounded()))s left · tap fast",
                              fg: .orange, bg: Color.orange.opacity(0.18),
                              stroke: Color.orange.opacity(0.5))
@@ -279,14 +281,14 @@ struct SkillTrainingView: View {
             Button {
                 if game.supercharge(skill), game.hapticsEnabled { superchargeHaptic += 1 }
             } label: {
-                let burst = Int(game.superchargeBurstPreview(for: skill).rounded())
-                primaryLabel(title: "Supercharge ×\(game.effectiveSuperchargeMultiplier)",
-                             subtitle: "\(burst)s burst",
+                // Burst length lives in the charge pill above, so the CTA stays a single clean line.
+                primaryLabel(title: "Supercharge (×\(game.effectiveSuperchargeMultiplier) XP)",
+                             subtitle: nil,
                              fg: .black, bg: Color.orange, stroke: .clear)
             }
             .buttonStyle(PressableStyle())
         } else {
-            primaryLabel(title: "Supercharge ×\(game.effectiveSuperchargeMultiplier)",
+            primaryLabel(title: "Supercharge (×\(game.effectiveSuperchargeMultiplier) XP)",
                          subtitle: superchargeDisabledReason,
                          fg: .secondary, bg: Color.white.opacity(0.06),
                          stroke: Color.white.opacity(0.08))
@@ -341,16 +343,20 @@ struct SkillTrainingView: View {
             .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.white.opacity(0.08)))
     }
 
-    /// The full-width primary button/label used by the Supercharge control across its states.
-    private func primaryLabel(title: String, subtitle: String,
+    /// The full-width primary button/label used by the Supercharge control across its states. A nil
+    /// `subtitle` renders a single centered line (used for the ready CTA, whose burst payoff is shown
+    /// in the charge pill) with a little extra height so it still matches the flanking controls.
+    private func primaryLabel(title: String, subtitle: String?,
                               fg: Color, bg: Color, stroke: Color) -> some View {
         VStack(spacing: 1) {
             Text(title).font(.subheadline.weight(.bold))
-            Text(subtitle).font(.caption2.weight(.semibold)).opacity(0.9)
+            if let subtitle {
+                Text(subtitle).font(.caption2.weight(.semibold)).opacity(0.9)
+            }
         }
         .foregroundStyle(fg)
         .lineLimit(1).minimumScaleFactor(0.8)
-        .frame(maxWidth: .infinity).padding(.vertical, 9)
+        .frame(maxWidth: .infinity).padding(.vertical, subtitle == nil ? 12 : 9)
         .background(bg, in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(stroke))
     }
