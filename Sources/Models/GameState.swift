@@ -219,11 +219,10 @@ final class GameState: ObservableObject {
     /// True when the player has a coupon to spend and no boost is already running.
     var canActivateDoubleXP: Bool { !isDoubleXPActive && doubleXPCoupons > 0 }
 
-    /// True when the player owns an Energy Cell and the given skill can accept an instant fill: it's
-    /// eligible to hold Supercharge charge, isn't already bursting, and isn't already full.
+    /// True when the player owns an Energy Cell and the given skill can accept an instant fill: it
+    /// isn't already bursting and isn't already full. Available at any level — charge is not gated.
     func canUseEnergyCell(on skill: SkillID) -> Bool {
         energyCells > 0
-            && isEligibleForSlot(skill)
             && !isSupercharged(skill)
             && energy(for: skill) < energyCapSeconds
     }
@@ -240,7 +239,7 @@ final class GameState: ObservableObject {
     var accuracyBias: Double { buffRaw(.attack) }          // 0 = uniform roll; higher biases toward max
     var maxHitMultiplier: Double { buffRaw(.strength) }    // × base method XP (the hit ceiling)
     var minHitMultiplier: Double { buffRaw(.defence) }     // × base method XP (the hit floor)
-    var energyRateMultiplier: Double { buffRaw(.hitpoints) }
+    var energyRateMultiplier: Double { buffRaw(.hitpoints) }  // Energy banked per tap-proc
     var extraHitChance: Double { buffRaw(.ranged) }
     var superchargeBonus: Int { Int(buffRaw(.prayer).rounded()) }
     var doubleXPPotency: Double { buffRaw(.magic) }        // the live Daily Boost multiplier value
@@ -249,7 +248,8 @@ final class GameState: ObservableObject {
     var cacheChance: Double { buffRaw(.woodcutting) }
     var energyProcChance: Double { buffRaw(.fishing) }
     var energyCapSeconds: Double { max(Balance.maxEnergySeconds, buffRaw(.mining)) }
-    var offlineEnergyMultiplier: Double { buffRaw(.farming) }
+    /// Farming "Patient Growth": multiplies offline passive XP retention (app closed).
+    var offlineXPEfficiency: Double { buffRaw(.farming) }
     /// Hunter "Trapper": multiplies OFFLINE passive XP (app closed). Neutral ×1 at level 1.
     var offlineRateMultiplier: Double { buffRaw(.hunter) }
 
@@ -337,8 +337,9 @@ final class GameState: ObservableObject {
         if isSupercharged(skill) { total *= Double(activeSuperchargeMultiplier(for: skill)) } // locked at activation
         if isDoubleXPActive { total *= doubleXPPotency }                 // Magic-boosted Daily Boost
         var gotEnergy = false
-        if energyProcChance > 0, Double.random(in: 0..<1) < energyProcChance {  // Fishing
-            bankEnergySeconds(Balance.fishingProcEnergySeconds, to: skill)
+        let chargeChance = Balance.baseEnergyTapChance + energyProcChance       // base + Fishing "Big Catch"
+        if chargeChance > 0, Double.random(in: 0..<1) < chargeChance {
+            bankEnergySeconds(Balance.energyTapProcSeconds * energyRateMultiplier, to: skill)  // Hitpoints "Vitality"
             gotEnergy = true
         }
         return TapResult(xp: Int(total.rounded()), didCrit: didCrit,
@@ -402,15 +403,15 @@ final class GameState: ObservableObject {
         case .accuracy:            return String(format: "avg roll %.0f%% of max", (1 + v) / (2 + v) * 100)
         case .maxHit:              return String(format: "+%.0f%% max hit", (v - 1) * 100)
         case .minHit:              return String(format: "+%.0f%% min hit", (v - 1) * 100)
-        case .energyRate:          return String(format: "×%.2f Energy rate", v)
+        case .energyRate:          return String(format: "×%.2f Energy per proc", v)
         case .extraHit:            return String(format: "%.0f%% extra hit", v * 100)
         case .superchargeBonus:    return String(format: "+%.0f Supercharge ×", v)
         case .doubleXPPotency:     return String(format: "%.2f× Daily Boost", v)
         case .cache:               return String(format: "%.0f%% bonus cache", v * 100)
-        case .energyProc:          return String(format: "%.0f%% bonus Energy", v * 100)
+        case .energyProc:          return String(format: "+%.0f%% charge chance", v * 100)
         case .energyCap:           return String(format: "%.0fs Energy cap", max(Balance.maxEnergySeconds, v))
-        case .offline:             return String(format: "×%.2f offline Energy", v)
-        case .offlineRate:         return String(format: "×%.2f offline XP", v)
+        case .offline:             return String(format: "×%.2f offline XP kept", v)
+        case .offlineRate:         return String(format: "×%.2f offline XP rate", v)
         case .tapPercent:          return String(format: "+%.0f%% tap XP", v * 100)
         case .superchargeDuration: return String(format: "×%.2f Supercharge time", v)
         case .critMagnitude:       return String(format: "×%.1f crit damage", v)
@@ -540,8 +541,8 @@ final class GameState: ObservableObject {
     }
 
     /// Spend one Energy Cell to instantly fill a single skill's Supercharge charge to its
-    /// (perk-adjusted) cap — the skill the player is currently training. AFK slots keep banking
-    /// charge passively; this is just the on-demand, targeted top-up.
+    /// (perk-adjusted) cap — the skill the player is currently training. Taps build charge over
+    /// time; this is just the on-demand, targeted top-up.
     @discardableResult
     func useEnergyCell(on skill: SkillID) -> Bool {
         guard canUseEnergyCell(on: skill) else { return false }
@@ -611,7 +612,6 @@ final class GameState: ObservableObject {
         for skill in slots {
             let actionsXP = Double(baseXPPerAction(for: skill)) * Balance.passiveActionsPerSecond * foregroundIdleMultiplier
             addXP(actionsXP * dt * xpMultiplier, to: skill)   // Smithing sets the idle rate; Daily Boost still applies
-            addEnergy(dt, to: skill)
         }
         pruneExpiredSupercharges()
         expireDoubleXPIfNeeded()
@@ -623,13 +623,12 @@ final class GameState: ObservableObject {
     }
 
     /// Called when the app returns to the foreground: credits offline XP to slotted skills
-    /// (reduced-rate and capped) plus offline Energy, then resets the offline window.
+    /// (reduced-rate and capped), then resets the offline window.
     func handleBecameActive() {
         let now = Date()
         let elapsed = now.timeIntervalSince(lastActive)
         if elapsed > 0 {
             creditOfflineProgress(timeAway: elapsed)
-            for skill in slots { addEnergy(elapsed, to: skill, offline: true) }
         }
         pruneExpiredSupercharges()   // Supercharge expiry is wall-clock, so away time already counts
         expireDoubleXPIfNeeded()
@@ -667,6 +666,7 @@ final class GameState: ObservableObject {
                 * offlineRateMultiplier                                     // Hunter (offline rate)
             let gained = ratePerSecond * credited
                 * Balance.offlineXPMultiplier                              // base offline penalty (40%)
+                * offlineXPEfficiency                                       // Farming (retention)
             guard gained > 0 else { continue }
             let fromLevel = level(for: skill)
             let before = xpBySkill[skill] ?? 0
@@ -704,15 +704,7 @@ final class GameState: ObservableObject {
         }
     }
 
-    private func addEnergy(_ realSeconds: TimeInterval, to skill: SkillID, offline: Bool = false) {
-        let current = energyBySkill[skill] ?? 0
-        var rate = energyRateMultiplier                       // Hitpoints
-        if offline { rate *= offlineEnergyMultiplier }        // Farming (offline only)
-        let gained = realSeconds / Balance.realSecondsPerEnergySecond * rate
-        energyBySkill[skill] = min(current + gained, energyCapSeconds)   // Mining raises the cap
-    }
-
-    /// Banks `seconds` of Supercharge Energy directly (used by Fishing "big catch" procs).
+    /// Banks `seconds` of Supercharge Energy directly (used by the per-tap charge proc).
     private func bankEnergySeconds(_ seconds: Double, to skill: SkillID) {
         let current = energyBySkill[skill] ?? 0
         energyBySkill[skill] = min(current + seconds, energyCapSeconds)

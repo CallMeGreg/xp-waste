@@ -170,38 +170,23 @@ struct SkillTrainingView: View {
     // MARK: Charge → burst pill (teaches the payoff, no prose)
 
     /// A single capsule reading `⚡ charge → 🔥 burst`. It shows the banked amount and the burst it
-    /// would buy (with a READY / ACTIVE badge), or a next-step hint when the skill isn't yet banking
-    /// charge. The numeric `banked/cap` doubles as the fill readout, so no separate progress bar is
-    /// needed — keeping the station compact.
+    /// would buy (with a READY / ACTIVE badge). Every skill can build charge by tapping, so the
+    /// readout is always shown — when empty, the burst slot nudges the player to tap. The numeric
+    /// `banked/cap` doubles as the fill readout, so no separate progress bar is needed.
     @ViewBuilder
     private func chargePill(supercharged: Bool, ready: Bool, banked: Double) -> some View {
         let cap = Int(game.energyCapSeconds)
         let burst = Int(game.superchargeBurstPreview(for: skill).rounded())
-        let banking = game.isSlotted(skill) || banked > 0 || supercharged
         let hot = ready || supercharged
         HStack(spacing: 8) {
-            if banking {
-                controlGlyph(.bolt, hot ? .orange : .yellow, size: 13)
-                Text("\(Int(banked.rounded(.down)))/\(cap)")
-                    .font(.caption.weight(.bold)).monospacedDigit().foregroundStyle(.primary)
-                Text("→").font(.caption.weight(.bold)).foregroundStyle(.secondary)
-                controlGlyph(.flame, .orange, size: 13)
-                Text(burst > 0 ? "\(burst)s XP boost" : "XP boost")
-                    .font(.caption.weight(.bold)).monospacedDigit().foregroundStyle(.orange)
-            } else if game.isEligibleForSlot(skill) {
-                controlGlyph(.bolt, .secondary, size: 13)
-                Text("AFK to bank charge")
-                    .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                    .lineLimit(1).minimumScaleFactor(0.8)
-                Text("→").font(.caption.weight(.bold)).foregroundStyle(.secondary)
-                controlGlyph(.flame, .orange, size: 13)
-                Text("XP boost").font(.caption.weight(.bold)).foregroundStyle(.orange)
-            } else {
-                controlGlyph(.lock, .secondary, size: 13)
-                Text("Reach lv.\(Balance.slotEligibilityLevel) to bank charge")
-                    .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                    .lineLimit(1).minimumScaleFactor(0.8)
-            }
+            controlGlyph(.bolt, hot ? .orange : .yellow, size: 13)
+            Text("\(Int(banked.rounded(.down)))/\(cap)")
+                .font(.caption.weight(.bold)).monospacedDigit().foregroundStyle(.primary)
+            Text("→").font(.caption.weight(.bold)).foregroundStyle(.secondary)
+            controlGlyph(.flame, .orange, size: 13)
+            Text(burst > 0 ? "\(burst)s XP boost" : "Tap to build charge")
+                .font(.caption.weight(.bold)).foregroundStyle(burst > 0 ? .orange : .secondary)
+                .lineLimit(1).minimumScaleFactor(0.8)
             Spacer(minLength: 4)
             if supercharged { pillBadge("ACTIVE") }
             else if ready { pillBadge("READY") }
@@ -299,11 +284,8 @@ struct SkillTrainingView: View {
     }
 
     /// Why the Supercharge button is currently unavailable, phrased as the next step to take.
-    private var superchargeDisabledReason: String {
-        if game.isSlotted(skill) { return "Bank charge to use" }
-        if game.isEligibleForSlot(skill) { return "AFK to bank charge" }
-        return "Reach lv.\(Balance.slotEligibilityLevel)"
-    }
+    /// Charge now comes from tapping at any level, so the nudge is always the same.
+    private var superchargeDisabledReason: String { "Tap to build charge" }
 
     /// Explicit Energy Cell action: a labelled battery button with the owned count that opens a
     /// confirmation before spending a cell to instantly fill *this* skill's Supercharge charge.

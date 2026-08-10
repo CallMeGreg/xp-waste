@@ -26,7 +26,7 @@ struct SettingsView: View {
                 Section("How to play") {
                     infoRow("👆", "Tap a skill's object to earn XP.")
                     infoRow("⚡️", "Reach level 10 to put a skill in an AFK slot for passive XP.")
-                    infoRow("🔋", "AFK skills bank Energy — even while the app is closed.")
+                    infoRow("🔋", "Tapping a skill can spark Supercharge charge — Fishing raises the odds.")
                     infoRow("🔥", "Supercharge to spend Energy for bonus XP per tap.")
                     infoRow("🎟️", "Activate a Daily Boost coupon for 5 min of 1.5× on every skill — one free daily.")
                 }

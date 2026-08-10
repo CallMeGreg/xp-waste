@@ -45,7 +45,7 @@ Values below are **level 1 → level 99** (the full envelope). "Kind" is the `Bu
 | Attack ⚔️ | Accuracy | `accuracy` | bias `0 → 6` | Skews each tap's XP roll toward its **max hit** (fewer low rolls). |
 | Strength 💪 | Power | `maxHit` | `×1.0 → ×2.0` | Raises the **ceiling** of the tap XP range (chance for bigger clicks). |
 | Defence 🛡️ | Guard | `minHit` | `×1.0 → ×1.75` | Raises the guaranteed **floor** of the tap XP range (clamped ≤ ceiling). |
-| Hitpoints ❤️ | Vitality | `energyRate` | `×1.0 → ×2.0` | Banks **Supercharge Energy faster** on every slot. |
+| Hitpoints ❤️ | Vitality | `energyRate` | `×1.0 → ×2.0` | Banks **more Supercharge Energy** each time a tap sparks a charge. |
 | Ranged 🏹 | Rapid Fire | `extraHit` | `0 → 60%` | Chance for a tap to land an **extra hit** (100%+ guarantees one and rolls again). |
 | Prayer 🙏 | Blessing | `superchargeBonus` | `+0 → +5` | **Adds flat** to the active Supercharge multiplier. |
 | Magic 🔮 | Enchantment | `doubleXPPotency` | `1.5 → 3.0×` | Empowers **the Daily Boost beyond 1.5×**. |
@@ -55,9 +55,9 @@ Values below are **level 1 → level 99** (the full envelope). "Kind" is the `Bu
 | Skill | Perk | Kind | Lever (1 → 99) | Effect |
 |-------|------|------|-----------------|--------|
 | Woodcutting 🪓 | Bird's Nests | `cache` | `0 → 12%` | Chance per tap for a **bonus-XP windfall** (`15×` base method XP). |
-| Fishing 🎣 | Big Catch | `energyProc` | `0 → 15%` | Chance per tap to bank **bonus Energy** (`+1s` per proc). |
+| Fishing 🎣 | Big Catch | `energyProc` | `0 → 15%` | **Raises the per-tap chance** to bank Supercharge Energy above the ~2% base. |
 | Mining ⛏️ | Deep Reserves | `energyCap` | `30s → 60s` | Raises the **maximum bankable Energy** for longer Supercharges. |
-| Farming 🌱 | Patient Growth | `offline` | `×1.0 → ×2.0` | Better **offline Energy** efficiency while the app is closed. |
+| Farming 🌱 | Patient Growth | `offline` | `×1.0 → ×2.0` | Keeps **more offline XP** while the app is closed. |
 | Hunter 🪤 | Trapper | `offlineRate` | `×1.0 → ×10.0` | Multiplies **offline** passive XP (app *closed*) — traps keep working while you're away. |
 
 ### Artisan — production & the boost economy
@@ -88,8 +88,9 @@ Some perks intentionally pair across skills so leveling two things compounds:
 - **Crits = Slayer × Crafting.** Slayer sets the *chance*, Crafting sets the *magnitude*. Slayer
   starts at `0%`, so no tap crits until you train it (preserving non-regression); Crafting starts
   at `×2`, so your first crit is already meaty.
-- **Supercharge power = Prayer, duration = Firemaking, cap = Mining, rate = Hitpoints, refund =
-  Thieving.** The whole Energy/Supercharge loop is levered by five different skills.
+- **Supercharge power = Prayer, duration = Firemaking, cap = Mining, charge chance = Fishing,
+  charge amount = Hitpoints, refund = Thieving.** The whole Energy/Supercharge loop is levered by
+  several different skills.
 - **Daily Boost = Magic (potency) × Herblore (duration) × Thieving (refund).** The boost economy is
   levered by three skills — Thieving can even hand the spent coupon straight back.
 - **Idle engine = Hunter (rate) × Smithing (+% XP) × Construction (workshop ×).** Slotted passive
@@ -114,7 +115,8 @@ Resolved in `GameState.rollTap(for:)`. Each tap:
 4. On a **Woodcutting** cache proc, add a `15×` base windfall.
 5. If supercharged, `× (Supercharge multiplier + Prayer bonus)`.
 6. If Daily Boost is active, `× Magic` Daily Boost potency.
-7. Side-effect: on a **Fishing** proc, bank bonus Energy to the tapped skill.
+7. Side-effect: each tap has a **base chance** (`baseEnergyTapChance`, raised by **Fishing**) to
+   bank Supercharge Energy to the tapped skill, in an amount scaled by **Hitpoints**.
 
 `GameState.expectedTapGain(for:)` computes the deterministic *average* of this pipeline for
 display (the method banner's "+X / tap"), while `rollTap` is the live, rolled result that drives
@@ -127,6 +129,7 @@ Beyond the `buffScaling` envelope, a few perks reference fixed constants in `Bal
 | Constant | Value | Used by |
 |----------|-------|---------|
 | `woodcuttingCacheMultiple` | `15×` base | Woodcutting cache windfall size |
-| `fishingProcEnergySeconds` | `1s` | Fishing Big Catch Energy per proc |
+| `baseEnergyTapChance` | `2%` | Base per-tap chance to bank Supercharge Energy (Fishing adds to it) |
+| `energyTapProcSeconds` | `1s` | Energy banked per tap-proc (scaled by Hitpoints) |
 | `agilityComboWindow` | `1.2s` | Max gap between taps to keep a combo chaining |
 | `agilityComboTapsToMax` | `20` | Taps to ramp a combo to its ceiling |

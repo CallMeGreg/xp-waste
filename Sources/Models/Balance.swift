@@ -58,10 +58,7 @@ enum Balance {
 
     // MARK: Energy & Supercharge
 
-    /// Real seconds required to bank one second of Supercharge (60s real = 1s charge).
-    static let realSecondsPerEnergySecond: Double = 60.0
-
-    /// Maximum bankable Supercharge time, in seconds (30 min real time → 30s charge).
+    /// Maximum bankable Supercharge time, in seconds. Mining's "Deep Reserves" perk raises it.
     static let maxEnergySeconds: Double = 30.0
 
     /// Minimum banked Energy (seconds) required to trigger a Supercharge.
@@ -143,7 +140,7 @@ enum Balance {
         .attack:       BuffScaling(at1: 0.0,   at99: 6.0),    // accuracy: roll-bias exponent (uniform → near-max)
         .strength:     BuffScaling(at1: 1.0,   at99: 2.0),    // power: max-hit ceiling (× base method XP)
         .defence:      BuffScaling(at1: 1.0,   at99: 1.75),   // guard: min-hit floor (× base, clamped ≤ max)
-        .hitpoints:    BuffScaling(at1: 1.0,   at99: 2.0),    // vitality: Energy bank-rate multiplier
+        .hitpoints:    BuffScaling(at1: 1.0,   at99: 2.0),    // vitality: charge banked per tap-proc ×
         .ranged:       BuffScaling(at1: 0.0,   at99: 0.60),   // rapid fire: chance for an extra hit
         .prayer:       BuffScaling(at1: 0.0,   at99: 5.0),    // blessing: +flat to Supercharge multiplier
         .magic:        BuffScaling(at1: doubleXPMultiplier, at99: 3.0),    // enchantment: Daily Boost multiplier value
@@ -151,7 +148,7 @@ enum Balance {
         .woodcutting:  BuffScaling(at1: 0.0,   at99: 0.12),   // bird's nests: bonus-XP cache chance
         .fishing:      BuffScaling(at1: 0.0,   at99: 0.15),   // big catch: bonus-Energy chance
         .mining:       BuffScaling(at1: maxEnergySeconds, at99: 60.0), // deep reserves: Energy cap (seconds)
-        .farming:      BuffScaling(at1: 1.0,   at99: 2.0),    // patient growth: offline Energy efficiency ×
+        .farming:      BuffScaling(at1: 1.0,   at99: 2.0),    // patient growth: offline XP efficiency ×
         .hunter:       BuffScaling(at1: 1.0,   at99: 10.0),   // trapper: OFFLINE passive XP rate × (app closed)
         // Artisan — production & the boost economy
         .cooking:      BuffScaling(at1: 0.0,   at99: 0.50),   // well fed: +fraction to all tap XP
@@ -171,8 +168,12 @@ enum Balance {
     /// Woodcutting cache windfall, expressed as a multiple of the current method's base XP.
     static let woodcuttingCacheMultiple: Double = 15.0
 
-    /// Seconds of Energy granted by a Fishing "big catch" proc.
-    static let fishingProcEnergySeconds: Double = 1.0
+    /// Base chance, per tap on any skill, to bank a burst of Supercharge Energy. Kept deliberately
+    /// low so charge builds gradually through active play; Fishing's "Big Catch" perk adds to it.
+    static let baseEnergyTapChance: Double = 0.02
+
+    /// Seconds of Energy granted when a tap's charge proc lands (scaled by Hitpoints "Vitality").
+    static let energyTapProcSeconds: Double = 1.0
 
     /// Max seconds between taps to keep an Agility combo chaining, and taps needed to reach the ceiling.
     static let agilityComboWindow: TimeInterval = 1.2
