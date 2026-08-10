@@ -85,22 +85,12 @@ Each slotted skill accumulates **Energy** in real time — whether the app is op
 
 - Conversion: **1 minute of elapsed time = 1 second of Supercharge**, capped at **30
   seconds** (so 30 minutes fully charges a skill).
-- Tap **Supercharge** to spend all banked Energy. For that many seconds, taps on that skill are
-  **multiplied**:
-
-  | Supercharge tier | Multiplier | Unlocks at total level |
-  |------------------|------------|------------------------|
-  | I    | **×2**   | 0 (start) |
-  | II   | **×5**   | 50 |
-  | III  | **×10**  | 250 |
-  | IV   | **×20**  | 450 |
-  | V    | **×30**  | 700 |
-  | VI   | **×50**  | 1000 |
-  | VII  | **×75**  | 1500 |
-  | VIII | **×100** | 2000 |
+- Tap **Supercharge** to spend all banked Energy. For that many seconds, taps on that skill earn a
+  flat **×2** multiplier. (Prayer's *Blessing* perk can add a flat bonus on top — see
+  [§4](#4-skill-perks-account-wide-passive-buffs).)
 
 The multiplier applies to the **current method's** XP-per-tap (e.g. a tier-4 method at +12/tap,
-supercharged ×10, under 1.5× Daily Boost = 180 XP per tap). This creates the signature
+supercharged ×2, under 1.5× Daily Boost = 36 XP per tap). This creates the signature
 **return-and-burst loop**: idle to bank Energy, come back, and tap furiously during the
 Supercharge window. Passive XP keeps trickling during a Supercharge; only *taps* get the multiplier.
 
@@ -130,13 +120,12 @@ re-balancing a perk is a one-line change that never touches gameplay or view cod
 ## 5. Progression arc (1 → maxed)
 
 - **Early (total 23–100):** Tap skills to level 10 to unlock slotting. Start the first passive
-  slot. Learn Supercharge on the first return, reaching tier II ×5 (total 50). Hit the first
+  slot. Learn Supercharge on the first return. Hit the first
   method upgrades (level 15/30).
-- **Mid (total 100–300):** Unlock slot 2 (100) and slot 3 (300). Reach Supercharge tier III
-  ×10 (250). Juggle three passive skills + active tapping + Supercharge bursts, and push skills
+- **Mid (total 100–300):** Unlock slot 2 (100) and slot 3 (300).
+  Juggle three passive skills + active tapping + Supercharge bursts, and push skills
   into their tier-4 methods (level 50, +12/tap).
-- **Late (total 300–2277):** Supercharge tier IV ×20 (450), then the high-total ladder
-  ×30/×50/×75/×100 (700/1000/1500/2000); tier-5/6 methods (level 70/90) accelerate the brutal
+- **Late (total 300–2277):** Tier-5/6 methods (level 70/90) accelerate the brutal
   OSRS tail. Milestones: first 99 → all combat 99 → all gathering 99 → all artisan 99 → all
   support 99 → **max cape (2277)**.
 
@@ -200,7 +189,7 @@ v1 _(future: tap/level/supercharge SFX)_.
 | Energy cap | 30 sec Supercharge (30 min real) |
 | Slot eligibility | skill level ≥ 10 |
 | Slot 2 / Slot 3 unlock | total level 100 / 300 |
-| Supercharge tiers | ×2 / ×5 / ×10 / ×20 / ×30 / ×50 / ×75 / ×100 tap multiplier at total 0 / 50 / 250 / 450 / 700 / 1000 / 1500 / 2000 |
+| Supercharge multiplier | flat **×2** tap multiplier (Prayer's *Blessing* perk adds up to +5) |
 | Daily Boost | 1.5× all XP for 5 min (base; Magic/Herblore perks scale ×/duration); 1 free coupon/day; IAP packs of 5 / 25 / 100 |
 | Energy Cells | Consumable that instantly refills every slotted skill to its Energy cap; IAP packs of 3 / 10 / 30 |
 | Skill perks | 23 unique account-wide buffs, each neutral at level 1 and scaling to its level-99 value (`Balance.buffScaling`) — see [SKILL_BUFFS.md](SKILL_BUFFS.md) |
@@ -216,7 +205,7 @@ v1 _(future: tap/level/supercharge SFX)_.
 **Risks & mitigations**
 1. **Endgame pacing is still the biggest risk.** The OSRS tail is punishing and a full 23-skill
    max is a very long haul. *Mitigation:* the **tiered training methods** now scale XP-per-tap up
-   to 50× (plus Supercharge ×20 and Daily Boost ×1.5) so late-game taps are far more rewarding than
+   to 50× (plus Supercharge ×2 and Daily Boost ×1.5) so late-game taps are far more rewarding than
    v1's flat +1; treat further yield-scaling as a balance patch — trivial because all constants
    are centralized. More skills also means more parallel goals and more frequent method-upgrade
    dopamine hits.
@@ -247,7 +236,7 @@ for permanent power (permanent power comes from the skill perks in [§4](#4-skil
 
 - **Daily Boost coupons** — activate one to earn **1.5× XP on every skill for 5 minutes** (base
   values) — taps, Supercharge taps, and passive slot XP alike. The multiplier stacks
-  *multiplicatively* with Supercharge (e.g. ×5 tap → ×7.5 while boosted).
+  *multiplicatively* with Supercharge (e.g. ×2 tap → ×3 while boosted).
 - **Energy Cells** — spend one to **instantly refill every slotted skill to its Energy cap**, so
   you can Supercharge on demand instead of waiting out the real-time charge.
 
@@ -289,7 +278,7 @@ synergize instead of one obsoleting the other.
 - *Strength:* both boosts are **fun-first and non-coercive** — a free daily coupon means F2P
   players always taste the Daily Boost mechanic, and purchases buy *more of a good time*, not power
   gates. Consumables suit a long grind and stack naturally with the existing Supercharge hook.
-- *Agnostic vs. perks (v1.2 rebalance):* the agnostic systems (Energy cap/rate, Supercharge tiers,
+- *Agnostic vs. perks (v1.2 rebalance):* the agnostic systems (Energy cap/rate, Supercharge multiplier,
   Daily Boost ×/duration, daily coupons) are deliberately set so their **base value equals each
   related perk at level 1** — at a fresh account the game plays exactly as it did pre-perks, and
   perks only ever add on top. This keeps defaults sensible and stops perks from silently

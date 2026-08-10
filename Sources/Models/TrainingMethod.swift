@@ -37,35 +37,35 @@ extension SkillID {
         switch self {
         // MARK: Combat
         case .attack:
-            // One sword, bronze → rune.
+            // One sword, bronze → dragon.
             return tiered([
-                TrainingMethod(name: "Jab with a bronze sword", art: .vector(.sword), tint: Palette.metal[0], shortName: "Bronze sword"),
-                TrainingMethod(name: "Drill with an iron sword", art: .vector(.sword), tint: Palette.metal[1], shortName: "Iron sword"),
-                TrainingMethod(name: "Spar with a steel sword", art: .vector(.sword), tint: Palette.metal[2], shortName: "Steel sword"),
-                TrainingMethod(name: "Duel with a mithril blade", art: .vector(.sword), tint: Palette.metal[3], shortName: "Mithril blade"),
-                TrainingMethod(name: "Onslaught with adamant", art: .vector(.sword), tint: Palette.metal[4], shortName: "Adamant sword"),
-                TrainingMethod(name: "Master the rune scimitar", art: .vector(.sword), tint: Palette.metal[5], shortName: "Rune scimitar")
+                TrainingMethod(name: "Bronze sword", art: .vector(.sword), tint: Palette.metal[0], shortName: "Bronze sword"),
+                TrainingMethod(name: "Iron sword", art: .vector(.sword), tint: Palette.metal[1], shortName: "Iron sword"),
+                TrainingMethod(name: "Steel sword", art: .vector(.sword), tint: Palette.metal[2], shortName: "Steel sword"),
+                TrainingMethod(name: "Mithril sword", art: .vector(.sword), tint: Palette.metal[3], shortName: "Mithril sword"),
+                TrainingMethod(name: "Rune sword", art: .vector(.sword), tint: Palette.metal[5], shortName: "Rune sword"),
+                TrainingMethod(name: "Dragon sword", art: .vector(.sword), tint: Palette.dragon, shortName: "Dragon sword")
             ])
         case .strength:
-            // One warhammer, bronze → rune. (OSRS trains Strength with aggressive crush weapons —
+            // One warhammer, bronze → dragon. (OSRS trains Strength with aggressive crush weapons —
             // warhammers/mauls — not dumbbells.)
             return tiered([
-                TrainingMethod(name: "Smash with a bronze warhammer", art: .vector(.warhammer), tint: Palette.metal[0], shortName: "Bronze warhammer"),
-                TrainingMethod(name: "Pound with an iron warhammer", art: .vector(.warhammer), tint: Palette.metal[1], shortName: "Iron warhammer"),
-                TrainingMethod(name: "Crush with a steel warhammer", art: .vector(.warhammer), tint: Palette.metal[2], shortName: "Steel warhammer"),
-                TrainingMethod(name: "Batter with a mithril warhammer", art: .vector(.warhammer), tint: Palette.metal[3], shortName: "Mithril warhammer"),
-                TrainingMethod(name: "Pulverise with an adamant maul", art: .vector(.warhammer), tint: Palette.metal[4], shortName: "Adamant maul"),
-                TrainingMethod(name: "Devastate with a rune warhammer", art: .vector(.warhammer), tint: Palette.metal[5], shortName: "Rune warhammer")
+                TrainingMethod(name: "Bronze warhammer", art: .vector(.warhammer), tint: Palette.metal[0], shortName: "Bronze warhammer"),
+                TrainingMethod(name: "Iron warhammer", art: .vector(.warhammer), tint: Palette.metal[1], shortName: "Iron warhammer"),
+                TrainingMethod(name: "Steel warhammer", art: .vector(.warhammer), tint: Palette.metal[2], shortName: "Steel warhammer"),
+                TrainingMethod(name: "Mithril warhammer", art: .vector(.warhammer), tint: Palette.metal[3], shortName: "Mithril warhammer"),
+                TrainingMethod(name: "Rune warhammer", art: .vector(.warhammer), tint: Palette.metal[5], shortName: "Rune warhammer"),
+                TrainingMethod(name: "Dragon warhammer", art: .vector(.warhammer), tint: Palette.dragon, shortName: "Dragon warhammer")
             ])
         case .defence:
-            // One shield, bronze → rune.
+            // One shield, bronze → dragon.
             return tiered([
-                TrainingMethod(name: "Block in bronze armour", art: .symbol("shield.fill"), tint: Palette.metal[0], shortName: "Bronze armour"),
-                TrainingMethod(name: "Guard in iron armour", art: .symbol("shield.fill"), tint: Palette.metal[1], shortName: "Iron armour"),
-                TrainingMethod(name: "Brace in steel plate", art: .symbol("shield.fill"), tint: Palette.metal[2], shortName: "Steel plate"),
-                TrainingMethod(name: "Hold the mithril line", art: .symbol("shield.fill"), tint: Palette.metal[3], shortName: "Mithril armour"),
-                TrainingMethod(name: "Stand firm in adamant", art: .symbol("shield.fill"), tint: Palette.metal[4], shortName: "Adamant armour"),
-                TrainingMethod(name: "Tank in rune armour", art: .symbol("shield.fill"), tint: Palette.metal[5], shortName: "Rune armour")
+                TrainingMethod(name: "Bronze armour", art: .symbol("shield.fill"), tint: Palette.metal[0], shortName: "Bronze armour"),
+                TrainingMethod(name: "Iron armour", art: .symbol("shield.fill"), tint: Palette.metal[1], shortName: "Iron armour"),
+                TrainingMethod(name: "Steel armour", art: .symbol("shield.fill"), tint: Palette.metal[2], shortName: "Steel armour"),
+                TrainingMethod(name: "Mithril armour", art: .symbol("shield.fill"), tint: Palette.metal[3], shortName: "Mithril armour"),
+                TrainingMethod(name: "Rune armour", art: .symbol("shield.fill"), tint: Palette.metal[5], shortName: "Rune armour"),
+                TrainingMethod(name: "Dragon armour", art: .symbol("shield.fill"), tint: Palette.dragon, shortName: "Dragon armour")
             ])
         case .hitpoints:
             // One heart, growing more vital.
@@ -92,19 +92,19 @@ extension SkillID {
             return tiered([
                 TrainingMethod(name: "Bury bones", art: .vector(.bone), tint: Palette.rgb(0.90, 0.88, 0.82), shortName: "Bones"),
                 TrainingMethod(name: "Bury big bones", art: .vector(.bone), tint: Palette.rgb(0.96, 0.94, 0.86), shortName: "Big bones"),
-                TrainingMethod(name: "Offer wyrm bones", art: .vector(.bone), tint: Palette.rgb(0.72, 0.82, 0.60), shortName: "Wyrm bones"),
-                TrainingMethod(name: "Offer dragon bones", art: .vector(.bone), tint: Palette.rgb(0.70, 0.82, 0.94), shortName: "Dragon bones"),
-                TrainingMethod(name: "Offer hydra bones", art: .vector(.bone), tint: Palette.rgb(0.36, 0.74, 0.66), shortName: "Hydra bones"),
-                TrainingMethod(name: "Offer dagannoth bones", art: .vector(.bone), tint: Palette.rgb(0.95, 0.86, 0.55), shortName: "Dagannoth bones")
+                TrainingMethod(name: "Bury wyrm bones", art: .vector(.bone), tint: Palette.rgb(0.72, 0.82, 0.60), shortName: "Wyrm bones"),
+                TrainingMethod(name: "Bury dragon bones", art: .vector(.bone), tint: Palette.rgb(0.70, 0.82, 0.94), shortName: "Dragon bones"),
+                TrainingMethod(name: "Bury hydra bones", art: .vector(.bone), tint: Palette.rgb(0.36, 0.74, 0.66), shortName: "Hydra bones"),
+                TrainingMethod(name: "Bury dagannoth bones", art: .vector(.bone), tint: Palette.rgb(0.95, 0.86, 0.55), shortName: "Dagannoth bones")
             ])
         case .magic:
-            // One spell-cast, cool air → white-hot surge.
+            // One spell-cast, ascending the elemental combat spells (Strike → Bolt → Blast → Wave → Surge).
             return tiered([
                 TrainingMethod(name: "Cast Wind Strike", art: .symbol("wand.and.stars"), tint: Palette.rgb(0.75, 0.88, 0.95), shortName: "Wind Strike"),
                 TrainingMethod(name: "Cast Fire Strike", art: .symbol("wand.and.stars"), tint: Palette.rgb(0.96, 0.60, 0.26), shortName: "Fire Strike"),
-                TrainingMethod(name: "Cast Fire Bolt", art: .symbol("wand.and.stars"), tint: Palette.rgb(0.96, 0.50, 0.22), shortName: "Fire Bolt"),
+                TrainingMethod(name: "Cast Water Bolt", art: .symbol("wand.and.stars"), tint: Palette.rgb(0.36, 0.62, 0.92), shortName: "Water Bolt"),
                 TrainingMethod(name: "Cast Fire Blast", art: .symbol("wand.and.stars"), tint: Palette.rgb(0.94, 0.38, 0.22), shortName: "Fire Blast"),
-                TrainingMethod(name: "Cast Fire Wave", art: .symbol("wand.and.stars"), tint: Palette.rgb(0.98, 0.66, 0.28), shortName: "Fire Wave"),
+                TrainingMethod(name: "Cast Earth Wave", art: .symbol("wand.and.stars"), tint: Palette.rgb(0.55, 0.45, 0.30), shortName: "Earth Wave"),
                 TrainingMethod(name: "Cast Fire Surge", art: .symbol("wand.and.stars"), tint: Palette.rgb(0.74, 0.86, 1.00), shortName: "Fire Surge")
             ])
 
@@ -146,7 +146,7 @@ extension SkillID {
                 TrainingMethod(name: "Grow onions", art: .symbol("leaf.fill"), tint: Palette.rgb(0.82, 0.74, 0.46), shortName: "Onions"),
                 TrainingMethod(name: "Tend tomatoes", art: .symbol("leaf.fill"), tint: Palette.rgb(0.86, 0.35, 0.30), shortName: "Tomatoes"),
                 TrainingMethod(name: "Raise apple trees", art: .symbol("leaf.fill"), tint: Palette.rgb(0.50, 0.66, 0.36), shortName: "Apple trees"),
-                TrainingMethod(name: "Cultivate herbs", art: .symbol("leaf.fill"), tint: Palette.rgb(0.38, 0.64, 0.34), shortName: "Herbs"),
+                TrainingMethod(name: "Plant papaya trees", art: .symbol("leaf.fill"), tint: Palette.rgb(0.38, 0.64, 0.34), shortName: "Papaya trees"),
                 TrainingMethod(name: "Grow magic saplings", art: .symbol("leaf.fill"), tint: Palette.rgb(0.52, 0.74, 0.95), shortName: "Magic saplings")
             ])
         case .hunter:
@@ -202,14 +202,15 @@ extension SkillID {
                 TrainingMethod(name: "Smith rune bars", art: .vector(.ingot), tint: Palette.metal[5], shortName: "Rune bars")
             ])
         case .fletching:
-            // One bow, shortbow → magic.
+            // Bow-making ladder (shortbow → magic), but shown as a quiver of arrows so Fletching
+            // reads distinctly from Ranged's bow at a glance.
             return tiered([
-                TrainingMethod(name: "Fletch shortbows", art: .vector(.bow), tint: Palette.wood[0], shortName: "Shortbows"),
-                TrainingMethod(name: "Fletch oak bows", art: .vector(.bow), tint: Palette.wood[1], shortName: "Oak bows"),
-                TrainingMethod(name: "Fletch willow bows", art: .vector(.bow), tint: Palette.wood[2], shortName: "Willow bows"),
-                TrainingMethod(name: "Fletch maple bows", art: .vector(.bow), tint: Palette.wood[3], shortName: "Maple bows"),
-                TrainingMethod(name: "Fletch yew bows", art: .vector(.bow), tint: Palette.wood[4], shortName: "Yew bows"),
-                TrainingMethod(name: "Fletch magic bows", art: .vector(.bow), tint: Palette.wood[5], shortName: "Magic bows")
+                TrainingMethod(name: "Fletch shortbows", art: .vector(.quiver), tint: Palette.wood[0], shortName: "Shortbows"),
+                TrainingMethod(name: "Fletch oak bows", art: .vector(.quiver), tint: Palette.wood[1], shortName: "Oak bows"),
+                TrainingMethod(name: "Fletch willow bows", art: .vector(.quiver), tint: Palette.wood[2], shortName: "Willow bows"),
+                TrainingMethod(name: "Fletch maple bows", art: .vector(.quiver), tint: Palette.wood[3], shortName: "Maple bows"),
+                TrainingMethod(name: "Fletch yew bows", art: .vector(.quiver), tint: Palette.wood[4], shortName: "Yew bows"),
+                TrainingMethod(name: "Fletch magic bows", art: .vector(.quiver), tint: Palette.wood[5], shortName: "Magic bows")
             ])
         case .herblore:
             // One potion, attack → super combat.
