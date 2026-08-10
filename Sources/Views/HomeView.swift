@@ -23,7 +23,7 @@ struct HomeView: View {
                 .frame(maxWidth: .infinity)
             }
             .background(GameBackground())
-            .navigationTitle("XP Waste")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: SkillID.self) { skill in
                 SkillTrainingView(skill: skill)
@@ -34,13 +34,13 @@ struct HomeView: View {
                         Image(systemName: "chart.bar.fill")
                     }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    BoostsIcons { showBoosts = true }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button { showSettings = true } label: {
                         Image(systemName: "gearshape.fill")
                     }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    BoostsIcons { showBoosts = true }
                 }
             }
             .sheet(isPresented: $showStats) { StatsView() }
