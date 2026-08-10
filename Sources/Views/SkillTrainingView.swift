@@ -182,11 +182,11 @@ struct SkillTrainingView: View {
         HStack(spacing: 8) {
             if banking {
                 controlGlyph(.bolt, hot ? .orange : .yellow, size: 13)
-                Text("\(Int(banked.rounded(.down)))/\(cap)s")
+                Text("\(Int(banked.rounded(.down)))/\(cap)")
                     .font(.caption.weight(.bold)).monospacedDigit().foregroundStyle(.primary)
                 Text("→").font(.caption.weight(.bold)).foregroundStyle(.secondary)
                 controlGlyph(.flame, .orange, size: 13)
-                Text(burst > 0 ? "\(burst)s burst" : "burst")
+                Text(burst > 0 ? "\(burst)s XP boost" : "XP boost")
                     .font(.caption.weight(.bold)).monospacedDigit().foregroundStyle(.orange)
             } else if game.isEligibleForSlot(skill) {
                 controlGlyph(.bolt, .secondary, size: 13)
@@ -195,7 +195,7 @@ struct SkillTrainingView: View {
                     .lineLimit(1).minimumScaleFactor(0.8)
                 Text("→").font(.caption.weight(.bold)).foregroundStyle(.secondary)
                 controlGlyph(.flame, .orange, size: 13)
-                Text("burst").font(.caption.weight(.bold)).foregroundStyle(.orange)
+                Text("XP boost").font(.caption.weight(.bold)).foregroundStyle(.orange)
             } else {
                 controlGlyph(.lock, .secondary, size: 13)
                 Text("Reach lv.\(Balance.slotEligibilityLevel) to bank charge")
