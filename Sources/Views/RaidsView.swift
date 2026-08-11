@@ -152,15 +152,16 @@ private struct RaidCard: View {
     }
 
     private func tierBadge(_ tier: Int) -> some View {
-        VStack(spacing: 1) {
+        let tierColor = SkillCategory.raidTierColor(tier)
+        return VStack(spacing: 1) {
             Text(SkillCategory.raidTierName(tier).uppercased())
                 .font(.caption2.weight(.heavy))
             Text("TIER \(tier + 1)").font(.system(size: 9, weight: .bold)).foregroundStyle(.secondary)
         }
         .padding(.horizontal, 10).padding(.vertical, 6)
-        .background(group.raidTint.opacity(0.18), in: Capsule())
-        .overlay(Capsule().strokeBorder(group.raidTint.opacity(0.5)))
-        .foregroundStyle(group.raidTint)
+        .background(tierColor.opacity(0.18), in: Capsule())
+        .overlay(Capsule().strokeBorder(tierColor.opacity(0.5)))
+        .foregroundStyle(tierColor)
     }
 }
 
