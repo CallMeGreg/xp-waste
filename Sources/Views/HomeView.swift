@@ -124,7 +124,7 @@ private struct SkillStatGroup: View {
     }
 }
 
-/// A single skill row: emblem, name, inline XP bar, level, and a Ready/Slot status flag.
+/// A single skill row: emblem, name, inline XP bar, level, and AFK-slot / meter-full status flags.
 private struct SkillStatRow: View {
     @EnvironmentObject private var game: GameState
     let skill: SkillID
@@ -132,7 +132,7 @@ private struct SkillStatRow: View {
         let level = game.level(for: skill)
         let method = game.currentMethod(for: skill)
         let slotted = game.isSlotted(skill)
-        let ready = game.canSupercharge(skill)
+        let energyFull = game.isEnergyFull(skill)
         return HStack(spacing: 12) {
             ZStack {
                 Circle().fill(skill.tint.opacity(0.22)).frame(width: 34, height: 34)
@@ -143,12 +143,13 @@ private struct SkillStatRow: View {
                     Text(skill.displayName)
                         .font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
                     Spacer()
-                    if ready {
-                        Label("Ready", systemImage: "flame.fill")
-                            .font(.caption2.weight(.bold)).foregroundStyle(.orange)
-                    } else if slotted, let i = game.slotIndex(of: skill) {
-                        Label("AFK \(i + 1)", systemImage: "bolt.fill")
+                    if slotted {
+                        Label("AFK", systemImage: "bolt.fill")
                             .font(.caption2.weight(.semibold)).foregroundStyle(.yellow)
+                    }
+                    if energyFull {
+                        Label("Full", systemImage: "flame.fill")
+                            .font(.caption2.weight(.bold)).foregroundStyle(.orange)
                     }
                     Text("lv. \(level)")
                         .font(.subheadline.weight(.bold)).monospacedDigit().foregroundStyle(.primary)

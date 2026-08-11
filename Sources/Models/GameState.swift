@@ -144,6 +144,9 @@ final class GameState: ObservableObject {
         min(energy(for: skill) / energyCapSeconds, 1.0)
     }
 
+    /// True when a skill's banked Energy has reached the cap — the Supercharge meter is full.
+    func isEnergyFull(_ skill: SkillID) -> Bool { energy(for: skill) >= energyCapSeconds }
+
     func canSupercharge(_ skill: SkillID) -> Bool {
         !isSupercharged(skill) && energy(for: skill) >= Balance.minEnergyToSupercharge
     }
