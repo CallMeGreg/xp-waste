@@ -55,6 +55,9 @@ private struct SaveData: Codable {
     // so a mid-burst level-up can't retroactively change it. Optional so older saves still decode;
     // a burst without a snapshot falls back to the live multiplier.
     var superchargeMultiplier: [String: Int]?
+    // Added in v1.5 — Raids. Optional for backward-compatible decoding of older saves.
+    var raidLamps: [RaidLampRecord]?
+    var raidDayByGroup: [String: String]?
 }
 
 /// The single source of truth for all game state and rules.
@@ -88,6 +91,12 @@ final class GameState: ObservableObject {
     /// Total duration of the currently-running boost, so the UI can draw an accurate countdown bar.
     @Published private(set) var doubleXPActiveDuration: TimeInterval = Balance.doubleXPDurationSeconds
 
+    /// Unspent raid lamps the player owns. Each is bound to a skill group and spent on one of that
+    /// group's skills (see `applyLamp`).
+    @Published private(set) var raidLamps: [RaidLampRecord] = []
+    /// Calendar day (yyyy-MM-dd) each group last attempted a raid, enforcing one shot per day.
+    @Published private(set) var raidDayByGroup: [String: String] = [:]
+
     /// Most recent level-up, consumed by the UI for a celebratory toast.
     @Published var levelUpEvent: LevelUpEvent?
 
@@ -117,6 +126,7 @@ final class GameState: ObservableObject {
         #if DEBUG
         applyDemoSeedIfRequested()
         applyOfflineDemoIfRequested()
+        applyLampSeedIfRequested()
         #endif
     }
 
@@ -459,6 +469,80 @@ final class GameState: ObservableObject {
         return nil
     }
 
+    // MARK: - Raids (derived)
+
+    /// Combined level of every skill in a group — the raid's difficulty/scaling input.
+    func raidCombinedLevel(_ group: SkillCategory) -> Int {
+        SkillID.skills(in: group).reduce(0) { $0 + level(for: $1) }
+    }
+
+    /// Max possible combined level for a group (skill count × 99).
+    func raidMaxCombinedLevel(_ group: SkillCategory) -> Int {
+        SkillID.skills(in: group).count * XPTable.maxLevel
+    }
+
+    /// The group's average skill level (1…99), which selects the raid tier.
+    func raidAverageLevel(_ group: SkillCategory) -> Int {
+        let skills = SkillID.skills(in: group)
+        guard !skills.isEmpty else { return 1 }
+        return raidCombinedLevel(group) / skills.count
+    }
+
+    /// Raid tier (0…5): the training-method tier of the group's average level, so a raid reads as
+    /// "Rune tier" exactly when its skills average level 90+.
+    func raidTier(_ group: SkillCategory) -> Int {
+        Balance.trainingTierIndex(forSkillLevel: raidAverageLevel(group))
+    }
+
+    /// Difficulty parameters for a group's current raid tier.
+    func raidParams(_ group: SkillCategory) -> Balance.RaidTierParams {
+        Balance.raidParams(forTier: raidTier(group))
+    }
+
+    /// Progress (0…1) of the group's average level toward the next raid tier. Returns 1 at the top.
+    func raidTierProgress(_ group: SkillCategory) -> Double {
+        let avg = raidAverageLevel(group)
+        let tier = raidTier(group)
+        let tiers = Balance.trainingTiers
+        guard tier + 1 < tiers.count else { return 1 }
+        let base = tiers[tier].unlockLevel
+        let next = tiers[tier + 1].unlockLevel
+        guard next > base else { return 1 }
+        return min(max(Double(avg - base) / Double(next - base), 0), 1)
+    }
+
+    /// The average level at which the group reaches its next raid tier, or nil at the top tier.
+    func raidNextTierLevel(_ group: SkillCategory) -> Int? {
+        let tier = raidTier(group)
+        let tiers = Balance.trainingTiers
+        guard tier + 1 < tiers.count else { return nil }
+        return tiers[tier + 1].unlockLevel
+    }
+
+    /// Whether the group's raid can still be attempted today (one shot per day).
+    func isRaidAvailableToday(_ group: SkillCategory) -> Bool {
+        raidDayByGroup[group.rawValue] != Self.dayKey()
+    }
+
+    /// Unspent lamps for a group (newest first).
+    func lamps(for group: SkillCategory) -> [RaidLampRecord] {
+        raidLamps.filter { $0.group == group }.sorted { $0.earned > $1.earned }
+    }
+
+    /// The XP a lamp would grant if applied to `skill` right now — roughly 1.5× the XP you'd earn
+    /// tapping that skill for the raid's duration, at its current method tier, times the tier bonus.
+    func projectedLampXP(_ lamp: RaidLampRecord, on skill: SkillID) -> Int {
+        guard skill.category == lamp.group else { return 0 }
+        let raidMinutes = Balance.raidDurationSeconds / 60
+        let perTap = Double(baseXPPerAction(for: skill))
+        let xp = Balance.raidRewardMultiplier
+            * raidMinutes
+            * Balance.raidRapidTapsPerMinute
+            * perTap
+            * Balance.raidTierBonus(forTier: lamp.tier)
+        return max(1, Int(xp.rounded()))
+    }
+
     // MARK: - Player actions
 
     /// Register a tap on a skill's trainable object. Returns the roll so the UI can animate it.
@@ -567,6 +651,48 @@ final class GameState: ObservableObject {
         return true
     }
 
+    // MARK: - Raid actions
+
+    /// Marks a group's daily raid attempt as spent — called when a raid *begins*, so quitting
+    /// mid-raid can't farm retries. Returns false if the group already raided today.
+    @discardableResult
+    func beginRaid(_ group: SkillCategory) -> Bool {
+        guard isRaidAvailableToday(group) else { return false }
+        raidDayByGroup[group.rawValue] = Self.dayKey()
+        save()
+        return true
+    }
+
+    /// Resolves a finished raid. On a win, banks a lamp for the group at its current raid tier; on a
+    /// loss, nothing (the daily attempt was already spent in `beginRaid`). Returns the earned lamp.
+    @discardableResult
+    func finishRaid(_ group: SkillCategory, passed: Bool) -> RaidLampRecord? {
+        guard passed else {
+            notice = "☠️ \(group.raidName) failed — come back tomorrow."
+            save()
+            return nil
+        }
+        let lamp = RaidLampRecord(group: group, tier: raidTier(group))
+        raidLamps.append(lamp)
+        notice = "🏆 \(group.raidName) cleared — \(group.rawValue) lamp earned!"
+        save()
+        return lamp
+    }
+
+    /// Spends a lamp on a single skill within its group, granting the projected XP through the
+    /// normal `addXP` pipeline (so the 200M cap and level-up toast apply). Returns the XP granted.
+    @discardableResult
+    func applyLamp(_ lamp: RaidLampRecord, to skill: SkillID) -> Int? {
+        guard skill.category == lamp.group,
+              let index = raidLamps.firstIndex(where: { $0.id == lamp.id }) else { return nil }
+        let xp = projectedLampXP(lamp, on: skill)
+        raidLamps.remove(at: index)
+        addXP(Double(xp), to: skill)
+        notice = "💡 \(skill.displayName) +\(Format.abbrev(xp)) XP from a \(SkillCategory.raidTierName(lamp.tier)) lamp"
+        save()
+        return xp
+    }
+
     /// Grants the free daily coupon the first time the app is opened each calendar day.
     @discardableResult
     func grantDailyCouponIfNeeded() -> Bool {
@@ -603,6 +729,8 @@ final class GameState: ObservableObject {
         slots = []
         levelUpEvent = nil
         doubleXPExpiry = nil
+        raidLamps = []
+        raidDayByGroup = [:]
         lastActive = Date()
         lastTick = Date()
         save()
@@ -780,6 +908,8 @@ final class GameState: ObservableObject {
         doubleXPExpiry = saved.doubleXPExpiry
         lastFreeCouponDay = saved.lastFreeCouponDay
         energyCells = saved.energyCells ?? 0
+        raidLamps = saved.raidLamps ?? []
+        raidDayByGroup = saved.raidDayByGroup ?? [:]
         if let expiry = doubleXPExpiry, expiry <= Date() { doubleXPExpiry = nil }
     }
 
@@ -811,6 +941,12 @@ final class GameState: ObservableObject {
         superchargeMultiplierBySkill = [:]
         doubleXPCoupons = 3
         energyCells = 2
+        // A couple of banked lamps so the Raids inventory / apply flow is populated for screenshots.
+        raidLamps = [
+            RaidLampRecord(group: .combat, tier: raidTier(.combat)),
+            RaidLampRecord(group: .gathering, tier: raidTier(.gathering)),
+            RaidLampRecord(group: .gathering, tier: raidTier(.gathering))
+        ]
         if variant == "super" {
             superchargeExpiryBySkill = [.attack: Date().addingTimeInterval(26)]
             superchargeMultiplierBySkill = [.attack: effectiveSuperchargeMultiplier]
@@ -849,6 +985,25 @@ final class GameState: ObservableObject {
         lastActive = Date()
         lastTick = Date()
     }
+
+    /// Seeds banked raid lamps when launched with `SEED_LAMPS` (e.g. `combat:2,gathering:1`), so the
+    /// Raids inventory and lamp-apply flow can be exercised without playing a raid. Never in release.
+    private func applyLampSeedIfRequested() {
+        guard let raw = ProcessInfo.processInfo.environment["SEED_LAMPS"], !raw.isEmpty else { return }
+        hasSeenOnboarding = true
+        for pair in raw.split(separator: ",") {
+            let kv = pair.split(separator: ":")
+            guard let name = kv.first.map({ String($0).lowercased() }),
+                  let group = SkillCategory.allCases.first(where: { $0.rawValue.lowercased() == name }) else { continue }
+            let count = kv.count > 1 ? (Int(kv[1]) ?? 1) : 1
+            for _ in 0..<max(0, count) {
+                raidLamps.append(RaidLampRecord(group: group, tier: raidTier(group)))
+            }
+        }
+        lastActive = Date()
+        lastTick = Date()
+        save()
+    }
     #endif
 
     private func save() {
@@ -876,7 +1031,9 @@ final class GameState: ObservableObject {
             }),
             superchargeMultiplier: Dictionary(uniqueKeysWithValues: futureExpiries.compactMap { entry in
                 superchargeMultiplierBySkill[entry.key].map { (entry.key.rawValue, $0) }
-            })
+            }),
+            raidLamps: raidLamps,
+            raidDayByGroup: raidDayByGroup
         )
         if let data = try? JSONEncoder().encode(snapshot) {
             UserDefaults.standard.set(data, forKey: Self.saveKey)

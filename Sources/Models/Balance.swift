@@ -179,4 +179,62 @@ enum Balance {
     /// Max seconds between taps to keep an Agility combo chaining, and taps needed to reach the ceiling.
     static let agilityComboWindow: TimeInterval = 1.2
     static let agilityComboTapsToMax: Int = 20
+
+    // MARK: Raids
+
+    /// How long a raid runs, in seconds — "a few minutes". A raid ends early on a win (goal met);
+    /// otherwise the clock is the fail deadline. Reward scales with this (see `raidRapidTapsPerMinute`).
+    static let raidDurationSeconds: Double = 180
+
+    /// Reference "rapid tapping" rate used to price a lamp. A lamp is worth roughly this many taps
+    /// per minute × the target skill's XP-per-tap × the raid length × `raidRewardMultiplier`. It's a
+    /// deliberate anchor for the 1.5× promise, not a measurement of any given player.
+    static let raidRapidTapsPerMinute: Double = 300
+
+    /// A raid lamp is worth ~this multiple of the XP you'd earn tapping the target skill for the
+    /// raid's duration. The headline "raids ≈ 1.5× tapping" lever.
+    static let raidRewardMultiplier: Double = 1.5
+
+    /// How many raids each skill group can be attempted per calendar day. One shot: a completed
+    /// attempt (win *or* loss) spends the day for that group.
+    static let raidsPerGroupPerDay: Int = 1
+
+    /// Explicit, default-neutral per-tier reward multiplier (index = raid tier 0…5). Lets a designer
+    /// make higher-tier raids extra-rewarding without touching gameplay or view code.
+    static let raidTierRewardBonus: [Double] = [1, 1, 1, 1, 1, 1]
+
+    /// Per-tier difficulty knobs the four raid loops read, selected by a group's raid tier (0…5).
+    /// Ascending difficulty: the goal climbs while the windows tighten and decoys multiply.
+    struct RaidTierParams {
+        /// Successful actions needed to clear (boss damage / products / rooms / resources).
+        let goal: Int
+        /// Failures tolerated before the raid is lost (missed dodges / mistimes / catches / wrong taps).
+        let allowedMistakes: Int
+        /// Seconds a target or prompt stays actionable before it lapses (tightens with tier).
+        let targetLifetime: Double
+        /// Seconds between spawns / prompt cadence (shrinks with tier).
+        let spawnInterval: Double
+        /// Wrong targets present alongside the right one (recognition pressure).
+        let decoyCount: Int
+    }
+
+    /// Six ascending-difficulty tiers, aligned to the training-method ladder (avg level 1/15/30/50/70/90).
+    static let raidTierParams: [RaidTierParams] = [
+        RaidTierParams(goal: 40, allowedMistakes: 12, targetLifetime: 1.70, spawnInterval: 1.25, decoyCount: 2),
+        RaidTierParams(goal: 48, allowedMistakes: 10, targetLifetime: 1.50, spawnInterval: 1.10, decoyCount: 3),
+        RaidTierParams(goal: 56, allowedMistakes: 9,  targetLifetime: 1.35, spawnInterval: 1.00, decoyCount: 4),
+        RaidTierParams(goal: 64, allowedMistakes: 8,  targetLifetime: 1.20, spawnInterval: 0.90, decoyCount: 5),
+        RaidTierParams(goal: 72, allowedMistakes: 7,  targetLifetime: 1.05, spawnInterval: 0.82, decoyCount: 6),
+        RaidTierParams(goal: 80, allowedMistakes: 6,  targetLifetime: 0.95, spawnInterval: 0.75, decoyCount: 7)
+    ]
+
+    /// Difficulty parameters for a given raid tier (clamped to the table).
+    static func raidParams(forTier tier: Int) -> RaidTierParams {
+        raidTierParams[min(max(tier, 0), raidTierParams.count - 1)]
+    }
+
+    /// Reward multiplier for a given raid tier (clamped; default 1.0).
+    static func raidTierBonus(forTier tier: Int) -> Double {
+        raidTierRewardBonus[min(max(tier, 0), raidTierRewardBonus.count - 1)]
+    }
 }

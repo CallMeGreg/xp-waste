@@ -245,18 +245,22 @@ static let raidTierRewardBonus: [Double] = [1, 1, 1, 1, 1, 1]
 
 /// Per-tier difficulty knobs consumed by the four loops. Index = raidTier 0…5.
 struct RaidTierParams {
-    let passScore: Double        // normalized 0…1 threshold to clear
-    let timeWindow: Double       // seconds a target/prompt stays actionable (tightens with tier)
-    let spawnInterval: Double    // seconds between spawns/telegraphs (shrinks with tier)
-    let decoyCount: Int          // wrong targets on screen
-    let quota: Int               // products/resources/rooms needed
-    let bossHP: Double           // Colosseum only
-    let allowedMistakes: Int     // Heist "caught" / general slip-ups permitted
+    let goal: Int              // successful actions to clear (boss damage / products / rooms / resources)
+    let allowedMistakes: Int   // failures tolerated before the raid is lost
+    let targetLifetime: Double // seconds a target/prompt/safe-window stays actionable (tightens with tier)
+    let spawnInterval: Double  // seconds between spawns / prompt cadence (shrinks with tier)
+    let decoyCount: Int        // wrong targets / distinct resource types present (recognition pressure)
 }
 static let raidTierParams: [RaidTierParams] = [ /* 6 entries, ascending difficulty */ ]
+static func raidParams(forTier tier: Int) -> RaidTierParams // clamped lookup
+static func raidTierBonus(forTier tier: Int) -> Double       // clamped reward lever
 ```
 
-Each loop reads `raidTierParams[raidTier(group)]`; re-balancing difficulty is a one-file change.
+A single shared `goal` (successes-before-timer) drives every loop, so the win condition and the
+HUD are uniform; each loop maps `goal` to its own fantasy (boss weakpoints, forge strikes, looted
+rooms, gathered resources). `targetLifetime` doubles as the Forge's timing tolerance and the Heist's
+safe-window length. Each loop reads `raidParams(forTier: raidTier(group))`; re-balancing difficulty
+is a one-file change.
 
 ---
 

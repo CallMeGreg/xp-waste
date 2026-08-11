@@ -9,7 +9,12 @@ struct RootView: View {
     var body: some View {
         ZStack {
             if game.hasSeenOnboarding {
-                HomeView()
+                TabView {
+                    HomeView()
+                        .tabItem { Label("Skills", systemImage: "square.grid.2x2.fill") }
+                    RaidsView()
+                        .tabItem { Label("Raids", systemImage: "flag.checkered") }
+                }
             } else {
                 OnboardingView()
             }
