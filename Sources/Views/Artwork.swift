@@ -6,7 +6,7 @@ import UIKit
 /// Every icon is a tintable, resolution-independent vector so it renders crisply at any
 /// size on iPhone and iPad. Most concepts map to an SF Symbol; the handful of RuneScape
 /// objects SF Symbols lacks (sword, axe, pickaxe, bow, arrow, quiver, ore, ingot, bone, skull,
-/// warhammer) are drawn as custom `VectorIcon` paths below.
+/// warhammer, flexed arm) are drawn as custom `VectorIcon` paths below.
 enum SkillArt {
     /// An SF Symbol, referenced by name.
     case symbol(String)
@@ -21,7 +21,7 @@ enum SkillArt {
 /// near the navigation bar. Drawn vector paths don't trigger that bug, so the control-bar
 /// glyphs use these instead.
 enum VectorIcon {
-    case sword, axe, pickaxe, bow, arrow, quiver, ore, ingot, bone, skull, warhammer, bolt, flame, lock, battery
+    case sword, axe, pickaxe, bow, arrow, quiver, ore, ingot, bone, skull, warhammer, flexArm, bolt, flame, lock, battery
 }
 
 // MARK: - Rendering
@@ -80,6 +80,8 @@ extension VectorIcon {
             LockIcon(color: color)
         case .battery:
             BatteryIcon(color: color)
+        case .flexArm:
+            FlexArmIcon(color: color)
         }
     }
 }
@@ -198,6 +200,40 @@ private struct BatteryIcon: View {
                     .fill(color.lightened(0.78))
                     .frame(width: 0.34 * s, height: 0.34 * s)
                     .position(x: 0.50 * s, y: 0.56 * s)
+            }
+        }
+    }
+}
+
+/// A flexed arm (biceps) — the Strength emblem. Composed from a horizontal upper arm and a
+/// vertical forearm meeting at the elbow, a round fist capping the forearm, and a bold biceps
+/// bulge in the crook, echoing OSRS's flexed-arm skill icon in the app's clean vector style.
+private struct FlexArmIcon: View {
+    let color: Color
+    var body: some View {
+        GeometryReader { geo in
+            let s = min(geo.size.width, geo.size.height)
+            ZStack {
+                // Upper arm (shoulder → elbow), lying along the bottom.
+                RoundedRectangle(cornerRadius: 0.115 * s)
+                    .fill(color)
+                    .frame(width: 0.64 * s, height: 0.23 * s)
+                    .position(x: 0.47 * s, y: 0.715 * s)
+                // Forearm rising from the elbow.
+                RoundedRectangle(cornerRadius: 0.115 * s)
+                    .fill(color)
+                    .frame(width: 0.23 * s, height: 0.56 * s)
+                    .position(x: 0.665 * s, y: 0.45 * s)
+                // Biceps bulge in the crook, just left of the forearm.
+                Circle()
+                    .fill(color)
+                    .frame(width: 0.37 * s, height: 0.37 * s)
+                    .position(x: 0.39 * s, y: 0.485 * s)
+                // Fist capping the forearm.
+                Circle()
+                    .fill(color)
+                    .frame(width: 0.32 * s, height: 0.32 * s)
+                    .position(x: 0.665 * s, y: 0.19 * s)
             }
         }
     }

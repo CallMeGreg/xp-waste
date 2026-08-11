@@ -65,6 +65,9 @@ struct HomeView: View {
                 if ProcessInfo.processInfo.environment["OPEN_SHEET"] == "doublexp" {
                     showBoosts = true
                 }
+                if ProcessInfo.processInfo.environment["OPEN_SHEET"] == "stats" {
+                    showStats = true
+                }
                 #endif
             }
         }

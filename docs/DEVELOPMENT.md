@@ -105,6 +105,7 @@ Used for deterministic screenshots / UI checks:
   (and, for `super`, an active Supercharge + Daily Boost).
 - `OPEN_SKILL=<rawValue>` — deep-links Home straight into a skill's training screen.
 - `OPEN_SHEET=doublexp` — auto-presents the Boosts sheet (Daily Boost + Energy Cells).
+- `OPEN_SHEET=stats` — auto-presents the Stats sheet (per-skill levels and emblems).
 - `OFFLINE_DEMO=1` — seeds a representative **"welcome back"** offline-earnings summary (per-skill
   XP + level-ups) so the sheet can be screenshotted deterministically.
 
