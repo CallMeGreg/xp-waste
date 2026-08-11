@@ -334,7 +334,8 @@ choice is informed. A gentle warning if the target is already at the 200M ceilin
 All raid/loop art goes through **`Artwork.swift`** (`SkillArt` → SF Symbol or hand-authored
 `VectorIcon`). **No emoji art** in the app (docs may use emoji for flavor, as here). Reuse each
 category's symbol/tint for cohesion; add any new vector emblems (boss, forge, mask, node) to
-`Artwork.swift`, not inline in views.
+`Artwork.swift`, not inline in views. The lamp reward is drawn as the hand-authored
+**`genieLamp`** `VectorIcon` (an Aladdin-style magic lamp), not a household lightbulb.
 
 ---
 

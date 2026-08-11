@@ -260,7 +260,7 @@ struct RaidSessionView: View {
     private func lampReward(_ lamp: RaidLampRecord) -> some View {
         VStack(spacing: 8) {
             HStack(spacing: 10) {
-                Image(systemName: "lightbulb.fill").font(.title2).foregroundStyle(.yellow)
+                ArtworkView(art: .vector(.genieLamp), size: 28, color: .yellow)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("\(SkillCategory.raidTierName(lamp.tier)) \(group.rawValue) Lamp")
                         .font(.subheadline.weight(.bold))

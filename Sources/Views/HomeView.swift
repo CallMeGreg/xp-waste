@@ -4,6 +4,7 @@ import SwiftUI
 /// "stat list" of every skill (emblem, name, inline XP bar, level, supercharge-ready flag).
 struct HomeView: View {
     @EnvironmentObject private var game: GameState
+    @Binding var tab: AppTab
     @State private var showStats = false
     @State private var showSettings = false
     @State private var showBoosts = false
@@ -48,6 +49,9 @@ struct HomeView: View {
                         .buttonStyle(.plain)
                         .accessibilityLabel("Settings")
                     }
+                }
+                ToolbarItem(placement: .principal) {
+                    TabSwitcher(selection: $tab)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     BoostsIcons {

@@ -5,6 +5,7 @@ import SwiftUI
 /// of its skills. Universal & responsive: width-capped and centered, adaptive to iPhone / iPad.
 struct RaidsView: View {
     @EnvironmentObject private var game: GameState
+    @Binding var tab: AppTab
     @State private var raidingGroup: SkillCategory?
     @State private var applyGroup: SkillCategory?
 
@@ -26,8 +27,13 @@ struct RaidsView: View {
                 .frame(maxWidth: .infinity)
             }
             .background(GameBackground())
-            .navigationTitle("Raids")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    TabSwitcher(selection: $tab)
+                }
+            }
             .fullScreenCover(item: $raidingGroup) { group in
                 RaidSessionView(group: group)
             }
@@ -67,7 +73,7 @@ private struct RaidsHeader: View {
             }
             Spacer()
             HStack(spacing: 5) {
-                Image(systemName: "lightbulb.fill").font(.footnote.weight(.bold)).foregroundStyle(.yellow)
+                ArtworkView(art: .vector(.genieLamp), size: 18, color: .yellow)
                 Text("\(lampCount)").font(.headline.weight(.bold)).monospacedDigit()
             }
             .padding(.horizontal, 12).padding(.vertical, 8)
@@ -151,7 +157,7 @@ private struct RaidCard: View {
                 if lampCount > 0 {
                     Button(action: onApply) {
                         HStack(spacing: 6) {
-                            Image(systemName: "lightbulb.fill")
+                            ArtworkView(art: .vector(.genieLamp), size: 17, color: .yellow)
                             Text("\(lampCount)").monospacedDigit()
                         }
                         .font(.subheadline.weight(.bold))
@@ -224,7 +230,7 @@ private struct LampApplySheet: View {
 
     private func header(remaining: Int) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: "lightbulb.fill").font(.title3).foregroundStyle(.yellow)
+            ArtworkView(art: .vector(.genieLamp), size: 24, color: .yellow)
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(remaining) lamp\(remaining == 1 ? "" : "s") to spend")
                     .font(.subheadline.weight(.bold))
