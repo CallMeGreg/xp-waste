@@ -56,8 +56,8 @@ requirement, not an afterthought.**
   gameplay or view code — change the constants here.**
 - **`XPTable.swift`** encodes the exact OSRS XP curve (level 1 = 0 XP, level 99 = 13,034,431).
   Do not alter the formula.
-- **`SkillID.swift`** enumerates the 23 skills across 4 categories (Combat, Gathering, Artisan,
-  Support) with identity theming (vector emblem, tint). **`TrainingMethod.swift`** holds each
+- **`SkillID.swift`** enumerates the 23 skills across 4 categories (Combat, Production, Utility,
+  Gathering) with identity theming (vector emblem, tint). **`TrainingMethod.swift`** holds each
   skill's six thematic, tiered training methods (basic → end-game, OSRS-faithful).
 - **`Artwork.swift`** is the rendering system for all skill/method art: a `SkillArt` value
   (`.symbol` SF Symbol or `.vector` hand-authored `Path`) drawn by `ArtworkView`. There is **no
