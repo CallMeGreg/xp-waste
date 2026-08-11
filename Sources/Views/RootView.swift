@@ -102,16 +102,23 @@ struct RootView: View {
     /// below it. All five destinations are kept alive so each keeps its own navigation and scroll
     /// state when switching tabs. A custom bar (rather than `TabView`) guarantees the tabs sit at
     /// the bottom identically on iPhone and iPad — iPadOS floats the native tab bar at the top.
+    ///
+    /// The bar is laid out in a `VStack` *below* the tab content (rather than as a
+    /// `safeAreaInset` overlay) so it never covers the scrollable area. A safe-area inset applied
+    /// out here wasn't reaching the scroll views inside each tab's own `NavigationStack`, which let
+    /// the last rows scroll underneath the bar; bounding the content above the bar fixes every tab.
     private var mainInterface: some View {
-        ZStack {
-            ForEach(AppTab.allCases) { item in
-                tabContent(item)
-                    .opacity(tab == item ? 1 : 0)
-                    .allowsHitTesting(tab == item)
-                    .accessibilityHidden(tab != item)
+        VStack(spacing: 0) {
+            ZStack {
+                ForEach(AppTab.allCases) { item in
+                    tabContent(item)
+                        .opacity(tab == item ? 1 : 0)
+                        .allowsHitTesting(tab == item)
+                        .accessibilityHidden(tab != item)
+                }
             }
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
             AppTabBar(selection: $tab)
         }
         .onAppear {
