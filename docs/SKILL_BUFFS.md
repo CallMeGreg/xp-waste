@@ -47,39 +47,39 @@ Values below are **level 1 → level 99** (the full envelope). "Kind" is the `Bu
 | Defence 🛡️ | Guard | `minHit` | `×1.0 → ×1.75` | Raises the guaranteed **floor** of the tap XP range (clamped ≤ ceiling). |
 | Hitpoints ❤️ | Vitality | `energyRate` | `×1.0 → ×2.0` | Banks **more Supercharge Energy** each time a tap sparks a charge. |
 | Ranged 🏹 | Rapid Fire | `extraHit` | `0 → 60%` | Chance for a tap to land an **extra hit** (100%+ guarantees one and rolls again). |
-| Prayer 🙏 | Blessing | `superchargeBonus` | `+0 → +5` | **Adds flat** to the active Supercharge multiplier. |
 | Magic 🔮 | Enchantment | `doubleXPPotency` | `1.5 → 3.0×` | Empowers **the Daily Boost beyond 1.5×**. |
+
+### Production — taps, idle & the boost economy
+
+| Skill | Perk | Kind | Lever (1 → 99) | Effect |
+|-------|------|------|-----------------|--------|
+| Smithing 🔨 | Foundry | `foregroundRate` | `×1.0 → ×10.0` | Multiplies **foreground idle** XP (app *open*). |
+| Crafting 🧵 | Masterwork | `critMagnitude` | `×2.0 → ×4.0` | **Critical taps hit harder** (crit chance comes from Slayer). |
+| Fletching 🎯 | Extra Ammo | `flatTap` | `+0 → +8` | Adds **flat bonus XP** to every tap. |
+| Runecraft 🌀 | Runic Automaton | `autoTap` | `0 → 3 / s` | **Auto-taps** the skill you're currently training. |
+| Cooking 🍳 | Well Fed | `tapPercent` | `+0% → +50%` | **+% XP on every tap**, on every skill. |
+| Construction 🏠 | Workshop | `offlineCap` | `10h → 48h` | Raises the **offline accrual cap** — bank more hours of away-time XP. |
+| Firemaking 🔥 | Slow Burn | `superchargeDuration` | `×1.0 → ×2.0` | **Supercharge bursts last longer.** |
+
+### Utility — tempo, offline & meta
+
+| Skill | Perk | Kind | Lever (1 → 99) | Effect |
+|-------|------|------|-----------------|--------|
+| Agility 🏃 | Momentum | `combo` | `×1.0 → ×1.6` | Fast tapping builds a **combo multiplier** (ramps over ~20 taps within a 1.2s window). |
+| Hunter 🪤 | Trapper | `offlineRate` | `×1.0 → ×10.0` | Multiplies **offline** passive XP (app *closed*) — traps keep working while you're away. |
+| Slayer 💀 | Assassinate | `critChance` | `0 → 15%` | Chance for a **critical tap** (magnitude comes from Crafting). |
+| Thieving 🥷 | Pickpocket | `refund` | `0% → 50%` | Chance to **refund a spent coupon or Supercharge** ("nick it back"). |
+| Prayer 🙏 | Blessing | `superchargeBonus` | `+0 → +5` | **Adds flat** to the active Supercharge multiplier. |
 
 ### Gathering — feed the idle engine
 
 | Skill | Perk | Kind | Lever (1 → 99) | Effect |
 |-------|------|------|-----------------|--------|
 | Woodcutting 🪓 | Bird's Nests | `cache` | `0 → 12%` | Chance per tap for a **bonus-XP windfall** (`15×` base method XP). |
+| Farming 🌱 | Patient Growth | `offline` | `×1.0 → ×2.0` | Keeps **more offline XP** while the app is closed. |
 | Fishing 🎣 | Big Catch | `energyProc` | `0 → 15%` | **Raises the per-tap chance** to bank Supercharge Energy above the ~2% base. |
 | Mining ⛏️ | Deep Reserves | `energyCap` | `30s → 60s` | Raises the **maximum bankable Energy** for longer Supercharges. |
-| Farming 🌱 | Patient Growth | `offline` | `×1.0 → ×2.0` | Keeps **more offline XP** while the app is closed. |
-| Hunter 🪤 | Trapper | `offlineRate` | `×1.0 → ×10.0` | Multiplies **offline** passive XP (app *closed*) — traps keep working while you're away. |
-
-### Artisan — production & the boost economy
-
-| Skill | Perk | Kind | Lever (1 → 99) | Effect |
-|-------|------|------|-----------------|--------|
-| Cooking 🍳 | Well Fed | `tapPercent` | `+0% → +50%` | **+% XP on every tap**, on every skill. |
-| Firemaking 🔥 | Slow Burn | `superchargeDuration` | `×1.0 → ×2.0` | **Supercharge bursts last longer.** |
-| Crafting 🧵 | Masterwork | `critMagnitude` | `×2.0 → ×4.0` | **Critical taps hit harder** (crit chance comes from Slayer). |
-| Smithing 🔨 | Foundry | `foregroundRate` | `×1.0 → ×10.0` | Multiplies **foreground idle** XP (app *open*). |
-| Fletching 🎯 | Extra Ammo | `flatTap` | `+0 → +8` | Adds **flat bonus XP** to every tap. |
 | Herblore 🧪 | Alchemist | `doubleXPDuration` | `+0 → +300s` | **Daily Boosts last longer.** |
-| Runecraft 🌀 | Runic Automaton | `autoTap` | `0 → 3 / s` | **Auto-taps** the skill you're currently training. |
-| Construction 🏠 | Workshop | `offlineCap` | `10h → 48h` | Raises the **offline accrual cap** — bank more hours of away-time XP. |
-
-### Support — tempo & meta
-
-| Skill | Perk | Kind | Lever (1 → 99) | Effect |
-|-------|------|------|-----------------|--------|
-| Agility 🏃 | Momentum | `combo` | `×1.0 → ×1.6` | Fast tapping builds a **combo multiplier** (ramps over ~20 taps within a 1.2s window). |
-| Thieving 🥷 | Pickpocket | `refund` | `0% → 50%` | Chance to **refund a spent coupon or Supercharge** ("nick it back"). |
-| Slayer 💀 | Assassinate | `critChance` | `0 → 15%` | Chance for a **critical tap** (magnitude comes from Crafting). |
 
 ## Designed synergies
 

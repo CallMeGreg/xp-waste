@@ -20,10 +20,10 @@ long-term goal is the ultimate flex: **level 99 in every skill (a "max cape", to
 
 | Category      | Skills |
 |---------------|--------|
-| Combat (7)    | Attack ⚔️, Strength 💪, Defence 🛡️, Hitpoints ❤️, Ranged 🏹, Prayer 🙏, Magic 🔮 |
-| Gathering (5) | Woodcutting 🪓, Fishing 🎣, Mining ⛏️, Farming 🌱, Hunter 🪤 |
-| Artisan (8)   | Cooking 🍳, Firemaking 🔥, Crafting 🧵, Smithing 🔨, Fletching 🎯, Herblore 🧪, Runecraft 🌀, Construction 🏠 |
-| Support (3)   | Agility 🏃, Thieving 🥷, Slayer 💀 |
+| Combat (6)     | Attack ⚔️, Strength 💪, Defence 🛡️, Hitpoints ❤️, Ranged 🏹, Magic 🔮 |
+| Production (7) | Smithing 🔨, Crafting 🧵, Fletching 🎯, Runecraft 🌀, Cooking 🍳, Construction 🏠, Firemaking 🔥 |
+| Utility (5)    | Agility 🏃, Hunter 🪤, Slayer 💀, Thieving 🥷, Prayer 🙏 |
+| Gathering (5)  | Woodcutting 🪓, Farming 🌱, Fishing 🎣, Mining ⛏️, Herblore 🧪 |
 
 Every skill uses the **exact OSRS XP curve** (level 99 = 13,034,431 XP; 92 → 99 is roughly
 half of that total). All skills start at level 1, so the starting **total level is 23** and
@@ -130,8 +130,8 @@ re-balancing a perk is a one-line change that never touches gameplay or view cod
   Juggle three passive skills + active tapping + Supercharge bursts, and push skills
   into their tier-4 methods (level 50, +12/tap).
 - **Late (total 300–2277):** Tier-5/6 methods (level 70/90) accelerate the brutal
-  OSRS tail. Milestones: first 99 → all combat 99 → all gathering 99 → all artisan 99 → all
-  support 99 → **max cape (2277)**.
+  OSRS tail. Milestones: first 99 → all combat 99 → all production 99 → all utility 99 → all
+  gathering 99 → **max cape (2277)**.
 
 ## 6. Screens & UX
 

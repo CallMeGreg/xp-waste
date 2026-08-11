@@ -14,7 +14,7 @@ struct OnboardingView: View {
 
     private let cards: [Card] = [
         Card(icon: "🏆", title: "Train all 23 skills to 99",
-             body: "Earn experience across 23 different skills — combat, gathering, artisan and support — to level each one up. The goal: reach level 99 in every skill and claim a max cape."),
+             body: "Earn experience across 23 different skills — combat, production, utility and gathering — to level each one up. The goal: reach level 99 in every skill and claim a max cape."),
         Card(icon: "👆", title: "Tap to train",
              body: "Open a skill and tap its object to earn XP. As you level up, that skill's training method improves into a faster, more rewarding one — and every tap earns more."),
         Card(icon: "⚡️", title: "AFK skills & Supercharge charge",

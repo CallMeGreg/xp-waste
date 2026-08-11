@@ -3,9 +3,9 @@ import SwiftUI
 /// High-level grouping used on the Home hub and Stats screen.
 enum SkillCategory: String, Codable, CaseIterable, Identifiable {
     case combat = "Combat"
+    case production = "Production"
+    case utility = "Utility"
     case gathering = "Gathering"
-    case artisan = "Artisan"
-    case support = "Support"
 
     var id: String { rawValue }
 
@@ -13,9 +13,9 @@ enum SkillCategory: String, Codable, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .combat: return "shield.lefthalf.filled"
+        case .production: return "hammer.fill"
+        case .utility: return "figure.run"
         case .gathering: return "leaf.fill"
-        case .artisan: return "hammer.fill"
-        case .support: return "figure.run"
         }
     }
 }
@@ -24,13 +24,13 @@ enum SkillCategory: String, Codable, CaseIterable, Identifiable {
 /// Declaration order is grouped by category so `skills(in:)` reads top-to-bottom per section.
 enum SkillID: String, Codable, CaseIterable, Identifiable {
     // Combat
-    case attack, strength, defence, hitpoints, ranged, prayer, magic
+    case attack, strength, defence, hitpoints, ranged, magic
+    // Production
+    case smithing, crafting, fletching, runecraft, cooking, construction, firemaking
+    // Utility
+    case agility, hunter, slayer, thieving, prayer
     // Gathering
-    case woodcutting, fishing, mining, farming, hunter
-    // Artisan
-    case cooking, firemaking, crafting, smithing, fletching, herblore, runecraft, construction
-    // Support
-    case agility, thieving, slayer
+    case woodcutting, farming, fishing, mining, herblore
 
     var id: String { rawValue }
 
@@ -64,14 +64,14 @@ enum SkillID: String, Codable, CaseIterable, Identifiable {
 
     var category: SkillCategory {
         switch self {
-        case .attack, .strength, .defence, .hitpoints, .ranged, .prayer, .magic:
+        case .attack, .strength, .defence, .hitpoints, .ranged, .magic:
             return .combat
-        case .woodcutting, .fishing, .mining, .farming, .hunter:
+        case .smithing, .crafting, .fletching, .runecraft, .cooking, .construction, .firemaking:
+            return .production
+        case .agility, .hunter, .slayer, .thieving, .prayer:
+            return .utility
+        case .woodcutting, .farming, .fishing, .mining, .herblore:
             return .gathering
-        case .cooking, .firemaking, .crafting, .smithing, .fletching, .herblore, .runecraft, .construction:
-            return .artisan
-        case .agility, .thieving, .slayer:
-            return .support
         }
     }
 

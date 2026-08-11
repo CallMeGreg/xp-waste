@@ -10,10 +10,10 @@ away, build up Energy for big bursts, and chase the max cape across **all 23 ski
 
 Twenty-three skills across four categories — each with its own thematic training:
 
-- **⚔️ Combat** — Attack, Strength, Defence, Hitpoints, Ranged, Magic, Prayer
-- **🌳 Gathering** — Woodcutting, Fishing, Mining, Farming, Hunter
-- **🔨 Artisan** — Cooking, Smithing, Crafting, Fletching, Herblore, Runecraft, Construction, Firemaking
-- **✨ Support** — Agility, Thieving, Slayer
+- **⚔️ Combat** — Attack, Strength, Defence, Hitpoints, Ranged, Magic
+- **🔨 Production** — Smithing, Crafting, Fletching, Runecraft, Cooking, Construction, Firemaking
+- **✨ Utility** — Agility, Hunter, Slayer, Thieving, Prayer
+- **🌳 Gathering** — Woodcutting, Farming, Fishing, Mining, Herblore
 
 Every skill uses the **authentic OSRS experience curve** — level 99 is a hard-earned
 13,034,431 XP, and maxing every skill means a **total level of 2277**.

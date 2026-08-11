@@ -79,12 +79,12 @@ struct StatsView: View {
             milestoneRow("First level 99", done: game.maxedSkillCount >= 1)
             milestoneRow("All combat skills 99",
                          done: SkillID.skills(in: .combat).allSatisfy { game.isMaxed($0) })
+            milestoneRow("All production skills 99",
+                         done: SkillID.skills(in: .production).allSatisfy { game.isMaxed($0) })
+            milestoneRow("All utility skills 99",
+                         done: SkillID.skills(in: .utility).allSatisfy { game.isMaxed($0) })
             milestoneRow("All gathering skills 99",
                          done: SkillID.skills(in: .gathering).allSatisfy { game.isMaxed($0) })
-            milestoneRow("All artisan skills 99",
-                         done: SkillID.skills(in: .artisan).allSatisfy { game.isMaxed($0) })
-            milestoneRow("All support skills 99",
-                         done: SkillID.skills(in: .support).allSatisfy { game.isMaxed($0) })
             ForEach(Array(Balance.slotUnlockTotalLevels.enumerated()), id: \.offset) { i, threshold in
                 milestoneRow("Unlock \(slotOrdinal(i + 2)) AFK slot (total \(threshold))",
                              done: game.totalLevel >= threshold)
