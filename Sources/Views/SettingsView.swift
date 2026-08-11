@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Settings: an at-a-glance progress summary, feedback toggles, a how-to recap, progress reset,
+/// Settings: feedback toggles, a how-to recap, an at-a-glance progress summary, progress reset,
 /// and about info.
 struct SettingsView: View {
     @EnvironmentObject private var game: GameState
@@ -13,8 +13,6 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                statsSection
-
                 Section("Feedback") {
                     Toggle("Haptics", isOn: $game.hapticsEnabled)
                         .onChange(of: game.hapticsEnabled) { _, _ in game.persist() }
@@ -32,6 +30,8 @@ struct SettingsView: View {
                     infoRow("🔥", "Supercharge to spend Energy for bonus XP per tap.")
                     infoRow("🎟️", "Activate a Boost coupon for 5 min of 1.5× XP on every skill — one free daily.")
                 }
+
+                statsSection
 
                 Section("Data") {
                     Button(role: .destructive) { showResetConfirm = true } label: {
