@@ -27,7 +27,8 @@ long-term goal is the ultimate flex: **level 99 in every skill (a "max cape", to
 
 Every skill uses the **exact OSRS XP curve** (level 99 = 13,034,431 XP; 92 → 99 is roughly
 half of that total). All skills start at level 1, so the starting **total level is 23** and
-the max is **2277** (23 × 99).
+the max is **2277** (23 × 99). XP keeps accruing past level 99 up to a hard **200M ceiling per
+skill** (`XPTable.xpCap`, matching OSRS's 200,000,000 experience cap), the ultimate end-game grind.
 
 > _Abstraction note:_ In OSRS, several skills (Hitpoints, Prayer, Slayer…) are trained
 > indirectly. Here every skill is a first-class tap skill, which suits a tapper. Flagged as an
@@ -131,7 +132,7 @@ re-balancing a perk is a one-line change that never touches gameplay or view cod
   into their tier-4 methods (level 50, +12/tap).
 - **Late (total 300–2277):** Tier-5/6 methods (level 70/90) accelerate the brutal
   OSRS tail. Milestones: first 99 → all combat 99 → all production 99 → all utility 99 → all
-  gathering 99 → **max cape (2277)**.
+  gathering 99 → **max cape (2277)** → 200M XP in a skill → **200M XP in every skill**.
 
 ## 6. Screens & UX
 

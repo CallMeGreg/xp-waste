@@ -90,6 +90,9 @@ struct StatsView: View {
                              done: game.totalLevel >= threshold)
             }
             milestoneRow("Max cape — every skill 99", done: game.isFullyMaxed)
+            milestoneRow("200M XP in a skill", done: game.hasAnyMaxXPSkill)
+            milestoneRow("200M XP in every skill (\(game.maxXPSkillCount)/\(SkillID.allCases.count))",
+                         done: game.isFullyMaxXP)
         }
     }
 
