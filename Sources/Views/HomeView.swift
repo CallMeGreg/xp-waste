@@ -185,8 +185,6 @@ private struct SkillStatRow: View {
                 XPProgressBar(progress: XPTable.progressToNextLevel(forXP: game.xp(for: skill)),
                               tint: skill.tint, height: 5)
                 HStack(spacing: 5) {
-                    Image(systemName: skill.buff.icon)
-                        .font(.system(size: 10, weight: .bold)).foregroundStyle(skill.tint)
                     Text("\(skill.buff.name): \(buff)")
                         .font(.caption2).foregroundStyle(.secondary)
                         .lineLimit(1).minimumScaleFactor(0.75)

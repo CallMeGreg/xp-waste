@@ -138,7 +138,6 @@ struct SkillTrainingView: View {
                     .layoutPriority(1)
                 Spacer(minLength: 4)
                 Divider().frame(height: 14).overlay(Color.white.opacity(0.2))
-                Image(systemName: skill.buff.icon).font(.caption).foregroundStyle(skill.tint)
                 Text(skill.buff.name)
                     .font(.caption.weight(.semibold)).foregroundStyle(.primary)
                     .lineLimit(1).layoutPriority(1)
@@ -520,7 +519,6 @@ struct SkillTrainingView: View {
         let change = game.nextBuffChange(for: skill)
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
-                Image(systemName: info.icon).font(.title3).foregroundStyle(skill.tint)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Perk · \(info.name)").font(.caption2).foregroundStyle(.secondary)
                     Text(current)
