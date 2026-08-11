@@ -21,7 +21,7 @@ struct OnboardingView: View {
              body: "Reach level 10 to put a skill in an AFK slot for passive XP. Tapping any skill has a small chance to build Supercharge charge — Fishing's perk raises the odds."),
         Card(icon: "🔥", title: "Supercharge for big bursts",
              body: "Spend a skill's banked charge to Supercharge it — a timed burst of big bonus XP on every tap. The more charge you spend, the longer the burst. In a hurry? Use an Energy Cell to fill the skill you're training instantly."),
-        Card(icon: "🎟️", title: "Daily Boost coupons",
+        Card(icon: "🎟️", title: "Boost Coupons",
              body: "Activate a coupon for a timed burst of multiplied XP across every skill — it even stacks with Supercharge. Claim a free one daily, or grab more anytime."),
         Card(icon: "🌟", title: "Every skill grants a perk",
              body: "Leveling any skill unlocks a permanent, account-wide perk — bigger Energy caps, stronger Supercharge, longer boosts, crit taps, richer daily rewards and more. The higher the level, the more powerful the perk.")

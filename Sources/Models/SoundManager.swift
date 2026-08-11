@@ -19,7 +19,7 @@ final class SoundManager {
         case tap         = "sfx_tap"          // every training tap (core loop)
         case levelUp     = "sfx_levelup"      // a skill gains a level
         case supercharge = "sfx_supercharge"  // spend Energy on a Supercharge burst
-        case energyCell  = "sfx_energycell"   // recharge all slots with an Energy Cell
+        case energyCell  = "sfx_energycell"   // fill the trained skill with an Energy Cell
         case doubleXP    = "sfx_doublexp"     // activate a Daily Boost coupon
         case purchase    = "sfx_purchase"     // an IAP grant lands
         case ui          = "sfx_ui"           // interface navigation (open a panel)

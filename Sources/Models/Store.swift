@@ -3,8 +3,16 @@ import StoreKit
 
 /// Which consumable family a store product belongs to.
 enum ProductKind: Equatable {
-    case coupons   // Daily Boost coupons (an XP multiplier)
+    case coupons   // Boost Coupons (activate for a timed XP multiplier)
     case energy    // Energy Cells (instant Supercharge Energy)
+
+    /// The player-facing item name, correctly pluralized for `count`.
+    func itemName(_ count: Int) -> String {
+        switch self {
+        case .coupons: return count == 1 ? "Boost Coupon" : "Boost Coupons"
+        case .energy:  return count == 1 ? "Energy Cell"  : "Energy Cells"
+        }
+    }
 }
 
 /// A purchasable pack of consumables, presented in the store UI.
@@ -123,7 +131,7 @@ final class Store: ObservableObject {
         guard storeAvailable, let product = products[pack.id] else {
             #if DEBUG
             onGrant?(pack.kind, pack.amount)
-            statusMessage = "Test purchase — added \(pack.amount) \(pack.kind == .coupons ? "coupons" : "Energy Cells")."
+            statusMessage = "Test purchase — added \(pack.amount) \(pack.kind.itemName(pack.amount))."
             #else
             statusMessage = "The Store is unavailable right now. Please try again later."
             #endif

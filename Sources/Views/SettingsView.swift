@@ -28,7 +28,7 @@ struct SettingsView: View {
                     infoRow("⚡️", "Reach level 10 to put a skill in an AFK slot for passive XP.")
                     infoRow("🔋", "Tapping a skill can spark Supercharge charge — Fishing raises the odds.")
                     infoRow("🔥", "Supercharge to spend Energy for bonus XP per tap.")
-                    infoRow("🎟️", "Activate a Daily Boost coupon for 5 min of 1.5× on every skill — one free daily.")
+                    infoRow("🎟️", "Activate a Boost coupon for 5 min of 1.5× XP on every skill — one free daily.")
                 }
 
                 Section("Data") {

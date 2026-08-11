@@ -409,7 +409,7 @@ final class GameState: ObservableObject {
         case .energyRate:          return String(format: "×%.2f Energy per proc", v)
         case .extraHit:            return String(format: "%.0f%% extra hit", v * 100)
         case .superchargeBonus:    return String(format: "+%.0f Supercharge ×", v)
-        case .doubleXPPotency:     return String(format: "%.2f× Daily Boost", v)
+        case .doubleXPPotency:     return String(format: "%.2f× XP Boost", v)
         case .cache:               return String(format: "%.0f%% bonus cache", v * 100)
         case .energyProc:          return String(format: "+%.0f%% charge chance", v * 100)
         case .energyCap:           return String(format: "%.0fs Energy cap", max(Balance.maxEnergySeconds, v))
@@ -420,7 +420,7 @@ final class GameState: ObservableObject {
         case .critMagnitude:       return String(format: "×%.1f crit damage", v)
         case .foregroundRate:      return String(format: "×%.2f idle XP", v)
         case .flatTap:             return String(format: "+%.1f XP per tap", v)
-        case .doubleXPDuration:    return String(format: "+%.0fs Daily Boost", v)
+        case .doubleXPDuration:    return String(format: "+%.0fs XP Boost", v)
         case .autoTap:             return String(format: "%.1f taps/sec", v)
         case .offlineCap:          return String(format: "%.0fh offline cap", max(Balance.maxOfflineHours, v))
         case .combo:               return String(format: "up to ×%.2f combo", v)
@@ -526,7 +526,7 @@ final class GameState: ObservableObject {
         guard count > 0 else { return }
         doubleXPCoupons += count
         if announce {
-            notice = "🎟️ +\(count) Daily Boost coupon\(count == 1 ? "" : "s")"
+            notice = "🎟️ +\(count) Boost Coupon\(count == 1 ? "" : "s")"
         }
         save()
     }
@@ -565,7 +565,7 @@ final class GameState: ObservableObject {
         let granted = Balance.dailyFreeCoupons
         doubleXPCoupons += granted
         if hasSeenOnboarding {
-            notice = "🎁 Daily reward: +\(granted) Daily Boost coupon\(granted == 1 ? "" : "s")"
+            notice = "🎁 Daily reward: +\(granted) Boost Coupon\(granted == 1 ? "" : "s")"
         }
         save()
         return true
