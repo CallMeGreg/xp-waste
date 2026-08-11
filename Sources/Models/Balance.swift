@@ -179,4 +179,20 @@ enum Balance {
     /// Max seconds between taps to keep an Agility combo chaining, and taps needed to reach the ceiling.
     static let agilityComboWindow: TimeInterval = 1.2
     static let agilityComboTapsToMax: Int = 20
+
+    // MARK: Rewards (Adventurer's Log — Feats & Reward Tokens)
+
+    /// Every tunable for the achievement/reward layer. Re-balancing payouts is a one-line change
+    /// here and never touches Feat definitions, gameplay, or view code. See docs/ACHIEVEMENTS.md.
+    enum Rewards {
+        /// Reward Tokens granted for completing a single Feat, by difficulty tier.
+        static let tokensEasy = 5
+        static let tokensMedium = 12
+        static let tokensHard = 30
+        static let tokensElite = 70
+        static let tokensMaster = 150
+
+        /// Flat Token bonus for completing *every* Feat in one Diary tier (a landmark reward).
+        static let diaryTierBonus = 50
+    }
 }

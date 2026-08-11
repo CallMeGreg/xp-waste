@@ -47,18 +47,21 @@ Sources/
             XPTable.swift               # OSRS XP curve
             Balance.swift               # ALL tunable constants (tiers, slots, supercharge, perks…)
             GameState.swift             # source of truth: XP, slots, energy, supercharge, coupons, energy cells
+            GameState+Rewards.swift     # Adventurer's Log engine: Feat evaluation, Token payouts, queries
             SkillBuff.swift             # per-skill unique account-wide perks (BuffKind + theming)
+            Feat.swift                  # Adventurer's Log: Feat/Diary/Tier model + full Feat catalog
             Store.swift                 # StoreKit 2 in-app purchases (coupon + Energy Cell packs)
             SoundManager.swift          # SFX engine: pooled AVAudioPlayers, one cue per game moment
   Views/    RootView / Onboarding / Home / SkillTile
             SkillTrainingView / StatsView / SettingsView / Components
             BoostsView                  # activate Daily Boost, use/buy Energy Cells, both stores
+            AdventurersLogView          # Adventurer's Log sheet: Feats, Diaries, Reward Tokens
   Resources/Sounds/                     # bundled OSRS-inspired SFX (sfx_*.wav) — see SOUND_DESIGN.md
   Assets.xcassets                       # app icon + accent color
 Config/     Products.storekit           # local StoreKit config for testing IAP (2 families)
 Tools/      sound_synth.py              # deterministic generator for the SFX (regenerate/re-pick)
 project.yml                             # XcodeGen project definition (universal: iPhone + iPad)
-docs/       GAME_DESIGN.md, DEVELOPMENT.md, SKILL_BUFFS.md, SOUND_DESIGN.md
+docs/       GAME_DESIGN.md, DEVELOPMENT.md, SKILL_BUFFS.md, SOUND_DESIGN.md, ACHIEVEMENTS.md
 ```
 
 ## Architecture at a glance
@@ -74,6 +77,10 @@ docs/       GAME_DESIGN.md, DEVELOPMENT.md, SKILL_BUFFS.md, SOUND_DESIGN.md
 - **`SkillBuff.swift`** maps each of the 23 skills to a **unique account-wide perk**; the scaling
   envelopes live in `Balance.buffScaling` and the effects are applied in `GameState` (see
   [SKILL_BUFFS.md](SKILL_BUFFS.md)).
+- **`Feat.swift`** + **`GameState+Rewards.swift`** implement the **Adventurer's Log**: a catalog of
+  Feats grouped into themed Diaries and difficulty tiers, evaluated live from gameplay counters,
+  paying out **Reward Tokens**. Token constants live in `Balance.Rewards`; the UI is
+  `AdventurersLogView` (see [ACHIEVEMENTS.md](ACHIEVEMENTS.md)).
 
 ## Tuning
 
@@ -102,14 +109,24 @@ sync with `Products.storekit`, and route grants in `XPWasteApp` (`onGrant`) to `
 Used for deterministic screenshots / UI checks:
 
 - `SEED_DEMO=ready|super` — seeds representative levels, slots, energy, coupons, and Energy Cells
-  (and, for `super`, an active Supercharge + Daily Boost).
+  (and, for `super`, an active Supercharge + Daily Boost). Also seeds a modest Adventurer's Log
+  (counters + Reward Tokens) so the Log isn't empty in demo screenshots.
+- `SEED_REWARDS=1` — seeds a **rich Adventurer's Log**: enough levels to unlock all 5 AFK slots,
+  representative lifetime counters, every currently-satisfied Feat marked complete, cleared
+  Diary tiers, and a healthy Reward Token balance. Ideal for reward-system screenshots.
 - `OPEN_SKILL=<rawValue>` — deep-links Home straight into a skill's training screen.
 - `OPEN_SHEET=doublexp` — auto-presents the Boosts sheet (Daily Boost + Energy Cells).
+- `OPEN_SHEET=log` — auto-presents the Adventurer's Log (Feats & Reward Tokens).
+- `LOG_TAB=feats` — opens the Log on the **Feats** tab (Diary list) instead of Overview.
+- `OPEN_DIARY=<rawValue>` — opens the Log and pushes straight into one Diary's detail
+  (e.g. `combat`, `gathering`, `tycoon`, `completionist`). Implies `OPEN_SHEET=log`.
+- `FEAT_TOAST=1` — surfaces a sample Feat-completion toast on launch (pairs with `SEED_REWARDS`).
 - `OFFLINE_DEMO=1` — seeds a representative **"welcome back"** offline-earnings summary (per-skill
   XP + level-ups) so the sheet can be screenshotted deterministically.
 
 Pass them to the simulator via the `SIMCTL_CHILD_` prefix, e.g.
-`SIMCTL_CHILD_SEED_DEMO=super SIMCTL_CHILD_OPEN_SKILL=attack xcrun simctl launch ...`.
+`SIMCTL_CHILD_SEED_DEMO=super SIMCTL_CHILD_OPEN_SKILL=attack xcrun simctl launch ...` or
+`SIMCTL_CHILD_SEED_REWARDS=1 SIMCTL_CHILD_OPEN_DIARY=combat xcrun simctl launch ...`.
 
 ## Notes
 

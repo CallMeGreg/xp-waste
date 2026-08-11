@@ -233,7 +233,8 @@ constants; the first post-launch pass is pure balancing.
 
 - Yield-scaling / prestige upgrades (including boosts to the offline XP rate/cap).
 - Custom art & animation per skill; SFX and music.
-- Achievements, daily goals, and a "max cape" celebration.
+- Achievements, daily goals, and a "max cape" celebration. **Designed:** see
+  [ACHIEVEMENTS.md](ACHIEVEMENTS.md) (the Adventurer's Log — Feats, Reward Tokens, XP Lamps, capes).
 - iCloud sync; Game Center leaderboards for total level.
 - Skill interactions (e.g., gathering feeds a crafting loop).
 
