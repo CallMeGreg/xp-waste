@@ -30,19 +30,23 @@ struct HomeView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        SoundManager.shared.play(.ui, enabled: game.soundEnabled)
-                        showStats = true
-                    } label: {
-                        Image(systemName: "chart.bar.fill")
-                    }
-                }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        SoundManager.shared.play(.ui, enabled: game.soundEnabled)
-                        showSettings = true
-                    } label: {
-                        Image(systemName: "gearshape.fill")
+                    HStack(spacing: 8) {
+                        Button {
+                            SoundManager.shared.play(.ui, enabled: game.soundEnabled)
+                            showStats = true
+                        } label: {
+                            Image(systemName: "chart.bar.fill").circleToolbarButton()
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Stats")
+                        Button {
+                            SoundManager.shared.play(.ui, enabled: game.soundEnabled)
+                            showSettings = true
+                        } label: {
+                            Image(systemName: "gearshape.fill").circleToolbarButton()
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Settings")
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -199,4 +203,21 @@ private struct BoostsIcons: View {
         .background(tint.opacity(0.16), in: Capsule())
         .overlay(Capsule().strokeBorder(tint.opacity(0.45)))
     }
+}
+
+/// Wraps a top-bar glyph in its own circular chip so each control reads as a
+/// distinct, separate button (matches the app's translucent-card styling).
+private struct CircleToolbarButton: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.footnote.weight(.bold))
+            .foregroundStyle(.primary)
+            .frame(width: 34, height: 34)
+            .background(Color.white.opacity(0.10), in: Circle())
+            .overlay(Circle().strokeBorder(Color.white.opacity(0.22)))
+    }
+}
+
+private extension View {
+    func circleToolbarButton() -> some View { modifier(CircleToolbarButton()) }
 }
