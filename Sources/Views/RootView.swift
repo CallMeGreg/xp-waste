@@ -4,16 +4,27 @@ import SwiftUI
 /// and a shared level-up toast.
 struct RootView: View {
     @EnvironmentObject private var game: GameState
+    @State private var tab = 0
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         ZStack {
             if game.hasSeenOnboarding {
-                TabView {
+                TabView(selection: $tab) {
                     HomeView()
+                        .tag(0)
                         .tabItem { Label("Skills", systemImage: "square.grid.2x2.fill") }
                     RaidsView()
+                        .tag(1)
                         .tabItem { Label("Raids", systemImage: "flag.checkered") }
+                }
+                .onAppear {
+                    #if DEBUG
+                    let env = ProcessInfo.processInfo.environment
+                    if env["OPEN_TAB"]?.lowercased() == "raids" || env["OPEN_RAID"] != nil || env["OPEN_APPLY"] != nil {
+                        tab = 1
+                    }
+                    #endif
                 }
             } else {
                 OnboardingView()

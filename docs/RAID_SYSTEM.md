@@ -343,9 +343,12 @@ category's symbol/tint for cohesion; add any new vector emblems (boss, forge, ma
 Add, guarded by `#if DEBUG`, consistent with the existing `SEED_DEMO` / `OPEN_SKILL` hooks and
 passed via `SIMCTL_CHILD_*`:
 
-- `OPEN_RAID=<combat|production|utility|gathering>` — deep-link straight into a raid session.
+- `OPEN_TAB=raids` — launch straight onto the Raids tab (the hub).
+- `OPEN_RAID=<combat|production|utility|gathering>` — deep-link straight into a raid session
+  (implies the Raids tab).
 - `FORCE_RAID_TIER=<0…5>` — override the auto tier for capturing every difficulty.
 - `SEED_LAMPS=<group:count,…>` — seed banked lamps to shoot the inventory/apply UI.
+- `OPEN_APPLY=<combat|production|utility|gathering>` — auto-present that group's lamp-apply sheet.
 - `RAID_RESULT=<win|lose>` — jump to a result screen for deterministic victory/defeat shots.
 
 The implementation PR must include **iPhone and iPad** captures of `RaidsView`, a session of each of

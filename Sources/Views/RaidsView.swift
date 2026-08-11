@@ -36,10 +36,16 @@ struct RaidsView: View {
             }
             .onAppear {
                 #if DEBUG
+                let env = ProcessInfo.processInfo.environment
                 if raidingGroup == nil,
-                   let raw = ProcessInfo.processInfo.environment["OPEN_RAID"],
+                   let raw = env["OPEN_RAID"],
                    let group = SkillCategory.allCases.first(where: { $0.rawValue.lowercased() == raw.lowercased() }) {
                     raidingGroup = group
+                }
+                if applyGroup == nil,
+                   let raw = env["OPEN_APPLY"],
+                   let group = SkillCategory.allCases.first(where: { $0.rawValue.lowercased() == raw.lowercased() }) {
+                    applyGroup = group
                 }
                 #endif
             }
