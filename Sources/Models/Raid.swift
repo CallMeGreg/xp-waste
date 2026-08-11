@@ -60,6 +60,12 @@ extension SkillCategory {
         let names = ["Bronze", "Iron", "Steel", "Mithril", "Adamant", "Rune"]
         return names[min(max(tier, 0), names.count - 1)]
     }
+
+    /// Tint for a raid tier, matching the named material (Bronze → bronze, Rune → runite) via the
+    /// shared metal ladder — so the tier badge reads as its metal, not the raid's group theme.
+    static func raidTierColor(_ tier: Int) -> Color {
+        Palette.metal[min(max(tier, 0), Palette.metal.count - 1)]
+    }
 }
 
 /// A banked, unspent XP lamp bound to one skill group. Earned by clearing that group's raid; spent

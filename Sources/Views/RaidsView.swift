@@ -12,7 +12,6 @@ struct RaidsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 14) {
-                    RaidsHeader(lampCount: game.raidLamps.count)
                     ForEach(SkillCategory.allCases) { group in
                         RaidCard(
                             group: group,
@@ -50,34 +49,6 @@ struct RaidsView: View {
                 #endif
             }
         }
-    }
-}
-
-/// Compact hub header explaining the loop and showing banked-lamp count.
-private struct RaidsHeader: View {
-    let lampCount: Int
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("RAIDS").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-                Text("Clear a raid for an XP lamp")
-                    .font(.subheadline.weight(.semibold))
-                Text("One attempt per group each day")
-                    .font(.caption2).foregroundStyle(.secondary)
-            }
-            Spacer()
-            HStack(spacing: 5) {
-                ArtworkView(art: .vector(.genieLamp), size: 18, color: .yellow)
-                Text("\(lampCount)").font(.headline.weight(.bold)).monospacedDigit()
-            }
-            .padding(.horizontal, 12).padding(.vertical, 8)
-            .background(Color.yellow.opacity(0.14), in: Capsule())
-            .overlay(Capsule().strokeBorder(Color.yellow.opacity(0.4)))
-            .accessibilityLabel("\(lampCount) lamps")
-        }
-        .padding(.horizontal, 16).padding(.vertical, 12)
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.white.opacity(0.08)))
     }
 }
 
@@ -176,15 +147,16 @@ private struct RaidCard: View {
     }
 
     private func tierBadge(_ tier: Int) -> some View {
-        VStack(spacing: 1) {
+        let tierColor = SkillCategory.raidTierColor(tier)
+        return VStack(spacing: 1) {
             Text(SkillCategory.raidTierName(tier).uppercased())
                 .font(.caption2.weight(.heavy))
             Text("TIER \(tier + 1)").font(.system(size: 9, weight: .bold)).foregroundStyle(.secondary)
         }
         .padding(.horizontal, 10).padding(.vertical, 6)
-        .background(group.raidTint.opacity(0.18), in: Capsule())
-        .overlay(Capsule().strokeBorder(group.raidTint.opacity(0.5)))
-        .foregroundStyle(group.raidTint)
+        .background(tierColor.opacity(0.18), in: Capsule())
+        .overlay(Capsule().strokeBorder(tierColor.opacity(0.5)))
+        .foregroundStyle(tierColor)
     }
 }
 
