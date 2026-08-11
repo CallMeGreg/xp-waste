@@ -139,6 +139,9 @@ final class GameState: ObservableObject {
     func isEligibleForSlot(_ skill: SkillID) -> Bool { level(for: skill) >= Balance.slotEligibilityLevel }
     func isMaxed(_ skill: SkillID) -> Bool { level(for: skill) >= XPTable.maxLevel }
 
+    /// True when a skill has hit the 200M XP ceiling (`XPTable.xpCap`) — the ultimate grind.
+    func isMaxXP(_ skill: SkillID) -> Bool { xp(for: skill) >= XPTable.xpCap }
+
     /// Progress (0...1) of banked Energy toward the (perk-adjusted) cap.
     func energyFraction(for skill: SkillID) -> Double {
         min(energy(for: skill) / energyCapSeconds, 1.0)
@@ -174,6 +177,13 @@ final class GameState: ObservableObject {
     }
     var maxedSkillCount: Int { SkillID.allCases.filter { isMaxed($0) }.count }
     var isFullyMaxed: Bool { maxedSkillCount == SkillID.allCases.count }
+
+    /// How many skills have reached the 200M XP ceiling.
+    var maxXPSkillCount: Int { SkillID.allCases.filter { isMaxXP($0) }.count }
+    /// True once at least one skill has reached 200M XP.
+    var hasAnyMaxXPSkill: Bool { maxXPSkillCount >= 1 }
+    /// True once *every* skill has reached the 200M XP ceiling — the ultimate end-game flex.
+    var isFullyMaxXP: Bool { maxXPSkillCount == SkillID.allCases.count }
     var hasFreeSlot: Bool { slots.count < maxSlots }
 
     // MARK: Training methods
@@ -696,10 +706,13 @@ final class GameState: ObservableObject {
     private func addXP(_ amount: Double, to skill: SkillID, announceLevelUp: Bool = true) {
         guard amount > 0 else { return }
         let current = xpBySkill[skill] ?? 0
+        let cap = Double(XPTable.xpCap)
+        guard current < cap else { return }   // already at the 200M ceiling — nothing to add
         let oldLevel = XPTable.level(forXP: Int(current.rounded(.down)))
         // XP keeps accruing past level 99 (the progress bar simply stays full); the level itself
-        // is capped at 99 by `XPTable.level`, so a maxed skill never re-announces a level-up.
-        let updated = current + amount
+        // is capped at 99 by `XPTable.level`, so a maxed skill never re-announces a level-up. XP
+        // itself is hard-capped at the 200M ceiling (`XPTable.xpCap`).
+        let updated = min(current + amount, cap)
         xpBySkill[skill] = updated
         let newLevel = XPTable.level(forXP: Int(updated.rounded(.down)))
         if announceLevelUp, newLevel > oldLevel {

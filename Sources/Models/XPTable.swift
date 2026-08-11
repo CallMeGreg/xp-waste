@@ -24,6 +24,11 @@ enum XPTable {
     /// Total XP required to fully max the skill (reach level 99).
     static let maxXP = xpForLevel[maxLevel]
 
+    /// The hard XP ceiling for a single skill, matching OSRS's 200,000,000 experience cap.
+    /// Level 99 is reached far earlier (13,034,431 XP); XP keeps accruing past 99 but stops
+    /// dead here. Reaching it is the ultimate end-game flex.
+    static let xpCap = 200_000_000
+
     /// Cumulative XP required to reach a given level (clamped to 1...99).
     static func xp(toReach level: Int) -> Int {
         xpForLevel[min(max(level, 1), maxLevel)]
