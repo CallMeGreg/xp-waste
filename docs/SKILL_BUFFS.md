@@ -53,7 +53,7 @@ Values below are **level 1 → level 99** (the full envelope). "Kind" is the `Bu
 
 | Skill | Perk | Kind | Lever (1 → 99) | Effect |
 |-------|------|------|-----------------|--------|
-| Smithing 🔨 | Foundry | `foregroundRate` | `×1.0 → ×10.0` | Multiplies **foreground idle** XP (app *open*). |
+| Smithing 🔨 | Foundry | `foregroundRate` | `×1.0 → ×5.0` | Multiplies **foreground idle** XP (app *open*). |
 | Crafting 🧵 | Masterwork | `critMagnitude` | `×2.0 → ×4.0` | **Critical taps hit harder** (crit chance comes from Slayer). |
 | Fletching 🎯 | Extra Ammo | `flatTap` | `+0 → +8` | Adds **flat bonus XP** to every tap. |
 | Runecraft 🌀 | Runic Automaton | `autoTap` | `0 → 3 / s` | **Auto-taps** the skill you're currently training. |
@@ -66,7 +66,7 @@ Values below are **level 1 → level 99** (the full envelope). "Kind" is the `Bu
 | Skill | Perk | Kind | Lever (1 → 99) | Effect |
 |-------|------|------|-----------------|--------|
 | Agility 🏃 | Momentum | `combo` | `×1.0 → ×1.6` | Fast tapping builds a **combo multiplier** (ramps over ~20 taps within a 1.2s window). |
-| Hunter 🪤 | Trapper | `offlineRate` | `×1.0 → ×10.0` | Multiplies **offline** passive XP (app *closed*) — traps keep working while you're away. |
+| Hunter 🪤 | Trapper | `offlineRate` | `×1.0 → ×5.0` | Multiplies **offline** passive XP (app *closed*) — traps keep working while you're away. |
 | Slayer 💀 | Assassinate | `critChance` | `0 → 15%` | Chance for a **critical tap** (magnitude comes from Crafting). |
 | Thieving 🥷 | Pickpocket | `refund` | `0% → 50%` | Chance to **refund a spent coupon or Supercharge** ("nick it back"). |
 | Prayer 🙏 | Blessing | `superchargeBonus` | `+0 → +5` | **Adds flat** to the active Supercharge multiplier. |
