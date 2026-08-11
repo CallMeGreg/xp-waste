@@ -7,7 +7,6 @@ import SwiftUI
 struct BoostsView: View {
     @EnvironmentObject private var game: GameState
     @EnvironmentObject private var store: Store
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
@@ -30,13 +29,9 @@ struct BoostsView: View {
                     .frame(maxWidth: 640)
                     .frame(maxWidth: .infinity)
                 }
+                .background(GameBackground())
                 .navigationTitle("Shop")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Done") { dismiss() }
-                    }
-                }
                 #if DEBUG
                 .onAppear {
                     // Deterministic screenshots of the lower "Token Packs" (IAP) section.

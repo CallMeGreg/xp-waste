@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// Settings: feedback toggles, a how-to recap, progress reset, and about info.
+/// Settings: an at-a-glance progress summary, feedback toggles, a how-to recap, progress reset,
+/// and about info.
 struct SettingsView: View {
     @EnvironmentObject private var game: GameState
-    @Environment(\.dismiss) private var dismiss
     @State private var showResetConfirm = false
 
     private var version: String {
@@ -13,6 +13,8 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
+                statsSection
+
                 Section("Feedback") {
                     Toggle("Haptics", isOn: $game.hapticsEnabled)
                         .onChange(of: game.hapticsEnabled) { _, _ in game.persist() }
@@ -49,17 +51,33 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
-            }
             .alert("Reset all progress?", isPresented: $showResetConfirm) {
                 Button("Reset", role: .destructive) { game.resetProgress() }
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("This permanently erases all levels, XP, slots and Energy.")
             }
+        }
+    }
+
+    /// A compact account overview (moved here from the former Stats screen).
+    private var statsSection: some View {
+        Section("Stats") {
+            statRow("Total level", "\(game.totalLevel) / \(game.maxTotalLevel)")
+            statRow("Total XP", Format.abbrev(game.totalXP))
+            statRow("Skills maxed", "\(game.maxedSkillCount) / \(SkillID.allCases.count)")
+            statRow("AFK slots", "\(game.slots.count) / \(game.maxSlots)")
+            statRow("Supercharge", "×\(game.effectiveSuperchargeMultiplier) tap XP")
+            statRow("Boost Coupons", "\(game.doubleXPCoupons)")
+            statRow("Energy Cells", "\(game.energyCells)")
+        }
+    }
+
+    private func statRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label)
+            Spacer()
+            Text(value).foregroundStyle(.secondary).monospacedDigit()
         }
     }
 

@@ -64,6 +64,15 @@ requirement, not an afterthought.**
   emoji art** — emblems and methods reference SF Symbols or the custom `VectorIcon` set. Add new
   art here, not inline in views.
 - **`Store.swift`** wraps StoreKit 2 for consumable Double XP coupon packs.
+- **`RootView.swift`** hosts the top-level navigation: a **custom bottom tab bar** (`AppTabBar`)
+  with five tabs — **Skills · Raids · Shop · Log · Settings** — placed identically on iPhone and
+  iPad (iPadOS floats the *native* `TabView` bar at the top, so the app uses a hand-rolled bar via
+  `.safeAreaInset(edge: .bottom)`). Each tab owns its own `NavigationStack`; global toasts and the
+  offline-progress sheet stay at the root so they overlay every tab. There is **no separate Stats
+  screen** — its former content is split across three tabs: overview stats live in **Settings**,
+  the Milestones/achievements checklist in **Log**, and per-skill buff descriptors in **Skills**.
+- **Skills tab** (`HomeView`) pins the **Total Level** header above the scroll view so it stays
+  visible while scrolling, and shows the active **XP Boost** banner there whenever a boost is live.
 
 ## Training methods (core theming rule)
 
@@ -113,8 +122,12 @@ Used for deterministic screenshots / UI checks — preserve them when refactorin
 
 - `SEED_DEMO=ready|super` — seeds representative levels, slots, energy, coupons (and, for
   `super`, an active Supercharge + Double XP boost).
-- `OPEN_SKILL=<rawValue>` — deep-links Home straight into a skill's training screen.
-- `OPEN_SHEET=doublexp` — auto-presents the Double XP sheet.
+- `OPEN_TAB=<skills|raids|shop|log|settings>` — launches directly on that bottom tab.
+- `OPEN_SKILL=<rawValue>` — selects the **Skills** tab and deep-links straight into a skill's
+  training screen.
+- `OPEN_SHEET=doublexp` — selects the **Shop** tab; `OPEN_SHEET=log` selects the **Log** tab.
+- `LOG_SCROLL=milestones` — on the **Log** tab, auto-scrolls the Overview down to the migrated
+  Milestones (achievements) checklist so it can be screenshotted from the CLI.
 - `OFFLINE_DEMO=1` — seeds a representative "welcome back" offline-earnings summary sheet.
 
 Pass them to the simulator via the `SIMCTL_CHILD_` prefix, e.g.
@@ -129,7 +142,7 @@ Pass them to the simulator via the `SIMCTL_CHILD_` prefix, e.g.
 - **Any PR that changes UI components must include screenshots of the affected UI in the PR
   description.** Show representative examples of the new/updated screens, and because this is a
   universal app, include **both iPhone and iPad** captures (and any relevant orientation/size-class
-  variants). Use the debug hooks above (`SEED_DEMO`, `OPEN_SKILL`, `OPEN_SHEET`, `OFFLINE_DEMO`) to
-  produce deterministic screenshots.
+  variants). Use the debug hooks above (`SEED_DEMO`, `OPEN_TAB`, `OPEN_SKILL`, `OPEN_SHEET`,
+  `OFFLINE_DEMO`) to produce deterministic screenshots.
 - Commit messages include:
   `Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>`.
