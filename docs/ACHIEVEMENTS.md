@@ -199,8 +199,8 @@ zones, top to bottom:
 |-----|----------------|--------------|
 | **Boost Coupon ×1** | **250** | One timed all-skill XP multiplier (the existing Double-XP coupon) |
 | **Boost Coupon ×5** | **1,250** | Five, at the same unit price |
-| **Energy Cell ×1** | **120** | Instantly fills the skill you're training to full Supercharge |
-| **Energy Cell ×5** | **600** | Five, at the same unit price |
+| **Energy Cell ×1** | **100** | Instantly fills the skill you're training to full Supercharge |
+| **Energy Cell ×5** | **500** | Five, at the same unit price |
 
 Buying adds to the **same inventory** the game already uses (`doubleXPCoupons`, `energyCells`), so all
 existing use-flows — the daily free coupon, `activateDoubleXP`, `useEnergyCell` on the training
@@ -222,7 +222,7 @@ costs many Feats' worth of Tokens.** Concrete anchors (all in `Balance.Rewards`)
 
 What this produces:
 
-- **A Boost Coupon (250) costs ~2 Master Feats or ~50 Easy Feats.** An Energy Cell (120) is about one
+- **A Boost Coupon (250) costs ~2 Master Feats or ~50 Easy Feats.** An Energy Cell (100) is about one
   Master Feat. So achievement Tokens *do* buy real play — but deliberately slowly.
 - **The entire free game (~4,189 Tokens) sits between the Sack (4,000) and Chest (9,000).** A single
   ~$5–10 purchase therefore exceeds *everything* you could ever earn from achievements → "paying gives
@@ -374,7 +374,7 @@ Each phase is centralized-constants-first, so balancing every one is a `Balance.
 
 `Balance.Rewards` centralizes the entire economy: **per-Feat Token grants** by tier
 (5/12/30/70/150), the **Diary-tier bonus** (50), **Shop prices** (`boostCouponCost` 250,
-`energyCellCost` 120), and **IAP grants** (`iapTokensSmall` 1,500, `iapTokensMedium` 4,000,
+`energyCellCost` 100), and **IAP grants** (`iapTokensSmall` 1,500, `iapTokensMedium` 4,000,
 `iapTokensLarge` 9,000). Per house rule, **re-balancing this system never touches gameplay or view
 code** — every number above is one edit here.
 
@@ -405,7 +405,7 @@ Settled during design review:
 3. **IAP — Token packs only.** Money buys the currency, not consumables directly; no XP-power or
    one-time-unlock products in this revision.
 4. **Scale — paying ≫ grinding.** Per-Feat 5–150; 100% completion ≈ 4,189 Tokens; Shop 250 (Boost) /
-   120 (Cell); IAP 1,500 / 4,000 / 9,000. A single ~$5–10 pack exceeds the entire achievement haul,
+   100 (Cell); IAP 1,500 / 4,000 / 9,000. A single ~$5–10 pack exceeds the entire achievement haul,
    yet one Shop item still costs many Feats — so both paths feel worthwhile.
 
 ### Still to tune (needs play-session data, not a design blocker)

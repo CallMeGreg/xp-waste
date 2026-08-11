@@ -190,7 +190,7 @@ enum Balance {
     /// Feats and *bought* via IAP (`iapTokens*`), then *spent* in the Shop on Boost Coupons and
     /// Energy Cells (`*Cost`). The scale is deliberately tiered so that paying yields far more than
     /// grinding achievements: the entire Feat catalog pays out ≈ 4,200 Tokens, a single Feat pays
-    /// 5–150, one shop item costs 120–250 (so it takes many Feats to afford one), and even the
+    /// 5–150, one shop item costs 100–250 (so it takes many Feats to afford one), and even the
     /// smallest IAP pack (1,500) dwarfs any single Feat and buys several shop items outright.
     enum Rewards {
         /// Tokens granted for completing a single Feat, by difficulty tier.
@@ -209,7 +209,7 @@ enum Balance {
         /// because a Boost affects every skill at once. ≈ one Master Feat, or a long run of easy ones.
         static let boostCouponCost = 250
         /// Tokens to buy one **Energy Cell** (an instant single-skill Supercharge fill).
-        static let energyCellCost = 120
+        static let energyCellCost = 100
 
         // MARK: IAP — Tokens granted per real-money pack
 
