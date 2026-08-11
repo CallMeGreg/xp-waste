@@ -4,7 +4,6 @@ import SwiftUI
 /// Clear a raid (once per group per day) to bank an XP **lamp** for that group, spendable on any one
 /// of its skills. Universal & responsive: width-capped and centered, adaptive to iPhone / iPad.
 struct RaidsView: View {
-    @EnvironmentObject private var game: GameState
     @Binding var tab: AppTab
     @State private var raidingGroup: SkillCategory?
     @State private var applyGroup: SkillCategory?
@@ -13,7 +12,6 @@ struct RaidsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 14) {
-                    RaidsHeader(lampCount: game.raidLamps.count)
                     ForEach(SkillCategory.allCases) { group in
                         RaidCard(
                             group: group,
@@ -56,34 +54,6 @@ struct RaidsView: View {
                 #endif
             }
         }
-    }
-}
-
-/// Compact hub header explaining the loop and showing banked-lamp count.
-private struct RaidsHeader: View {
-    let lampCount: Int
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("RAIDS").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-                Text("Clear a raid for an XP lamp")
-                    .font(.subheadline.weight(.semibold))
-                Text("One attempt per group each day")
-                    .font(.caption2).foregroundStyle(.secondary)
-            }
-            Spacer()
-            HStack(spacing: 5) {
-                ArtworkView(art: .vector(.genieLamp), size: 18, color: .yellow)
-                Text("\(lampCount)").font(.headline.weight(.bold)).monospacedDigit()
-            }
-            .padding(.horizontal, 12).padding(.vertical, 8)
-            .background(Color.yellow.opacity(0.14), in: Capsule())
-            .overlay(Capsule().strokeBorder(Color.yellow.opacity(0.4)))
-            .accessibilityLabel("\(lampCount) lamps")
-        }
-        .padding(.horizontal, 16).padding(.vertical, 12)
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.white.opacity(0.08)))
     }
 }
 
