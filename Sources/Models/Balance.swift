@@ -149,12 +149,12 @@ enum Balance {
         .fishing:      BuffScaling(at1: 0.0,   at99: 10.0),   // big catch: ×base Supercharge charge chance (0×→10×)
         .mining:       BuffScaling(at1: maxEnergySeconds, at99: 60.0), // deep reserves: Energy cap (seconds)
         .farming:      BuffScaling(at1: 1.0,   at99: 2.0),    // patient growth: offline XP efficiency ×
-        .hunter:       BuffScaling(at1: 1.0,   at99: 10.0),   // trapper: OFFLINE passive XP rate × (app closed)
+        .hunter:       BuffScaling(at1: 1.0,   at99: 5.0),    // trapper: OFFLINE passive XP rate × (app closed)
         // Artisan — production & the boost economy
         .cooking:      BuffScaling(at1: 0.0,   at99: 0.50),   // well fed: +fraction to all tap XP
         .firemaking:   BuffScaling(at1: 1.0,   at99: 2.0),    // slow burn: Supercharge duration ×
         .crafting:     BuffScaling(at1: 2.0,   at99: 4.0),    // masterwork: crit magnitude ×
-        .smithing:     BuffScaling(at1: 1.0,   at99: 10.0),   // foundry: FOREGROUND idle XP rate × (app open)
+        .smithing:     BuffScaling(at1: 1.0,   at99: 5.0),    // foundry: FOREGROUND idle XP rate × (app open)
         .fletching:    BuffScaling(at1: 0.0,   at99: 8.0),    // extra ammo: +flat XP per tap
         .herblore:     BuffScaling(at1: 0.0,   at99: 300.0),  // alchemist: +seconds to Daily Boost duration
         .runecraft:    BuffScaling(at1: 0.0,   at99: 3.0),    // runic automaton: auto-taps per second
@@ -236,5 +236,45 @@ enum Balance {
     /// Reward multiplier for a given raid tier (clamped; default 1.0).
     static func raidTierBonus(forTier tier: Int) -> Double {
         raidTierRewardBonus[min(max(tier, 0), raidTierRewardBonus.count - 1)]
+    }
+
+    // MARK: Rewards (Adventurer's Log — Feats & universal Tokens)
+
+    /// Every tunable for the achievement/reward economy. Re-balancing payouts, shop prices, or IAP
+    /// grants is a one-line change here and never touches Feat definitions, gameplay, or view code.
+    /// See docs/ACHIEVEMENTS.md.
+    ///
+    /// **One currency.** Tokens are the single spendable currency. They are *earned* by completing
+    /// Feats and *bought* via IAP (`iapTokens*`), then *spent* in the Shop on Boost Coupons and
+    /// Energy Cells (`*Cost`). The scale is deliberately tiered so that paying yields far more than
+    /// grinding achievements: the entire Feat catalog pays out ≈ 4,200 Tokens, a single Feat pays
+    /// 5–150, one shop item costs 100–250 (so it takes many Feats to afford one), and even the
+    /// smallest IAP pack (500) dwarfs any single Feat and buys several shop items outright.
+    enum Rewards {
+        /// Tokens granted for completing a single Feat, by difficulty tier.
+        static let tokensEasy = 5
+        static let tokensMedium = 12
+        static let tokensHard = 30
+        static let tokensElite = 70
+        static let tokensMaster = 150
+
+        /// Flat Token bonus for completing *every* Feat in one Diary tier (a landmark reward).
+        static let diaryTierBonus = 50
+
+        // MARK: Shop prices — Tokens spent to acquire a consumable
+
+        /// Tokens to buy one **Boost Coupon** (a timed all-skill XP multiplier). Pricier than a Cell
+        /// because a Boost affects every skill at once. ≈ one Master Feat, or a long run of easy ones.
+        static let boostCouponCost = 250
+        /// Tokens to buy one **Energy Cell** (an instant single-skill Supercharge fill).
+        static let energyCellCost = 100
+
+        // MARK: IAP — Tokens granted per real-money pack
+
+        /// Tokens granted by the small / medium / large Token packs. Each dwarfs a single Feat so
+        /// buying is a big jump, and the large pack alone exceeds a full achievement clear.
+        static let iapTokensSmall = 500
+        static let iapTokensMedium = 3_000
+        static let iapTokensLarge = 7_500
     }
 }

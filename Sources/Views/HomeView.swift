@@ -8,6 +8,7 @@ struct HomeView: View {
     @State private var showStats = false
     @State private var showSettings = false
     @State private var showBoosts = false
+    @State private var showLog = false
     @State private var path: [SkillID] = []
 
     var body: some View {
@@ -54,15 +55,22 @@ struct HomeView: View {
                     TabSwitcher(selection: $tab)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    BoostsIcons {
-                        SoundManager.shared.play(.ui, enabled: game.soundEnabled)
-                        showBoosts = true
+                    HStack(spacing: 8) {
+                        LogChip {
+                            SoundManager.shared.play(.ui, enabled: game.soundEnabled)
+                            showLog = true
+                        }
+                        BoostsIcons {
+                            SoundManager.shared.play(.ui, enabled: game.soundEnabled)
+                            showBoosts = true
+                        }
                     }
                 }
             }
             .sheet(isPresented: $showStats) { StatsView() }
             .sheet(isPresented: $showSettings) { SettingsView() }
             .sheet(isPresented: $showBoosts) { BoostsView() }
+            .sheet(isPresented: $showLog) { AdventurersLogView() }
             .onAppear {
                 #if DEBUG
                 if path.isEmpty,
@@ -70,9 +78,12 @@ struct HomeView: View {
                    let skill = SkillID(rawValue: raw) {
                     path = [skill]
                 }
-                if ProcessInfo.processInfo.environment["OPEN_SHEET"] == "doublexp" {
-                    showBoosts = true
+                switch ProcessInfo.processInfo.environment["OPEN_SHEET"] {
+                case "doublexp": showBoosts = true
+                case "log":      showLog = true
+                default:         break
                 }
+                if ProcessInfo.processInfo.environment["OPEN_DIARY"] != nil { showLog = true }
                 #endif
             }
         }
@@ -168,6 +179,28 @@ private struct SkillStatRow: View {
         }
         .padding(.horizontal, 12).padding(.vertical, 9)
         .contentShape(Rectangle())
+    }
+}
+
+/// A gold toolbar chip showing the Reward Token balance; opens the Adventurer's Log.
+private struct LogChip: View {
+    @EnvironmentObject private var game: GameState
+    var onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 4) {
+                Image(systemName: "book.closed.fill")
+                    .font(.footnote.weight(.bold)).foregroundStyle(Color.rewardToken)
+                Text("\(game.tokens)")
+                    .font(.caption.weight(.bold)).monospacedDigit().foregroundStyle(.primary)
+            }
+            .padding(.horizontal, 8).padding(.vertical, 6)
+            .background(Color.rewardToken.opacity(0.16), in: Capsule())
+            .overlay(Capsule().strokeBorder(Color.rewardToken.opacity(0.45)))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Adventurer's Log, \(game.tokens) Reward Tokens")
     }
 }
 

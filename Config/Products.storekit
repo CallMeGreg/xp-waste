@@ -8,28 +8,28 @@
       "internalID" : "6001000001",
       "localizations" : [
         {
-          "description" : "1 Daily Boost coupon",
-          "displayName" : "Pouch of Coupons",
+          "description" : "500 Tokens — spend on Boosts and Energy Cells",
+          "displayName" : "Pouch of Tokens",
           "locale" : "en_US"
         }
       ],
-      "productID" : "com.callmegreg.xpwaste.coupons.small",
-      "referenceName" : "Pouch of Coupons",
+      "productID" : "com.callmegreg.xpwaste.tokens.small",
+      "referenceName" : "Pouch of Tokens",
       "type" : "Consumable"
     },
     {
-      "displayPrice" : "3.99",
+      "displayPrice" : "4.99",
       "familyShareable" : false,
       "internalID" : "6001000002",
       "localizations" : [
         {
-          "description" : "5 Daily Boost coupons",
-          "displayName" : "Sack of Coupons",
+          "description" : "3,000 Tokens — spend on Boosts and Energy Cells",
+          "displayName" : "Sack of Tokens",
           "locale" : "en_US"
         }
       ],
-      "productID" : "com.callmegreg.xpwaste.coupons.medium",
-      "referenceName" : "Sack of Coupons",
+      "productID" : "com.callmegreg.xpwaste.tokens.medium",
+      "referenceName" : "Sack of Tokens",
       "type" : "Consumable"
     },
     {
@@ -38,58 +38,13 @@
       "internalID" : "6001000003",
       "localizations" : [
         {
-          "description" : "20 Daily Boost coupons",
-          "displayName" : "Chest of Coupons",
+          "description" : "7,500 Tokens — best value; spend on Boosts and Energy Cells",
+          "displayName" : "Chest of Tokens",
           "locale" : "en_US"
         }
       ],
-      "productID" : "com.callmegreg.xpwaste.coupons.large",
-      "referenceName" : "Chest of Coupons",
-      "type" : "Consumable"
-    },
-    {
-      "displayPrice" : "0.99",
-      "familyShareable" : false,
-      "internalID" : "6001000004",
-      "localizations" : [
-        {
-          "description" : "3 Energy Cells — instantly fills the skill you're training",
-          "displayName" : "Spark Cells",
-          "locale" : "en_US"
-        }
-      ],
-      "productID" : "com.callmegreg.xpwaste.energy.small",
-      "referenceName" : "Spark Cells",
-      "type" : "Consumable"
-    },
-    {
-      "displayPrice" : "2.99",
-      "familyShareable" : false,
-      "internalID" : "6001000005",
-      "localizations" : [
-        {
-          "description" : "10 Energy Cells — instantly fills the skill you're training",
-          "displayName" : "Charged Cells",
-          "locale" : "en_US"
-        }
-      ],
-      "productID" : "com.callmegreg.xpwaste.energy.medium",
-      "referenceName" : "Charged Cells",
-      "type" : "Consumable"
-    },
-    {
-      "displayPrice" : "6.99",
-      "familyShareable" : false,
-      "internalID" : "6001000006",
-      "localizations" : [
-        {
-          "description" : "30 Energy Cells — instantly fills the skill you're training",
-          "displayName" : "Power Core",
-          "locale" : "en_US"
-        }
-      ],
-      "productID" : "com.callmegreg.xpwaste.energy.large",
-      "referenceName" : "Power Core",
+      "productID" : "com.callmegreg.xpwaste.tokens.large",
+      "referenceName" : "Chest of Tokens",
       "type" : "Consumable"
     }
   ],

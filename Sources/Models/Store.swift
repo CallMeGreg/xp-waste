@@ -1,78 +1,53 @@
 import Foundation
 import StoreKit
 
-/// Which consumable family a store product belongs to.
-enum ProductKind: Equatable {
-    case coupons   // Boost Coupons (activate for a timed XP multiplier)
-    case energy    // Energy Cells (instant Supercharge Energy)
-
-    /// The player-facing item name, correctly pluralized for `count`.
-    func itemName(_ count: Int) -> String {
-        switch self {
-        case .coupons: return count == 1 ? "Boost Coupon" : "Boost Coupons"
-        case .energy:  return count == 1 ? "Energy Cell"  : "Energy Cells"
-        }
-    }
-}
-
-/// A purchasable pack of consumables, presented in the store UI.
+/// A purchasable pack of **universal Tokens**, presented in the Shop.
 ///
 /// This is a lightweight view-model over a StoreKit `Product`, so the UI can render
-/// (and be previewed/tested) without depending on live App Store connectivity.
-struct StorePack: Identifiable, Equatable {
+/// (and be previewed/tested) without depending on live App Store connectivity. Tokens are the
+/// single spendable currency: bought here, earned from Feats, and spent on Boost Coupons and
+/// Energy Cells (see `docs/ACHIEVEMENTS.md`).
+struct TokenPack: Identifiable, Equatable {
     let id: String
-    let kind: ProductKind
     let title: String
-    /// Number of coupons (or Energy Cells) granted by this pack.
-    let amount: Int
+    /// Number of Tokens granted by this pack.
+    let tokens: Int
     let priceText: String
     var bestValue: Bool = false
 }
 
-/// Wraps StoreKit 2 to sell two families of consumables: Daily Boost coupons and Energy Cells.
+/// Wraps StoreKit 2 to sell **Token packs** — the one IAP family. Consumables no longer sell
+/// coupons or Energy Cells directly; players buy Tokens and spend them in the Shop instead.
 ///
 /// Products are defined in `Config/Products.storekit` for local testing (wired into the
 /// scheme) and would map to App Store Connect products in production. Successful, verified
-/// purchases call `onGrant` with the product family and the amount to credit.
+/// purchases call `onGrant` with the number of Tokens to credit.
 @MainActor
 final class Store: ObservableObject {
 
-    // Daily Boost coupon packs (an XP multiplier).
-    static let couponSmallID = "com.callmegreg.xpwaste.coupons.small"
-    static let couponMediumID = "com.callmegreg.xpwaste.coupons.medium"
-    static let couponLargeID = "com.callmegreg.xpwaste.coupons.large"
+    // Universal Token packs.
+    static let tokenSmallID = "com.callmegreg.xpwaste.tokens.small"
+    static let tokenMediumID = "com.callmegreg.xpwaste.tokens.medium"
+    static let tokenLargeID = "com.callmegreg.xpwaste.tokens.large"
 
-    // Energy Cell packs (instant Supercharge Energy).
-    static let energySmallID = "com.callmegreg.xpwaste.energy.small"
-    static let energyMediumID = "com.callmegreg.xpwaste.energy.medium"
-    static let energyLargeID = "com.callmegreg.xpwaste.energy.large"
+    static let productIDs = [tokenSmallID, tokenMediumID, tokenLargeID]
 
-    static let productIDs = [couponSmallID, couponMediumID, couponLargeID,
-                             energySmallID, energyMediumID, energyLargeID]
-
-    /// What each product grants: its family and amount. Keep in sync with `Config/Products.storekit`.
-    static let grants: [String: (kind: ProductKind, amount: Int)] = [
-        couponSmallID:  (.coupons, 1),
-        couponMediumID: (.coupons, 5),
-        couponLargeID:  (.coupons, 20),
-        energySmallID:  (.energy, 3),
-        energyMediumID: (.energy, 10),
-        energyLargeID:  (.energy, 30)
+    /// How many Tokens each product grants. Keep in sync with `Config/Products.storekit`.
+    /// Amounts live in `Balance.Rewards` so re-balancing the economy stays a one-file change.
+    static let grants: [String: Int] = [
+        tokenSmallID:  Balance.Rewards.iapTokensSmall,
+        tokenMediumID: Balance.Rewards.iapTokensMedium,
+        tokenLargeID:  Balance.Rewards.iapTokensLarge
     ]
 
-    @Published private(set) var packs: [StorePack] = []
+    @Published private(set) var packs: [TokenPack] = []
     @Published private(set) var storeAvailable = false
     @Published private(set) var isLoading = false
     @Published var purchasingID: String?
     @Published var statusMessage: String?
 
-    /// Invoked with the product family and amount to credit after a verified purchase.
-    var onGrant: ((ProductKind, Int) -> Void)?
-
-    /// Packs in the Daily Boost coupon family, in catalog order.
-    var couponPacks: [StorePack] { packs.filter { $0.kind == .coupons } }
-    /// Packs in the Energy Cell family, in catalog order.
-    var energyPacks: [StorePack] { packs.filter { $0.kind == .energy } }
+    /// Invoked with the number of Tokens to credit after a verified purchase.
+    var onGrant: ((Int) -> Void)?
 
     private var products: [String: Product] = [:]
     private var updatesTask: Task<Void, Never>?
@@ -95,14 +70,13 @@ final class Store: ObservableObject {
             let loaded = try await Product.products(for: Self.productIDs)
             products = Dictionary(uniqueKeysWithValues: loaded.map { ($0.id, $0) })
 
-            let built: [StorePack] = Self.productIDs.compactMap { id in
-                guard let product = products[id], let grant = Self.grants[id] else { return nil }
-                return StorePack(id: id,
-                                 kind: grant.kind,
+            let built: [TokenPack] = Self.productIDs.compactMap { id in
+                guard let product = products[id], let tokens = Self.grants[id] else { return nil }
+                return TokenPack(id: id,
                                  title: product.displayName,
-                                 amount: grant.amount,
+                                 tokens: tokens,
                                  priceText: product.displayPrice,
-                                 bestValue: id == Self.couponLargeID || id == Self.energyLargeID)
+                                 bestValue: id == Self.tokenLargeID)
             }
 
             if !built.isEmpty {
@@ -122,18 +96,18 @@ final class Store: ObservableObject {
         #endif
     }
 
-    /// Purchase a pack. On success, the grant is credited via `onGrant`.
-    func purchase(_ pack: StorePack) async {
+    /// Purchase a pack. On success, the Tokens are credited via `onGrant`.
+    func purchase(_ pack: TokenPack) async {
         statusMessage = nil
         purchasingID = pack.id
         defer { purchasingID = nil }
 
         guard storeAvailable, let product = products[pack.id] else {
             #if DEBUG
-            onGrant?(pack.kind, pack.amount)
-            statusMessage = "Test purchase — added \(pack.amount) \(pack.kind.itemName(pack.amount))."
+            onGrant?(pack.tokens)
+            statusMessage = "Test purchase — added \(pack.tokens) Tokens."
             #else
-            statusMessage = "The Store is unavailable right now. Please try again later."
+            statusMessage = "The Shop is unavailable right now. Please try again later."
             #endif
             return
         }
@@ -172,12 +146,12 @@ final class Store: ObservableObject {
         await transaction.finish()
     }
 
-    /// Credits the grant for a verified product id (falling back to the tapped pack if unknown).
-    private func grant(for productID: String, fallback: StorePack?) {
-        if let grant = Self.grants[productID] {
-            onGrant?(grant.kind, grant.amount)
+    /// Credits the Tokens for a verified product id (falling back to the tapped pack if unknown).
+    private func grant(for productID: String, fallback: TokenPack?) {
+        if let tokens = Self.grants[productID] {
+            onGrant?(tokens)
         } else if let fallback {
-            onGrant?(fallback.kind, fallback.amount)
+            onGrant?(fallback.tokens)
         }
     }
 
@@ -189,15 +163,12 @@ final class Store: ObservableObject {
     }
 
     #if DEBUG
-    /// Placeholder catalog so the store UI renders when no live products are available
+    /// Placeholder catalog so the Shop renders when no live products are available
     /// (e.g. running from the command line without the scheme's StoreKit configuration).
-    static let mockPacks: [StorePack] = [
-        StorePack(id: couponSmallID, kind: .coupons, title: "Pouch of Coupons", amount: 1, priceText: "$0.99"),
-        StorePack(id: couponMediumID, kind: .coupons, title: "Sack of Coupons", amount: 5, priceText: "$3.99"),
-        StorePack(id: couponLargeID, kind: .coupons, title: "Chest of Coupons", amount: 20, priceText: "$9.99", bestValue: true),
-        StorePack(id: energySmallID, kind: .energy, title: "Spark Cells", amount: 3, priceText: "$0.99"),
-        StorePack(id: energyMediumID, kind: .energy, title: "Charged Cells", amount: 10, priceText: "$2.99"),
-        StorePack(id: energyLargeID, kind: .energy, title: "Power Core", amount: 30, priceText: "$6.99", bestValue: true)
+    static let mockPacks: [TokenPack] = [
+        TokenPack(id: tokenSmallID, title: "Pouch of Tokens", tokens: Balance.Rewards.iapTokensSmall, priceText: "$0.99"),
+        TokenPack(id: tokenMediumID, title: "Sack of Tokens", tokens: Balance.Rewards.iapTokensMedium, priceText: "$4.99"),
+        TokenPack(id: tokenLargeID, title: "Chest of Tokens", tokens: Balance.Rewards.iapTokensLarge, priceText: "$9.99", bestValue: true)
     ]
     #endif
 }

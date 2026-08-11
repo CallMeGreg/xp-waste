@@ -191,8 +191,8 @@ regenerate or re-pick the cues.
 | Constant | Value |
 |----------|-------|
 | Training method tiers | +1 / 3 / 6 / 12 / 25 / 50 XP-per-tap, unlocking at level 1 / 15 / 30 / 50 / 70 / 90 |
-| Passive rate | ~1 action / sec / slotted skill, valued at the skill's current method XP; **Smithing** multiplies the foreground (app-open) rate up to ×10 |
-| Offline passive XP | 40% base rate, scaled by **Hunter** (×1 → ×10) and capped by **Construction** at 10 h → 48 h of away time (window resets on return) |
+| Passive rate | ~1 action / sec / slotted skill, valued at the skill's current method XP; **Smithing** multiplies the foreground (app-open) rate up to ×5 |
+| Offline passive XP | 40% base rate, scaled by **Hunter** (×1 → ×5) and capped by **Construction** at 10 h → 48 h of away time (window resets on return) |
 | Energy charge | ~2% base chance per tap to bank 1 sec (Fishing raises the chance, Hitpoints the amount) |
 | Energy cap | 30 sec Supercharge (Mining raises it) |
 | Slot eligibility | skill level ≥ 10 |
@@ -233,7 +233,8 @@ constants; the first post-launch pass is pure balancing.
 
 - Yield-scaling / prestige upgrades (including boosts to the offline XP rate/cap).
 - Custom art & animation per skill; SFX and music.
-- Achievements, daily goals, and a "max cape" celebration.
+- Achievements, daily goals, and a "max cape" celebration. **Designed:** see
+  [ACHIEVEMENTS.md](ACHIEVEMENTS.md) (the Adventurer's Log — Feats, Reward Tokens, XP Lamps, capes).
 - iCloud sync; Game Center leaderboards for total level.
 - Skill interactions (e.g., gathering feeds a crafting loop).
 
