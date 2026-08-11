@@ -226,7 +226,7 @@ struct SkillTrainingView: View {
             .buttonStyle(PressableStyle())
         } else if game.isEligibleForSlot(skill) {
             Button {
-                if !game.toggleSlot(skill) { showSlotManager = true }
+                showSlotManager = true
             } label: {
                 compactControl {
                     controlGlyph(.bolt, .secondary)
@@ -243,8 +243,7 @@ struct SkillTrainingView: View {
     }
 
     private var slotLabel: String {
-        if let idx = game.slotIndex(of: skill) { return "AFK \(idx + 1)" }
-        return "AFK'ing"
+        game.isSlotted(skill) ? "AFK" : "AFK'ing"
     }
 
     /// The primary Supercharge action. Adapts across states: a big enabled CTA that names its
@@ -357,44 +356,56 @@ struct SkillTrainingView: View {
 
     // MARK: Slot manager sheet (item 7 — swap a full AFK slot instead of a dead-end alert)
 
-    /// Shown when every AFK slot is full and the player tries to slot this skill. Lists the
-    /// currently-slotted skills and lets the player swap one out for this one in a single tap.
+    /// The AFK slot manager. Always shown when the player taps "AFK" on an eligible skill (even
+    /// with a free slot open), so slotting is an explicit choice. Offers an "Assign" row when a
+    /// slot is free and lets the player swap the skill in for any currently-slotted one.
     private var slotManagerSheet: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("All \(game.maxSlots) AFK slots are full")
+                    Text(game.hasFreeSlot ? "Assign an AFK slot"
+                                          : "All \(game.maxSlots) AFK slots are full")
                         .font(.headline)
-                    Text("Swap one out to AFK **\(skill.displayName)** instead, or raise your total level to unlock another slot.")
+                    Text(game.hasFreeSlot
+                         ? "Add **\(skill.displayName)** to a free AFK slot, or swap it in for another skill below."
+                         : "Swap one out to AFK **\(skill.displayName)** instead, or raise your total level to unlock another slot.")
                         .font(.subheadline).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    ForEach(Array(game.slots.enumerated()), id: \.element) { index, slotted in
+
+                    if game.hasFreeSlot {
                         Button {
-                            if game.swapSlot(remove: slotted, add: skill), game.hapticsEnabled {
-                                superchargeHaptic += 1
-                            }
+                            game.toggleSlot(skill)
+                            if game.hapticsEnabled { superchargeHaptic += 1 }
                             showSlotManager = false
                         } label: {
-                            HStack(spacing: 12) {
-                                ArtworkView(art: slotted.art, size: 26, color: slotted.tint)
-                                    .frame(width: 30, height: 30)
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(slotted.displayName).font(.subheadline.weight(.semibold))
-                                        .foregroundStyle(.primary)
-                                    Text("AFK \(index + 1) · lv. \(game.level(for: slotted))")
-                                        .font(.caption2).foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                Label("Swap out", systemImage: "arrow.left.arrow.right")
-                                    .font(.caption.weight(.semibold)).foregroundStyle(skill.tint)
-                                    .labelStyle(.titleAndIcon)
-                            }
-                            .padding(12)
-                            .frame(maxWidth: .infinity)
-                            .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
-                            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.white.opacity(0.08)))
+                            slotManagerRow(art: skill.art, tint: skill.tint,
+                                           title: skill.displayName,
+                                           subtitle: "Add to a free AFK slot",
+                                           actionText: "Assign", actionIcon: "plus.circle.fill",
+                                           highlighted: true)
                         }
                         .buttonStyle(PressableStyle(scale: 0.98))
+                    }
+
+                    if !game.slots.isEmpty {
+                        Text("Swap out")
+                            .font(.caption.weight(.bold)).foregroundStyle(.secondary)
+                            .padding(.top, 4)
+                        ForEach(game.slots, id: \.self) { slotted in
+                            Button {
+                                if game.swapSlot(remove: slotted, add: skill), game.hapticsEnabled {
+                                    superchargeHaptic += 1
+                                }
+                                showSlotManager = false
+                            } label: {
+                                slotManagerRow(art: slotted.art, tint: slotted.tint,
+                                               title: slotted.displayName,
+                                               subtitle: "AFK · lv. \(game.level(for: slotted))",
+                                               actionText: "Swap out", actionIcon: "arrow.left.arrow.right",
+                                               highlighted: false)
+                            }
+                            .buttonStyle(PressableStyle(scale: 0.98))
+                        }
                     }
                 }
                 .padding(20)
@@ -410,6 +421,29 @@ struct SkillTrainingView: View {
             }
         }
         .presentationDetents([.medium, .large])
+    }
+
+    /// One row in the slot-manager sheet: a skill emblem, its label, and a trailing action chip.
+    private func slotManagerRow(art: SkillArt, tint: Color, title: String, subtitle: String,
+                                actionText: String, actionIcon: String, highlighted: Bool) -> some View {
+        HStack(spacing: 12) {
+            ArtworkView(art: art, size: 26, color: tint)
+                .frame(width: 30, height: 30)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                Text(subtitle).font(.caption2).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Label(actionText, systemImage: actionIcon)
+                .font(.caption.weight(.semibold)).foregroundStyle(skill.tint)
+                .labelStyle(.titleAndIcon)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity)
+        .background(highlighted ? skill.tint.opacity(0.12) : Color.white.opacity(0.05),
+                    in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14)
+            .strokeBorder(highlighted ? skill.tint.opacity(0.4) : Color.white.opacity(0.08)))
     }
 
     // MARK: Details sheet (full method + perk info, one tap from the chip)

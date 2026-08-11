@@ -60,8 +60,8 @@ struct SkillTileView: View {
             } else if ready {
                 Label("Ready", systemImage: "flame")
                     .font(.caption2.weight(.semibold)).foregroundStyle(.orange)
-            } else if slotted, let idx = game.slotIndex(of: skill) {
-                Label("AFK \(idx + 1)", systemImage: "bolt.fill")
+            } else if slotted {
+                Label("AFK", systemImage: "bolt.fill")
                     .font(.caption2.weight(.semibold)).foregroundStyle(.yellow)
             } else if game.isMaxed(skill) {
                 Label("Maxed", systemImage: "checkmark.seal.fill")
