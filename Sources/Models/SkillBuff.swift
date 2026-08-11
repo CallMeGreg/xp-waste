@@ -66,7 +66,7 @@ extension SkillID {
                                  blurb: "Adds to your active Supercharge multiplier.")
         case .magic:
             return SkillBuffInfo(kind: .doubleXPPotency, name: "Enchantment", icon: "wand.and.stars",
-                                 blurb: "Empowers the Daily Boost beyond 1.5×.")
+                                 blurb: "Empowers the XP Boost beyond 1.5×.")
 
         // MARK: Gathering
         case .woodcutting:
@@ -103,7 +103,7 @@ extension SkillID {
                                  blurb: "Adds flat bonus XP to every tap.")
         case .herblore:
             return SkillBuffInfo(kind: .doubleXPDuration, name: "Alchemist", icon: "hourglass",
-                                 blurb: "Daily Boosts last longer.")
+                                 blurb: "XP Boosts last longer.")
         case .runecraft:
             return SkillBuffInfo(kind: .autoTap, name: "Runic Automaton", icon: "cpu.fill",
                                  blurb: "Auto-taps the skill you're training.")

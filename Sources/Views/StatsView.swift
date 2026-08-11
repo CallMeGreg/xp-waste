@@ -35,7 +35,7 @@ struct StatsView: View {
             statRow("Skills maxed", "\(game.maxedSkillCount) / \(SkillID.allCases.count)")
             statRow("AFK slots", "\(game.slots.count) / \(game.maxSlots)")
             statRow("Supercharge", "×\(game.effectiveSuperchargeMultiplier) tap XP")
-            statRow("Daily Boost coupons", "\(game.doubleXPCoupons)")
+            statRow("Boost Coupons", "\(game.doubleXPCoupons)")
             statRow("Energy Cells", "\(game.energyCells)")
         }
     }
