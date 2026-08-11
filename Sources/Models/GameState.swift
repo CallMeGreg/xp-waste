@@ -592,6 +592,52 @@ final class GameState: ObservableObject {
         evaluateFeats(.currency)
     }
 
+    // MARK: - Shop (spend Tokens)
+
+    /// Credit Tokens from a completed IAP purchase, with feedback, and persist immediately.
+    func creditPurchasedTokens(_ count: Int) {
+        guard count > 0 else { return }
+        tokens += count
+        notice = "🪙 +\(count) Tokens"
+        save()
+    }
+
+    /// Tokens needed to buy `quantity` Boost Coupons.
+    func boostCouponPrice(_ quantity: Int = 1) -> Int { Balance.Rewards.boostCouponCost * max(quantity, 1) }
+    /// Tokens needed to buy `quantity` Energy Cells.
+    func energyCellPrice(_ quantity: Int = 1) -> Int { Balance.Rewards.energyCellCost * max(quantity, 1) }
+
+    /// Whether the player can afford `quantity` Boost Coupons right now.
+    func canBuyBoostCoupon(_ quantity: Int = 1) -> Bool { tokens >= boostCouponPrice(quantity) }
+    /// Whether the player can afford `quantity` Energy Cells right now.
+    func canBuyEnergyCell(_ quantity: Int = 1) -> Bool { tokens >= energyCellPrice(quantity) }
+
+    /// Spend Tokens to buy `quantity` Boost Coupons. No-op (returns false) if unaffordable.
+    @discardableResult
+    func buyBoostCoupon(_ quantity: Int = 1) -> Bool {
+        let qty = max(quantity, 1)
+        let price = boostCouponPrice(qty)
+        guard tokens >= price else { return false }
+        tokens -= price
+        doubleXPCoupons += qty
+        notice = "🎟️ +\(qty) Boost Coupon\(qty == 1 ? "" : "s") — \(price) Tokens"
+        save()
+        return true
+    }
+
+    /// Spend Tokens to buy `quantity` Energy Cells. No-op (returns false) if unaffordable.
+    @discardableResult
+    func buyEnergyCell(_ quantity: Int = 1) -> Bool {
+        let qty = max(quantity, 1)
+        let price = energyCellPrice(qty)
+        guard tokens >= price else { return false }
+        tokens -= price
+        energyCells += qty
+        notice = "🔋 +\(qty) Energy Cell\(qty == 1 ? "" : "s") — \(price) Tokens"
+        save()
+        return true
+    }
+
     // MARK: - Energy Cell actions
 
     /// Add Energy Cells to the player's balance (from a completed purchase).

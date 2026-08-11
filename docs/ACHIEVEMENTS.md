@@ -3,17 +3,20 @@
 A design proposal to deepen XP Waste's mid-game and end-game by turning the flat, unrewarded
 **Milestones** checklist into a living **achievement + reward economy**. OSRS-flavoured in name and
 tone, but with mechanics tuned for a mobile tapper. Nothing here changes the core loop — it wraps a
-layer of goals, currency, and cosmetics **around** it.
+layer of goals and a single spendable currency **around** it.
 
-> **Status:** design only. This document specifies mechanics, UX, data model, balance, and
+> **Status:** design. This document specifies mechanics, UX, data model, balance, and
 > monetization so it can be built in phases (see [§11](#11-rollout-phases)). No gameplay numbers are
 > final; every one lands in `Balance.swift` per the project's "re-balancing never touches gameplay
-> code" rule.
+> code" rule. **Phase 1 (Feats + Tokens) and the unified Token economy (this revision) are
+> implemented.**
 >
-> **Resolved design decisions** (see [§14](#14-resolved-decisions)): single spendable currency
-> (**Reward Tokens**) with **Total Level** as the prestige meter; **XP Lamps are the headline reward
-> and primary Token sink**; the premium IAP is a **one-time Adventurer's Pass**; Lamps apply to
-> **any skill freely**.
+> **Resolved design decisions** (see [§14](#14-resolved-decisions)): a **single spendable currency —
+> Tokens — is the whole economy.** Tokens are *earned* by completing Feats and *bought* via IAP, then
+> *spent* in the Shop on the game's two consumables (**Boost Coupons** and **Energy Cells**). There
+> are no XP Lamps and no direct coupon/cell IAP: money buys Tokens, Tokens buy consumables. **Total
+> Level** remains the prestige meter. The scale is tuned so paying yields far more Tokens than
+> grinding Feats, and one shop item costs many Feats' worth of Tokens.
 
 ---
 
@@ -32,49 +35,44 @@ Four gaps:
 4. **Only one flavour of "flex."** Max cape is the sole cosmetic identity; there's nothing to
    collect, equip, or show off along the way.
 
-The **Adventurer's Log** fills all four with one coherent system.
+The **Adventurer's Log** and unified **Token economy** tackle these: gaps 1–3 are addressed by the
+shipped Feats + spendable Tokens (earn achievements → spend on Boosts/Cells), and gap 4 (collectible
+cosmetic "flex") is left for a future phase.
 
 ---
 
-## 2. System overview — one hub, one currency
+## 2. System overview — one currency, one Shop
 
 Everything lives behind a single new toolbar entry on the Home hub: the **Adventurer's Log**
-(a `book.closed.fill` button beside Stats/Settings). Inside, the pieces feed one economy:
+(a `book.closed.fill` button beside Stats/Settings) for earning, and the existing **Shop** for
+spending. One currency ties them together:
 
 ```mermaid
 flowchart TD
     Play["Core loop\n(tap · AFK · Supercharge · Boost)"] -->|triggers| Feats
     Feats["① Feats\n(achievement tasks in Diaries)"] -->|award| Tokens
-    Daily["③ Daily & Weekly Feats\n(rotating, streaks)"] -->|award| Tokens["② Reward Tokens\n(single spendable currency)"]
-    TotalLevel["Total Level 23→2277\n(existing prestige meter)"] -->|unlocks tiers of| Vault
-    Tokens -->|spend| Vault["④ Reward Vault"]
-    Vault -->|primary sink| Lamps["XP Lamps\n(choose any skill · time, not power)"]
-    Vault -->|cosmetic sink| Cosmetics["Capes · trims · themes"]
-    TotalLevel -->|unlocks| CapeLadder["Metal cape ladder\n(Bronze → Third Age)"]
-    Feats --> Log["Collection Log\n(completion %, the flex)"]
-    Cosmetics --> Log
-    CapeLadder --> Log
-    IAP(["In-app purchases"]) -.expedite.-> Tokens
-    IAP -.expedite.-> Lamps
-    IAP -.unlock content.-> Pass["Adventurer's Pass\n(one-time: bonus Diary + cosmetics)"]
-    Pass --> Feats
+    IAP(["② In-app purchase\n(Token packs — real money)"]) -->|top up| Tokens["★ Tokens\n(single currency)"]
+    Tokens -->|spend in the Shop| Boosts["Boost Coupons\n(timed all-skill XP)"]
+    Tokens -->|spend in the Shop| Cells["Energy Cells\n(instant Supercharge fill)"]
+    Boosts --> Play
+    Cells --> Play
 ```
 
 - **① Feats** — concrete, checkable achievement tasks, grouped into themed **Diaries** with
-  difficulty tiers (§4). Completing one awards **Reward Tokens**.
-- **② Reward Tokens** — the single spendable currency, earned from Feats, Daily/Weekly tasks, and
-  streaks; spent in the Vault; optionally topped up via IAP (§10).
-- **③ Daily & Weekly Feats** — a rotating, streak-building engagement loop (§5).
-- **④ Reward Vault** — spend Tokens on **XP Lamps** (the headline reward — §6.1),
-  **cosmetic capes/trims/themes** (§6.2), and modest **quality-of-life unlocks** (§6.3).
+  difficulty tiers (§4). Completing one awards **Tokens**.
+- **② IAP** — real-money **Token packs** top up the same pouch (§10). This is the *only* IAP: there
+  are no direct consumable purchases anymore.
+- **★ Tokens** — the single currency. Earned from Feats, bought via IAP, and **spent in the Shop**
+  on the two existing consumables:
+  - **Boost Coupons** — a timed XP multiplier on every skill.
+  - **Energy Cells** — an instant, single-skill Supercharge fill.
 
 The existing **Total Level** (23 → 2277) stays the account's **prestige meter** — we don't add a
-second score to compete with it. Total Level also gates the Vault's growing stock and unlocks a
-**cosmetic metal cape ladder** (§3). A **Collection Log** (§7) ties it together as a completion
-percentage — the completionist end-game.
+second score to compete with it.
 
-**One currency, one metaphor** — Tokens are coins in your pouch. No parallel score to reason about,
-so the UI stays legible on iPhone.
+**One currency, one metaphor** — Tokens are coins in your pouch. Achievements *earn* coins slowly;
+IAP *buys* coins in bulk; the Shop is where coins turn into play. No parallel score, so the UI stays
+legible on iPhone.
 
 ---
 
@@ -84,10 +82,11 @@ Rather than invent a new lifetime score, the design leans on the number the game
 displays front-and-centre: **Total Level**, climbing 23 → 2277. It's monotonic, familiar, and
 already the Home header's hero stat.
 
-To give that climb the OSRS-flavoured "where am I on the ladder" read, Total Level unlocks a
-**cosmetic cape ladder** that reuses OSRS's universally-understood metal ordering. Each rung is a
-purely cosmetic **equippable cape emblem** (rendered via `Artwork.swift`), granted free on reaching
-its Total-Level threshold — a glanceable flex, not a power gate:
+To give that climb the OSRS-flavoured "where am I on the ladder" read, Total Level can later unlock a
+**cosmetic cape ladder** that reuses OSRS's universally-understood metal ordering. Each rung would be
+a purely cosmetic **equippable cape emblem** (rendered via `Artwork.swift`), granted free on reaching
+its Total-Level threshold — a glanceable flex, not a power gate. *(This cosmetic ladder is a **future**
+idea, not part of the current Token-economy revision.)*
 
 | Rung | Cape | Illustrative Total Level |
 |-----:|------|--------------------------:|
@@ -102,8 +101,7 @@ its Total-Level threshold — a glanceable flex, not a power gate:
 | 9 | **Barrows** | 2200 |
 | 10 | **Third Age** | 2277 (max cape territory) |
 
-Thresholds live in `Balance.capeLadder` and are a one-line re-tune. The ladder also drives **Vault
-stock gating** (§6): higher rungs unlock more Vault shelves, so the shop grows as you climb.
+Thresholds would live in `Balance.capeLadder`, a one-line re-tune. *(Future — see the note above.)*
 
 ---
 
@@ -125,13 +123,12 @@ account's actual activities.
 | **Idler's Diary** | AFK slots & offline | slots filled, offline returns, idle XP |
 | **Tycoon's Diary** | the boost economy | Boosts, Energy Cells, stacked multipliers |
 | **Completionist's Diary** | the long haul | 99s, category sweeps, max cape, 200M (folds in **all** of today's Milestones so nothing is lost) |
-| **Explorer's Diary** *(Pass)* | premium bonus set | unlocked by the Adventurer's Pass (§10) |
 
 ### 4.2 Difficulty tiers (within each Diary)
 
 `Easy → Medium → Hard → Elite → Master`. Higher tiers award more Tokens. Completing **every Feat in a
-tier** grants a **Diary-tier reward**: a chunky XP Lamp, a **trimmed** version of that category's
-cape, and a Token bonus. (In OSRS, completing a diary tier is a landmark — we keep that weight.)
+tier** grants a **Diary-tier bonus** — a chunky flat Token reward on top of the individual Feats. (In
+OSRS, completing a diary tier is a landmark — we keep that weight, paid in Tokens.)
 
 ### 4.3 Example Feats (concrete, hooked to existing mechanics)
 
@@ -160,14 +157,16 @@ progress is visible and motivating.
 
 ### 4.4 Feat rewards
 
-Each Feat awards **Tokens** scaled by its tier (illustrative: Easy 5 → Master 120). A handful of
-signature Feats also grant a **named cosmetic** directly (e.g. "Max a skill" → that skill's **Cape of
-Accomplishment**). Diary-tier completion adds a bonus Lamp + trimmed cape + Tokens. All values live
-in `Balance`.
+Each Feat awards **Tokens** scaled by its tier: **Easy 5 · Medium 12 · Hard 30 · Elite 70 · Master
+150**. Completing an entire tier of a Diary adds a flat **Diary-tier bonus** (50 Tokens). All values
+live in `Balance.Rewards` — re-tuning the economy never touches gameplay or view code.
 
 ---
 
-## 5. Daily & Weekly Feats — the return loop
+## 5. Daily & Weekly Feats — the return loop *(future)*
+
+> **Not part of the current economy revision** — a future engagement layer. Documented here so the
+> data model leaves room for it. When built, every payout is in **Tokens** (never permanent power).
 
 A rotating set of small tasks that refresh on a schedule (reusing the existing `dayKey()` mechanism
 and a new `weekKey()`), giving the missing reason to open the app every day.
@@ -175,79 +174,82 @@ and a new `weekKey()`), giving the missing reason to open the app every day.
 - **3 Daily Feats** — light, same-session tasks: "Tap 500 times", "Level up any skill 3×", "Spend a
   Boost", "Collect 5 caches". Award Tokens.
 - **1 Weekly Feat** — a bigger push: "Gain 2 levels across any skills", "Complete 6 Daily Feats this
-  week". Awards a Lamp + Tokens.
+  week". Awards a larger Token bonus.
 - **Adventurer's Streak** — a consecutive-day counter (like the daily coupon, but escalating).
-  Longer streaks multiply daily Token payouts up to a cap, and hit **streak milestones** (7/30/100
-  days) that grant cosmetics. Missing a day resets the streak (never your Total Level or owned
-  cosmetics), which rewards returning without harshly punishing lapses.
+  Longer streaks multiply daily Token payouts up to a cap. Missing a day resets the streak (never
+  your Total Level), rewarding returning without harshly punishing lapses.
 
-This layer is intentionally **all Tokens + cosmetics** — never permanent power — so daily play is
-rewarding but a missed day is never a power setback.
-
----
-
-## 6. Reward Vault — spending Tokens
-
-A new **Vault** tab in the Log (styled like the existing Shop's family cards). You spend **Reward
-Tokens** here. Your **Total Level** rung (§3) gates what's in stock, so the shelf grows as you climb.
-
-### 6.1 XP Lamps — the headline reward (sell *time*, not power)
-
-Straight out of OSRS quest rewards ("antique lamp"), Lamps are the Vault's centrepiece and its
-**primary Token sink**: choose **any** skill (freely, including favourites you want to push) and apply
-a chunk of XP. Three sizes at scaling prices:
-
-| Lamp | Grants |
-|------|--------|
-| **Tarnished Lamp** | small XP boost |
-| **Antique Lamp** | medium |
-| **Radiant Lamp** | large |
-
-**Guardrail — Lamps compress time, they don't skip the grind.** Lamp XP is **level-scaled** (a
-percentage of the chosen skill's *next-level* requirement) with a **floor and a hard ceiling**, so a
-Lamp is meaningful at level 5 *and* at level 92, but can never leap you up the brutal 92→99 tail (half
-of a skill's total XP). Because a Lamp only compresses tapping you'd otherwise do, it stays consistent
-with the project's monetization ethic — "spend for time and multipliers, never for permanent power"
-([GAME_DESIGN §12](GAME_DESIGN.md)). Formula and caps live in `Balance.lampGrants`.
-
-### 6.2 Cosmetics (the "look and feel" depth)
-
-Pure vanity, all equippable, all rendered with the existing `Artwork.swift` / `ArtworkView`
-pipeline (SF Symbols + the hand-authored `VectorIcon` set — **no emoji**, per house style):
-
-- **Capes of Accomplishment** — one per skill, unlocked at 99 (earned, not bought); **trimmed**
-  variants from completing that category's Diary tier.
-- **Metal cape ladder** — Bronze → Third Age, unlocked free at Total-Level rungs (§3).
-- **Milestone capes** — **Max Cape** (2277), **Completionist Cape** (full Collection Log).
-- **Home themes / palettes** — cosmetic reskins of the parchment-and-rune background (a secondary
-  Token sink).
-
-Your **equipped cape** shows on the Home header (beside Total Level) and on the training screen — a
-constant, glanceable flex.
-
-### 6.3 Quality-of-life unlocks (modest, never power)
-
-Convenience only, so spending Tokens (or buying them) can never buy *strength*:
-
-- **Loadouts** — save/swap AFK-slot presets.
-- **Extra Daily Feat slot** — a 4th daily task.
-- **One-tap offline collect** — auto-dismiss the welcome-back summary.
-
-> **Hard rule preserved:** permanent *power* comes only from skill perks
-> ([GAME_DESIGN §4](GAME_DESIGN.md)). The Vault sells **time** (Lamps), **cosmetics**, and
-> **convenience** — never a permanent multiplier. This is what keeps Tokens safe to sell for real
-> money even with Lamps as the headline reward.
+This layer is intentionally **all Tokens** — never permanent power — so daily play is rewarding but a
+missed day is never a power setback.
 
 ---
 
-## 7. Collection Log — the completionist meta
+## 6. The Shop — spending Tokens
 
-A dedicated Log tab that tracks **everything**: every Feat, Diary tier, cape, cosmetic, and cape-ladder
-rung, shown as filled/empty slots with an overall **completion %**. This is the flex that gives the
-end-game its depth:
+Spending happens in the **existing Shop** (the `bag`/Boosts screen), now rebuilt around Tokens. Three
+zones, top to bottom:
+
+1. **Boost status hero** — unchanged: activate a Boost Coupon and watch the live multiplier/countdown.
+2. **Token wallet** — a gold `star.circle.fill` card showing your current Token balance (the same
+   glyph the Adventurer's Log uses, so the currency reads identically everywhere).
+3. **Spend Tokens** — two family cards priced **in Tokens**, buying inventory of the game's existing
+   consumables:
+
+| Buy | Price (Tokens) | What it does |
+|-----|----------------|--------------|
+| **Boost Coupon ×1** | **250** | One timed all-skill XP multiplier (the existing Double-XP coupon) |
+| **Boost Coupon ×5** | **1,250** | Five, at the same unit price |
+| **Energy Cell ×1** | **120** | Instantly fills the skill you're training to full Supercharge |
+| **Energy Cell ×5** | **600** | Five, at the same unit price |
+
+Buying adds to the **same inventory** the game already uses (`doubleXPCoupons`, `energyCells`), so all
+existing use-flows — the daily free coupon, `activateDoubleXP`, `useEnergyCell` on the training
+screen — are unchanged. Tokens are the only new thing: a purchase debits Tokens and credits an item.
+
+### 6.1 The economy scale (the crux)
+
+The whole point of the revision: **buying Tokens gives far more than grinding Feats, and one shop item
+costs many Feats' worth of Tokens.** Concrete anchors (all in `Balance.Rewards`):
+
+| Source | Tokens |
+|--------|--------|
+| One Easy Feat | 5 |
+| One Master Feat | 150 |
+| **Every Feat + every Diary-tier bonus (100% completion)** | **≈ 4,189** |
+| Smallest IAP (Pouch of Tokens, $1.99) | 1,500 |
+| Middle IAP (Sack, $4.99) | 4,000 |
+| Largest IAP (Chest, $9.99) | 9,000 |
+
+What this produces:
+
+- **A Boost Coupon (250) costs ~2 Master Feats or ~50 Easy Feats.** An Energy Cell (120) is about one
+  Master Feat. So achievement Tokens *do* buy real play — but deliberately slowly.
+- **The entire free game (~4,189 Tokens) sits between the Sack (4,000) and Chest (9,000).** A single
+  ~$5–10 purchase therefore exceeds *everything* you could ever earn from achievements → "paying gives
+  a lot more" ✓.
+- Because Tokens only ever buy **time** (Boosts) and **Supercharge convenience** (Cells) — never a
+  permanent multiplier — this stays consistent with the project's monetization ethic: "spend for time
+  and multipliers, never for permanent power" ([GAME_DESIGN §12](GAME_DESIGN.md)).
+
+Every number here is one edit away in `Balance.Rewards`; nothing about the scale is baked into
+gameplay or view code.
+
+> **Out of scope (future):** XP Lamps, cosmetic capes/trims/home themes, and quality-of-life unlocks
+> were explored in earlier drafts as additional Token sinks. They are **not** part of this revision —
+> the Shop sells only Boost Coupons and Energy Cells today. If added later they must obey the same
+> hard rule: **Tokens buy time, cosmetics, or convenience — never permanent power.**
+
+---
+
+## 7. Collection Log — the completionist meta *(future)*
+
+> **Not part of the current economy revision.** A future completionist surface; documented for
+> direction only.
+
+A dedicated Log tab that tracks **everything**: every Feat and Diary tier, shown as filled/empty slots
+with an overall **completion %**. This is the flex that gives the end-game its depth:
 
 - It reframes "200M in everything" from a lonely grind into one entry in a rich checklist.
-- **100% Collection Log** is the true completionist crown → the **Completionist Cape**.
 - Great for screenshots and Game Center (a future "Collection %" leaderboard slots right in).
 
 ---
@@ -257,23 +259,24 @@ end-game its depth:
 The whole system rides existing patterns, so it feels native on day one and works on **iPhone and
 iPad** (a hard project requirement):
 
-- **Entry point** — a `book.closed.fill` toolbar button on Home opens the **Adventurer's Log** sheet
-  (mirrors how `StatsView`/`BoostsView` present).
-- **Log layout** — a segmented control: **Overview · Feats · Vault · Collection**.
-  - *Overview*: the Total-Level cape-ladder meter, Adventurer's Streak, Token balance, and today's
-    Daily/Weekly Feats.
+- **Entry points** — a `book.closed.fill` toolbar button on Home opens the **Adventurer's Log** sheet
+  (earning); the existing **Shop** (`bag`) is where Tokens are spent. Both mirror how
+  `StatsView`/`BoostsView` already present.
+- **Log layout** — a segmented control: **Overview · Feats** (with *Collection* reserved for a future
+  phase).
+  - *Overview*: the Total-Level meter, Token balance, and progress summary.
   - *Feats*: a Diary list → tier → feats. On **regular width (iPad/landscape)** this is a **two-pane**
     layout (Diaries left, feats right) exactly like `SkillTrainingView`; on **compact** it's a
     stacked drill-down. Content is width-capped and centred (`.frame(maxWidth:…)`) like every other
     screen.
-  - *Vault*: family cards reused from `BoostsView` (Lamps up top as the hero, then Cosmetics, then
-    QoL). Lamp purchase opens a **skill picker** (any skill) with a live "+X XP → level N" preview.
-  - *Collection*: an adaptive grid (`GridItem(.adaptive)`) of earned/unearned slots.
+- **Shop layout** — the existing `BoostsView`, rebuilt around Tokens (§6): Boost status hero → **Token
+  wallet** card → **Spend Tokens** family cards (Boost Coupons, Energy Cells, priced in Tokens) → **Get
+  more Tokens** (IAP Token packs). Family cards and the width-cap/centre treatment are reused verbatim.
 - **Celebration** — completing a Feat fires a toast through the **existing** `notice`/overlay
-  pipeline in `RootView`, plus a new `SoundManager` cue (`.feat`). A **Diary completion** or a new
-  **cape-ladder rung** gets a larger, one-off celebration.
-- **Home header** — add a compact **Token chip** and the **equipped-cape** emblem next to Total Level,
-  without crowding (the current supercharge/slots subtitle folds in).
+  pipeline in `RootView`, plus a `SoundManager` cue. A **Diary completion** gets a larger, one-off
+  celebration.
+- **Home header** — a compact **Token chip** sits next to Total Level without crowding (the current
+  supercharge/slots subtitle folds in).
 - **Migration** — `StatsView`'s Milestones section becomes a compact summary that **deep-links** into
   the Completionist Diary, so nothing regresses for players who know it.
 
@@ -284,30 +287,28 @@ iPad** (a hard project requirement):
 All additions are **additive and backward-compatible**, following the established `SaveData`
 pattern (new fields are optional so older saves keep decoding — see `GameState.SaveData`).
 
-**New `SaveData` fields (all optional):**
+**`SaveData` fields (implemented this revision, all optional):**
 
 ```
-tokens: Int?                        // single spendable balance
+tokens: Int?                        // single spendable balance (earned + purchased)
 completedFeats: [String]?           // one-shot + finished cumulative feat IDs
 featProgress: [String: Int]?        // partial counters for cumulative feats
-claimedDiaryTiers: [String]?        // Diary-tier rewards already granted
-claimedCapeRungs: [String]?         // cape-ladder rungs already granted
-dailyFeatDay: String?               // rotation key (reuses dayKey())
-weeklyFeatWeek: String?             // rotation key (new weekKey())
-dailyStreak: Int?; lastStreakDay: String?
-ownedCosmetics: [String]?; equippedCape: String?
-unlockedQoL: [String]?              // purchased QoL toggles
-purchasedPass: Bool?                // Adventurer's Pass unlock (§10)
+claimedDiaryTiers: [String]?        // Diary-tier bonuses already granted
 ```
 
-**New model files** (keep `GameState.swift` lean via an extension):
+*(Existing `doubleXPCoupons` / `energyCells` inventory is reused as-is — the Shop just tops it up.)*
+
+**Future fields (reserved for later phases, still optional/back-compat):** `claimedCapeRungs`,
+`dailyFeatDay`, `weeklyFeatWeek`, `dailyStreak`, `lastStreakDay`, `ownedCosmetics`, `equippedCape`,
+`unlockedQoL`.
+
+**Model files:**
 
 - `Feat.swift` — `Feat`, `FeatDiary`, `FeatTier`, and the **static catalog** of all feats (pure
-  data, like `TrainingMethod.swift`).
-- `Reward.swift` — Vault item definitions (Lamps, cosmetics, QoL), `Cosmetic`/`Cape`, and the
-  cape-ladder rungs.
-- `GameState+Rewards.swift` — the engine: `award(feat:)`, `spendTokens(on:)`, `useLamp(on:size:)`,
-  streak/rotation handling, and a single cheap `evaluateFeats(trigger:)`.
+  data, like `TrainingMethod.swift`). *(Implemented.)*
+- `GameState+Rewards.swift` — the engine: `addTokens`, `evaluateFeats(trigger:)`, Diary-tier bonus
+  handling. *(Implemented.)* Shop spending (`creditPurchasedTokens`, `buyBoostCoupon`,
+  `buyEnergyCell`, affordability helpers) lives on `GameState`.
 
 **Evaluation strategy.** Feats index by **trigger type** (`.tap`, `.levelUp`, `.supercharge`,
 `.offlineReturn`, `.boost`, `.slot`, …). Existing mutation points already fire these transitions —
@@ -317,33 +318,38 @@ purchasedPass: Bool?                // Adventurer's Pass unlock (§10)
 No per-frame scanning; the 1 Hz tick already handles time-based checks.
 
 **Debug hooks** (extend the existing `#if DEBUG` set for deterministic screenshots, per
-`DEVELOPMENT.md`): `SEED_REWARDS=<rung>` to seed Tokens/cosmetics/streak, and `OPEN_SHEET=log` to
-deep-link the Adventurer's Log.
+`DEVELOPMENT.md`): `SEED_REWARDS` to seed levels/counters + satisfied feats (which pay out Tokens),
+`OPEN_SHEET=log` to deep-link the Adventurer's Log, and `SHOP_SCROLL=tokens` to auto-scroll the Shop
+to its IAP Token-Packs section for below-the-fold captures.
 
 ---
 
 ## 10. Monetization — IAP
 
-IAP **expedites or unlocks new components**, staying strictly within the game's existing ethic —
-**you buy time, content, and cosmetics; never permanent stat power** (that remains earned via skill
-perks). New products extend `Store.swift`'s proven `ProductKind` / `grants` / mock-catalog pattern
-alongside the current coupon and Energy-Cell families.
+IAP is a **single family: Token packs.** Real money buys **Tokens**; Tokens buy the game's
+consumables in the Shop (§6). There are no direct coupon/cell purchases and no XP-power products —
+money buys the *currency*, and the currency only ever buys **time** (Boost Coupons) and **Supercharge
+convenience** (Energy Cells), never permanent stat power (that stays earned via skill perks). Products
+use `Store.swift`'s proven `grants` / mock-catalog pattern and a single `onGrant` callback that
+credits Tokens.
 
-| Product family | Kind | What it does | Fairness |
-|---|---|---|---|
-| **Reward Token packs** | consumable | Tops up the Token pouch to **expedite** Vault purchases (Lamps, cosmetics). | Tokens only buy time + cosmetics + convenience, never power. |
-| **XP Lamp bundles** | consumable | Direct Lamps to **expedite** a chosen skill. | Level-scaled with a hard ceiling: compresses tapping, never skips the 92→99 tail. |
-| **Adventurer's Pass** | **non-consumable, one-time unlock** | Unlocks the premium **Explorer's Diary** (exclusive feats), an exclusive cosmetic cape line, a **+X% Token accrual**, and a 4th Daily Feat — bought once, kept forever. | No FOMO/seasonal reset; grants content + cosmetics + token *rate* (time), **no** permanent XP multiplier. |
+| Pack | Price | Grants | Role |
+|------|-------|--------|------|
+| **Pouch of Tokens** | $1.99 | **1,500** Tokens | Entry top-up — already ~6 Boost Coupons. |
+| **Sack of Tokens** | $4.99 | **4,000** Tokens | Mid tier — roughly the entire free-game achievement haul. |
+| **Chest of Tokens** | $9.99 | **9,000** Tokens | *Best value* — more than 100% Feat completion yields. |
 
-- **Non-pay-to-win by construction.** Everything purchasable is time (Lamps/Tokens), content
-  (Pass feats/cosmetics), or convenience — mirroring how coupons/Energy Cells already "sell time and
-  multipliers, never permanent power" ([GAME_DESIGN §12](GAME_DESIGN.md)). Even with Lamps as the
-  headline reward, the level-scaled ceiling means money buys *pace*, not a finished account.
-- **The free game is complete.** Every cape, Diary, and cape-ladder rung is earnable without paying;
-  IAP only shortens the path or adds *optional* cosmetic content. The Adventurer's Pass adds a *bonus*
-  Diary, never gating base progression behind it.
-- **Reuse the plumbing.** New product IDs in `Store.productIDs`/`grants`, new `#if DEBUG` mock packs,
-  and `onGrant` routing to `addTokens` / `addLamps` / `unlockPass`, wired into `Config/Products.storekit`.
+- **Paying gives far more than grinding.** 100% Feat completion ≈ **4,189 Tokens**; the $4.99 Sack
+  alone (4,000) nearly matches it and the $9.99 Chest (9,000) more than doubles it. Achievements make
+  the currency *meaningful*; IAP makes it *fast*.
+- **Non-pay-to-win by construction.** Tokens only buy time (Boosts) and convenience (Cells) — mirroring
+  how coupons/Energy Cells already "sell time and multipliers, never permanent power"
+  ([GAME_DESIGN §12](GAME_DESIGN.md)). Money buys *pace*, not a finished account.
+- **The free game is complete.** Every Feat and Diary is earnable without paying; the Shop is fully
+  usable on achievement Tokens alone — just slower.
+- **Reuse the plumbing.** Three product IDs (`com.callmegreg.xpwaste.tokens.small|medium|large`) in
+  `Store`'s `productIDs`/`grants`, a `#if DEBUG` mock catalog, and `onGrant → creditPurchasedTokens`,
+  wired into `Config/Products.storekit`.
 
 ---
 
@@ -351,25 +357,26 @@ alongside the current coupon and Energy-Cell families.
 
 Shippable in independent slices, each valuable on its own:
 
-1. **Feats + Tokens (no IAP).** ✅ **Implemented.** Catalog, trigger-based evaluation, the Log's
-   Overview + Feats tabs, Token earning, Home Token chip, and the feat-completion toast. Tokens
-   accrue but aren't spendable yet. Immediately makes achievement *rewarding*.
-2. **Reward Vault.** XP Lamps (the headline sink, with skill picker) + earned cosmetic capes + the
-   Total-Level cape ladder + Home equipped-cape emblem.
-3. **Daily/Weekly Feats + Adventurer's Streak.** The return loop.
-4. **Collection Log.** The completionist meta + Completionist Cape.
-5. **IAP.** Token packs, Lamp bundles, the one-time Adventurer's Pass (+ Explorer's Diary).
+1. **Feats + Tokens (no spending).** ✅ **Implemented.** Catalog, trigger-based evaluation, the Log's
+   Overview + Feats tabs, Token earning, Home Token chip, and the feat-completion toast.
+2. **Unified Token economy + Shop + IAP.** ✅ **Implemented (this revision).** Tokens become
+   spendable: the Shop sells Boost Coupons and Energy Cells for Tokens, and the sole IAP family is
+   Token packs. One currency, earned or bought, spent on the two existing consumables.
+3. **Daily/Weekly Feats + Adventurer's Streak.** *(Future.)* The return loop.
+4. **Collection Log.** *(Future.)* The completionist meta.
+5. **Cosmetics / cape ladder.** *(Future.)* Purely vanity Token sinks (capes, trims, home themes).
 
 Each phase is centralized-constants-first, so balancing every one is a `Balance.swift` pass.
 
 ---
 
-## 12. Balance constants (all new, all tunable)
+## 12. Balance constants (all tunable in `Balance.Rewards`)
 
-A new `Balance` section (e.g. `Balance.Rewards`) centralizes: Token grants per Feat by tier, Diary-tier
-bonus rewards, cape-ladder Total-Level thresholds + names, Vault stock gating by rung, lamp XP formula
-+ floor + ceiling + Token prices, daily/weekly Token grants, streak multiplier curve + cap, and IAP
-grant amounts. Per house rule, **re-balancing this system never touches gameplay or view code.**
+`Balance.Rewards` centralizes the entire economy: **per-Feat Token grants** by tier
+(5/12/30/70/150), the **Diary-tier bonus** (50), **Shop prices** (`boostCouponCost` 250,
+`energyCellCost` 120), and **IAP grants** (`iapTokensSmall` 1,500, `iapTokensMedium` 4,000,
+`iapTokensLarge` 9,000). Per house rule, **re-balancing this system never touches gameplay or view
+code** — every number above is one edit here.
 
 ---
 
@@ -377,32 +384,32 @@ grant amounts. Per house rule, **re-balancing this system never touches gameplay
 
 | Risk | Mitigation |
 |------|------------|
-| **Lamps undercut the "grind is the game" fantasy** | Level-scaled XP with a hard ceiling — Lamps compress time, never skip the 92→99 tail. All caps in `Balance`; Lamps priced so they're a treat, not a bypass. |
-| **Pay-to-win perception** (Lamps buyable + primary sink) | Money buys *pace*, not a finished account; permanent power stays with perks; the free game is fully completable. |
+| **Pay-to-win perception** (Tokens buyable) | Tokens buy only time (Boosts) + Supercharge convenience (Cells); permanent power stays with perks; the free game is fully playable on earned Tokens. |
+| **Achievement Tokens feel worthless next to IAP** | Feats still buy real play (a Cell ≈ 1 Master Feat; a Boost ≈ 2); IAP is a *shortcut*, deliberately scaled so grinding stays meaningful but slow. |
 | **Currency confusion** | Just one currency (Tokens = coins). No parallel score; Total Level stays the sole prestige meter. |
 | **Feat-eval performance** | Trigger-indexed evaluation off existing mutation hooks; no per-frame scans. |
-| **Scope creep** | Five independent phases; phase 1 ships value with zero economy or IAP. |
-| **UI crowding on iPhone** | Everything behind one Log sheet; Home only gains a compact Token chip + cape emblem; two-pane only on regular width. |
+| **Scope creep** | Independent phases; the shipped economy needs no cosmetics/collection work. |
+| **UI crowding on iPhone** | Earning behind one Log sheet; spending in the existing Shop; Home only gains a compact Token chip. |
 
 ---
 
 ## 14. Resolved decisions
 
-Settled during design review (open items from the first draft, now closed):
+Settled during design review:
 
-1. **Currency model — single spendable Tokens.** No separate "Renown" score; **Total Level** remains
-   the prestige meter, and the OSRS metal ladder becomes a *cosmetic* cape track pinned to Total-Level
-   thresholds. Simpler UI, no parallel number to reason about.
-2. **XP Lamps — prominent.** Lamps are the Vault's headline reward and primary Token sink, kept fair
-   by the level-scaled ceiling (they sell *time*, not power).
-3. **Adventurer's Pass — one-time unlock.** A non-consumable bought once and kept forever (no seasonal
-   FOMO), granting the Explorer's Diary, an exclusive cosmetic cape line, +Token accrual, and a 4th
-   Daily Feat.
-4. **Lamp targeting — any skill freely.** Maximum player agency; the level-scaling + ceiling already
-   prevent tail-skipping, so no need to exclude maxed skills.
+1. **Currency model — one spendable currency, Tokens.** No separate score; **Total Level** remains the
+   prestige meter. Tokens are earned from Feats *and* bought via IAP, and spent in the Shop.
+2. **Spending — the existing consumables.** Tokens buy **Boost Coupons** and **Energy Cells** (a
+   two-step model: Tokens → inventory → use), preserving every existing use-flow and the free daily
+   coupon. No XP Lamps.
+3. **IAP — Token packs only.** Money buys the currency, not consumables directly; no XP-power or
+   one-time-unlock products in this revision.
+4. **Scale — paying ≫ grinding.** Per-Feat 5–150; 100% completion ≈ 4,189 Tokens; Shop 250 (Boost) /
+   120 (Cell); IAP 1,500 / 4,000 / 9,000. A single ~$5–10 pack exceeds the entire achievement haul,
+   yet one Shop item still costs many Feats — so both paths feel worthwhile.
 
 ### Still to tune (needs play-session data, not a design blocker)
 
-- Cape-ladder Total-Level thresholds and Vault-gating rungs.
-- Token payouts per Feat tier and Lamp Token prices.
-- Lamp XP floor/ceiling percentages and the streak multiplier curve.
+- Token payouts per Feat tier and the Diary-tier bonus.
+- Shop prices (Boost Coupon / Energy Cell) and IAP grant amounts.
+- Whether to add bulk-buy discounts or additional Shop items later.

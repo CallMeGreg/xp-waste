@@ -15,11 +15,8 @@ struct XPWasteApp: App {
                 .tint(.accentColor)
                 .task {
                     SoundManager.shared.prepare()
-                    store.onGrant = { [weak game] kind, amount in
-                        switch kind {
-                        case .coupons: game?.addCoupons(amount)
-                        case .energy:  game?.addEnergyCells(amount)
-                        }
+                    store.onGrant = { [weak game] tokens in
+                        game?.creditPurchasedTokens(tokens)
                         if let game {
                             SoundManager.shared.play(.purchase, enabled: game.soundEnabled)
                         }

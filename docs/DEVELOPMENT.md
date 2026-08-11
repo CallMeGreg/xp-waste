@@ -50,15 +50,15 @@ Sources/
             GameState+Rewards.swift     # Adventurer's Log engine: Feat evaluation, Token payouts, queries
             SkillBuff.swift             # per-skill unique account-wide perks (BuffKind + theming)
             Feat.swift                  # Adventurer's Log: Feat/Diary/Tier model + full Feat catalog
-            Store.swift                 # StoreKit 2 in-app purchases (coupon + Energy Cell packs)
+            Store.swift                 # StoreKit 2 in-app purchases (Token packs; tokens buy consumables)
             SoundManager.swift          # SFX engine: pooled AVAudioPlayers, one cue per game moment
   Views/    RootView / Onboarding / Home / SkillTile
             SkillTrainingView / StatsView / SettingsView / Components
-            BoostsView                  # activate Daily Boost, use/buy Energy Cells, both stores
+            BoostsView                  # the Shop: activate Boost, spend Tokens on Coupons/Cells, buy Token packs
             AdventurersLogView          # Adventurer's Log sheet: Feats, Diaries, Reward Tokens
   Resources/Sounds/                     # bundled OSRS-inspired SFX (sfx_*.wav) — see SOUND_DESIGN.md
   Assets.xcassets                       # app icon + accent color
-Config/     Products.storekit           # local StoreKit config for testing IAP (2 families)
+Config/     Products.storekit           # local StoreKit config for testing IAP (Token packs)
 Tools/      sound_synth.py              # deterministic generator for the SFX (regenerate/re-pick)
 project.yml                             # XcodeGen project definition (universal: iPhone + iPad)
 docs/       GAME_DESIGN.md, DEVELOPMENT.md, SKILL_BUFFS.md, SOUND_DESIGN.md, ACHIEVEMENTS.md
@@ -79,8 +79,10 @@ docs/       GAME_DESIGN.md, DEVELOPMENT.md, SKILL_BUFFS.md, SOUND_DESIGN.md, ACH
   [SKILL_BUFFS.md](SKILL_BUFFS.md)).
 - **`Feat.swift`** + **`GameState+Rewards.swift`** implement the **Adventurer's Log**: a catalog of
   Feats grouped into themed Diaries and difficulty tiers, evaluated live from gameplay counters,
-  paying out **Reward Tokens**. Token constants live in `Balance.Rewards`; the UI is
-  `AdventurersLogView` (see [ACHIEVEMENTS.md](ACHIEVEMENTS.md)).
+  paying out **Tokens**. Tokens are the game's single currency — earned from Feats, bought via IAP,
+  and **spent in the Shop** (`BoostsView`) on Boost Coupons and Energy Cells. All economy numbers
+  (Feat grants, Diary-tier bonus, Shop prices, IAP grants) live in `Balance.Rewards`; the earning UI
+  is `AdventurersLogView` (see [ACHIEVEMENTS.md](ACHIEVEMENTS.md)).
 
 ## Tuning
 
@@ -91,18 +93,20 @@ level-99 value). Re-balancing the game is a one-file change.
 
 ## Testing in-app purchases
 
-`Config/Products.storekit` defines two families of consumables — **Daily Boost coupon** packs
-(`…coupons.small/medium/large`) and **Energy Cell** packs (`…energy.small/medium/large`) — and is
-wired into the `XPWaste` scheme's Run action, so purchases work locally in the simulator when you
-run from **Xcode** (no App Store Connect needed). In production these map to real App Store Connect
-product IDs (`com.callmegreg.xpwaste.coupons.*` and `com.callmegreg.xpwaste.energy.*`). The
-`Store.grants` table maps each product ID to its family (`ProductKind`) and amount — keep it in
-sync with `Products.storekit`, and route grants in `XPWasteApp` (`onGrant`) to `addCoupons` /
-`addEnergyCells`.
+The economy is built on a **single currency, Tokens**. IAP sells only **Token packs**; Tokens are
+then spent in the Shop (`BoostsView`) on Boost Coupons and Energy Cells. `Config/Products.storekit`
+defines the three consumable Token packs (`com.callmegreg.xpwaste.tokens.small/medium/large` →
+1,500 / 4,000 / 9,000 Tokens) and is wired into the `XPWaste` scheme's Run action, so purchases work
+locally in the simulator when you run from **Xcode** (no App Store Connect needed). In production
+these map to the same real App Store Connect product IDs. `Store.grants` maps each product ID to its
+Token amount — keep it in sync with `Products.storekit`, and route grants in `XPWasteApp` (`onGrant`)
+to `creditPurchasedTokens`. Spending is handled entirely in-game by `GameState.buyBoostCoupon` /
+`buyEnergyCell` (priced from `Balance.Rewards`), which debit Tokens and top up the existing
+`doubleXPCoupons` / `energyCells` inventory.
 
 > `simctl launch` from the CLI does **not** apply the scheme's StoreKit config, so
-> `Product.products` is empty there. `Store.swift` has a `#if DEBUG` mock catalog fallback (both
-> families) so the store still renders for screenshots / UI verification.
+> `Product.products` is empty there. `Store.swift` has a `#if DEBUG` mock catalog fallback (the three
+> Token packs) so the Shop still renders for screenshots / UI verification.
 
 ## Debug hooks (guarded by `#if DEBUG`, never in release)
 
@@ -115,7 +119,10 @@ Used for deterministic screenshots / UI checks:
   representative lifetime counters, every currently-satisfied Feat marked complete, cleared
   Diary tiers, and a healthy Reward Token balance. Ideal for reward-system screenshots.
 - `OPEN_SKILL=<rawValue>` — deep-links Home straight into a skill's training screen.
-- `OPEN_SHEET=doublexp` — auto-presents the Boosts sheet (Daily Boost + Energy Cells).
+- `OPEN_SHEET=doublexp` — auto-presents the **Shop** (Boost status, Spend Tokens, Token packs).
+- `SHOP_SCROLL=tokens` — after opening the Shop, auto-scrolls to the bottom (Energy Cells + IAP
+  **Token Packs**) so the below-the-fold section can be screenshotted from the CLI (which can't
+  inject scroll gestures). Pairs with `OPEN_SHEET=doublexp`.
 - `OPEN_SHEET=log` — auto-presents the Adventurer's Log (Feats & Reward Tokens).
 - `LOG_TAB=feats` — opens the Log on the **Feats** tab (Diary list) instead of Overview.
 - `OPEN_DIARY=<rawValue>` — opens the Log and pushes straight into one Diary's detail
