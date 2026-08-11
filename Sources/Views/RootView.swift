@@ -1,15 +1,42 @@
 import SwiftUI
 
+/// The two top-level destinations, shown via a shared segmented `TabSwitcher` in the nav bar
+/// (identical placement on iPhone and iPad) rather than a platform tab bar.
+enum AppTab: String, CaseIterable, Identifiable {
+    case skills, raids
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .skills: return "Skills"
+        case .raids: return "Raids"
+        }
+    }
+}
+
 /// Root switch between onboarding and the main game, plus the global game tick
 /// and a shared level-up toast.
 struct RootView: View {
     @EnvironmentObject private var game: GameState
+    @State private var tab: AppTab = .skills
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         ZStack {
             if game.hasSeenOnboarding {
-                HomeView()
+                Group {
+                    switch tab {
+                    case .skills: HomeView(tab: $tab)
+                    case .raids: RaidsView(tab: $tab)
+                    }
+                }
+                .onAppear {
+                    #if DEBUG
+                    let env = ProcessInfo.processInfo.environment
+                    if env["OPEN_TAB"]?.lowercased() == "raids" || env["OPEN_RAID"] != nil || env["OPEN_APPLY"] != nil {
+                        tab = .raids
+                    }
+                    #endif
+                }
             } else {
                 OnboardingView()
             }
@@ -70,6 +97,42 @@ struct RootView: View {
         .sheet(item: $game.offlineProgress) { progress in
             WelcomeBackView(progress: progress)
         }
+    }
+}
+
+/// Compact segmented control that swaps between the Skills and Raids tabs. Rendered in each
+/// screen's `.principal` toolbar slot so it centers in the nav bar on both iPhone and iPad.
+struct TabSwitcher: View {
+    @EnvironmentObject private var game: GameState
+    @Binding var selection: AppTab
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(AppTab.allCases) { tab in
+                let selected = tab == selection
+                Button {
+                    guard selection != tab else { return }
+                    SoundManager.shared.play(.ui, enabled: game.soundEnabled)
+                    withAnimation(.easeInOut(duration: 0.18)) { selection = tab }
+                } label: {
+                    Text(tab.title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(selected ? Color.accentColor : Color.secondary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 5)
+                        .background {
+                            if selected {
+                                Capsule().fill(Color.accentColor.opacity(0.16))
+                            }
+                        }
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(3)
+        .background(Color.black.opacity(0.25), in: Capsule())
+        .overlay(Capsule().strokeBorder(.white.opacity(0.10), lineWidth: 1))
     }
 }
 

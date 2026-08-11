@@ -14,6 +14,7 @@
 		124F19220488BF1D8027ABA2 /* Feat.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20FBD0DDFF950CAB19AFCA5 /* Feat.swift */; };
 		1B016D853D344ACEEF19BEAD /* GameState+Rewards.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC65032C570084FABF084B0A /* GameState+Rewards.swift */; };
 		320C0AA8E3FB6F6E8BF802BF /* AdventurersLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28BB60DCB2EDCEA1D22A7061 /* AdventurersLogView.swift */; };
+		328EA7B55C24ADE345DA0687 /* Raid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5520666392607253DEAFDB12 /* Raid.swift */; };
 		3EC3B8B37F118C12BFA96869 /* sfx_supercharge.wav in Resources */ = {isa = PBXBuildFile; fileRef = 68F7EDB17BC84F7AA4F6F609 /* sfx_supercharge.wav */; };
 		42E3FC858C8AAA216E97261C /* SkillTileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A73F31CA01FA254794325B62 /* SkillTileView.swift */; };
 		4CD930F2481D373399C70C87 /* SkillBuff.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA92635CDC1688C41F943B2E /* SkillBuff.swift */; };
@@ -29,8 +30,10 @@
 		8F6200F872C157763621F772 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB187F79C7FE5E118212510E /* Store.swift */; };
 		967809326B0FB53C02C3565C /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B478FD59A22ADAC0A2ABCF /* OnboardingView.swift */; };
 		9E70423FFD34C8AB1E7D2FBB /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 852367EAB33B20BA0A578E99 /* Components.swift */; };
+		A9276D834D61ED527501F2BA /* RaidSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD95D4A980FDA0DE23EEB24F /* RaidSessionView.swift */; };
 		A980E6DC1C48709391337CC2 /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70A64B91523B00BEDCB4B1A1 /* StatsView.swift */; };
 		B4CA291C706944B984EB3FC4 /* SkillTrainingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03B8C0EA791C2B43261579F9 /* SkillTrainingView.swift */; };
+		C0C24955A5F888BB257D5E92 /* RaidsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E4257F5FE849B93235C6A28 /* RaidsView.swift */; };
 		CB95F8778113B507E3F72F71 /* SkillID.swift in Sources */ = {isa = PBXBuildFile; fileRef = A234E12FEEC3048572025502 /* SkillID.swift */; };
 		D118138CED3AB82B41C4EFAF /* sfx_purchase.wav in Resources */ = {isa = PBXBuildFile; fileRef = 483D4E3DDA8B1591A44D0918 /* sfx_purchase.wav */; };
 		D9459034B2FE66ABFA5CEFD7 /* sfx_ui.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9882C06F47069BFA64F36A2C /* sfx_ui.wav */; };
@@ -52,17 +55,20 @@
 		483D4E3DDA8B1591A44D0918 /* sfx_purchase.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_purchase.wav; sourceTree = "<group>"; };
 		4B871194523F49C6EFE71A9E /* sfx_tap.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_tap.wav; sourceTree = "<group>"; };
 		4E0E45C7E9D9D0DE29D72FF3 /* XPTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPTable.swift; sourceTree = "<group>"; };
+		5520666392607253DEAFDB12 /* Raid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Raid.swift; sourceTree = "<group>"; };
 		57DBBD080CB70CC277CDB776 /* BoostsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoostsView.swift; sourceTree = "<group>"; };
 		59886A67FF636EED9ED92699 /* WelcomeBackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeBackView.swift; sourceTree = "<group>"; };
 		5A1C4A48A3AB2D27D55890FB /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		68F7EDB17BC84F7AA4F6F609 /* sfx_supercharge.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_supercharge.wav; sourceTree = "<group>"; };
 		69A5CC9613060263169E5EB5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		70A64B91523B00BEDCB4B1A1 /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
+		7E4257F5FE849B93235C6A28 /* RaidsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaidsView.swift; sourceTree = "<group>"; };
 		7F29F2538DC2225317947196 /* sfx_energycell.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_energycell.wav; sourceTree = "<group>"; };
 		852367EAB33B20BA0A578E99 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		9882C06F47069BFA64F36A2C /* sfx_ui.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_ui.wav; sourceTree = "<group>"; };
 		A234E12FEEC3048572025502 /* SkillID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillID.swift; sourceTree = "<group>"; };
 		A73F31CA01FA254794325B62 /* SkillTileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillTileView.swift; sourceTree = "<group>"; };
+		AD95D4A980FDA0DE23EEB24F /* RaidSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaidSessionView.swift; sourceTree = "<group>"; };
 		AF5A40F0D52C34D7005A153B /* sfx_doublexp.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_doublexp.wav; sourceTree = "<group>"; };
 		B20FBD0DDFF950CAB19AFCA5 /* Feat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Feat.swift; sourceTree = "<group>"; };
 		B3F92A66FDB037CF549DD065 /* XPWaste.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = XPWaste.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -93,6 +99,8 @@
 				852367EAB33B20BA0A578E99 /* Components.swift */,
 				2361CABEB8A5D1333D07C294 /* HomeView.swift */,
 				E9B478FD59A22ADAC0A2ABCF /* OnboardingView.swift */,
+				AD95D4A980FDA0DE23EEB24F /* RaidSessionView.swift */,
+				7E4257F5FE849B93235C6A28 /* RaidsView.swift */,
 				5A1C4A48A3AB2D27D55890FB /* RootView.swift */,
 				C2089696249D42DE662D0E79 /* SettingsView.swift */,
 				A73F31CA01FA254794325B62 /* SkillTileView.swift */,
@@ -110,6 +118,7 @@
 				B20FBD0DDFF950CAB19AFCA5 /* Feat.swift */,
 				33472B73562B32DA87AB511B /* GameState.swift */,
 				BC65032C570084FABF084B0A /* GameState+Rewards.swift */,
+				5520666392607253DEAFDB12 /* Raid.swift */,
 				FA92635CDC1688C41F943B2E /* SkillBuff.swift */,
 				A234E12FEEC3048572025502 /* SkillID.swift */,
 				0C7168FD8B07047E81EECF79 /* SoundManager.swift */,
@@ -258,6 +267,9 @@
 				E5FBF22C0C1BC0EE4B7A9ABE /* GameState.swift in Sources */,
 				E6AD469C44B797FE347F5FC3 /* HomeView.swift in Sources */,
 				967809326B0FB53C02C3565C /* OnboardingView.swift in Sources */,
+				328EA7B55C24ADE345DA0687 /* Raid.swift in Sources */,
+				A9276D834D61ED527501F2BA /* RaidSessionView.swift in Sources */,
+				C0C24955A5F888BB257D5E92 /* RaidsView.swift in Sources */,
 				55350A696836F8EFBC5340E6 /* RootView.swift in Sources */,
 				5B1E2E8A0E04A2D6DBDA58C3 /* SettingsView.swift in Sources */,
 				4CD930F2481D373399C70C87 /* SkillBuff.swift in Sources */,

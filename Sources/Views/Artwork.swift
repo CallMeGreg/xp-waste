@@ -21,7 +21,7 @@ enum SkillArt {
 /// near the navigation bar. Drawn vector paths don't trigger that bug, so the control-bar
 /// glyphs use these instead.
 enum VectorIcon {
-    case sword, axe, pickaxe, bow, arrow, quiver, ore, ingot, bone, skull, warhammer, bolt, flame, lock, battery
+    case sword, axe, pickaxe, bow, arrow, quiver, ore, ingot, bone, skull, warhammer, bolt, flame, lock, battery, genieLamp
 }
 
 // MARK: - Rendering
@@ -80,6 +80,8 @@ extension VectorIcon {
             LockIcon(color: color)
         case .battery:
             BatteryIcon(color: color)
+        case .genieLamp:
+            GenieLampIcon(color: color)
         }
     }
 }
@@ -421,6 +423,76 @@ private struct OreIcon: View {
                         .frame(width: flecks[i].2 * 2 * w, height: flecks[i].2 * 2 * h)
                         .position(x: flecks[i].0 * w, y: flecks[i].1 * h)
                 }
+            }
+        }
+    }
+}
+
+/// A genie (Aladdin) oil lamp: an elongated bulbous body with a long up-tilted spout on the left, a
+/// curled handle on the right, a domed lid, and a round finial on top. Reads as a "magic lamp" — the
+/// source of the XP wish — rather than a household lightbulb. Single-tint so any color works.
+private struct GenieLampIcon: View {
+    let color: Color
+
+    private func pt(_ x: Double, _ y: Double, in s: CGSize) -> CGPoint {
+        CGPoint(x: x * s.width, y: y * s.height)
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width, h = geo.size.height
+            let s = geo.size
+            ZStack {
+                // Curled handle on the right, drawn as a filled crescent (outer edge out, inner
+                // edge back) so the whole lamp is a single-fill silhouette — consistent with the
+                // other custom fills and crisp at small sizes.
+                Path { p in
+                    p.move(to: pt(0.75, 0.49, in: s))
+                    p.addCurve(to: pt(0.74, 0.67, in: s),
+                               control1: pt(0.99, 0.48, in: s), control2: pt(1.00, 0.69, in: s))   // outer edge
+                    p.addCurve(to: pt(0.75, 0.49, in: s),
+                               control1: pt(0.88, 0.64, in: s), control2: pt(0.87, 0.52, in: s))   // inner edge back
+                    p.closeSubpath()
+                }
+                .fill(color)
+
+                // Body + integrated left spout (single filled silhouette).
+                Path { p in
+                    p.move(to: pt(0.05, 0.45, in: s))                              // spout tip (top)
+                    p.addLine(to: pt(0.29, 0.52, in: s))                           // into body, upper
+                    p.addQuadCurve(to: pt(0.80, 0.52, in: s), control: pt(0.52, 0.32, in: s))  // domed top
+                    p.addQuadCurve(to: pt(0.72, 0.71, in: s), control: pt(0.87, 0.63, in: s))  // right side down
+                    p.addQuadCurve(to: pt(0.30, 0.71, in: s), control: pt(0.50, 0.83, in: s))  // rounded bottom
+                    p.addLine(to: pt(0.05, 0.58, in: s))                           // spout tip (bottom)
+                    p.closeSubpath()
+                }
+                .fill(color)
+
+                // Flared foot.
+                Path { p in
+                    p.move(to: pt(0.37, 0.69, in: s))
+                    p.addLine(to: pt(0.63, 0.69, in: s))
+                    p.addLine(to: pt(0.67, 0.80, in: s))
+                    p.addLine(to: pt(0.33, 0.80, in: s))
+                    p.closeSubpath()
+                }
+                .fill(color)
+
+                // Domed lid.
+                Path { p in
+                    p.addEllipse(in: CGRect(x: 0.44 * w, y: 0.30 * h, width: 0.16 * w, height: 0.11 * h))
+                }
+                .fill(color)
+
+                // Finial neck + ball on top.
+                Path { p in
+                    p.addRect(CGRect(x: 0.49 * w, y: 0.22 * h, width: 0.06 * w, height: 0.10 * h))
+                }
+                .fill(color)
+                Circle()
+                    .fill(color)
+                    .frame(width: 0.13 * w, height: 0.13 * h)
+                    .position(x: 0.52 * w, y: 0.19 * h)
             }
         }
     }
