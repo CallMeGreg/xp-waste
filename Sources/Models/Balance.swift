@@ -191,7 +191,7 @@ enum Balance {
     /// Energy Cells (`*Cost`). The scale is deliberately tiered so that paying yields far more than
     /// grinding achievements: the entire Feat catalog pays out ≈ 4,200 Tokens, a single Feat pays
     /// 5–150, one shop item costs 100–250 (so it takes many Feats to afford one), and even the
-    /// smallest IAP pack (1,500) dwarfs any single Feat and buys several shop items outright.
+    /// smallest IAP pack (500) dwarfs any single Feat and buys several shop items outright.
     enum Rewards {
         /// Tokens granted for completing a single Feat, by difficulty tier.
         static let tokensEasy = 5
@@ -215,8 +215,8 @@ enum Balance {
 
         /// Tokens granted by the small / medium / large Token packs. Each dwarfs a single Feat so
         /// buying is a big jump, and the large pack alone exceeds a full achievement clear.
-        static let iapTokensSmall = 1_500
-        static let iapTokensMedium = 4_000
-        static let iapTokensLarge = 9_000
+        static let iapTokensSmall = 500
+        static let iapTokensMedium = 3_000
+        static let iapTokensLarge = 7_500
     }
 }

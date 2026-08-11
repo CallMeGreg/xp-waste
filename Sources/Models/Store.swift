@@ -166,7 +166,7 @@ final class Store: ObservableObject {
     /// Placeholder catalog so the Shop renders when no live products are available
     /// (e.g. running from the command line without the scheme's StoreKit configuration).
     static let mockPacks: [TokenPack] = [
-        TokenPack(id: tokenSmallID, title: "Pouch of Tokens", tokens: Balance.Rewards.iapTokensSmall, priceText: "$1.99"),
+        TokenPack(id: tokenSmallID, title: "Pouch of Tokens", tokens: Balance.Rewards.iapTokensSmall, priceText: "$0.99"),
         TokenPack(id: tokenMediumID, title: "Sack of Tokens", tokens: Balance.Rewards.iapTokensMedium, priceText: "$4.99"),
         TokenPack(id: tokenLargeID, title: "Chest of Tokens", tokens: Balance.Rewards.iapTokensLarge, priceText: "$9.99", bestValue: true)
     ]

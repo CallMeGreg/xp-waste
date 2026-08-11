@@ -3,12 +3,12 @@
   "nonRenewingSubscriptions" : [],
   "products" : [
     {
-      "displayPrice" : "1.99",
+      "displayPrice" : "0.99",
       "familyShareable" : false,
       "internalID" : "6001000001",
       "localizations" : [
         {
-          "description" : "1,500 Tokens — spend on Boosts and Energy Cells",
+          "description" : "500 Tokens — spend on Boosts and Energy Cells",
           "displayName" : "Pouch of Tokens",
           "locale" : "en_US"
         }
@@ -23,7 +23,7 @@
       "internalID" : "6001000002",
       "localizations" : [
         {
-          "description" : "4,000 Tokens — spend on Boosts and Energy Cells",
+          "description" : "3,000 Tokens — spend on Boosts and Energy Cells",
           "displayName" : "Sack of Tokens",
           "locale" : "en_US"
         }
@@ -38,7 +38,7 @@
       "internalID" : "6001000003",
       "localizations" : [
         {
-          "description" : "9,000 Tokens — best value; spend on Boosts and Energy Cells",
+          "description" : "7,500 Tokens — best value; spend on Boosts and Energy Cells",
           "displayName" : "Chest of Tokens",
           "locale" : "en_US"
         }

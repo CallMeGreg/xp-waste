@@ -96,7 +96,7 @@ level-99 value). Re-balancing the game is a one-file change.
 The economy is built on a **single currency, Tokens**. IAP sells only **Token packs**; Tokens are
 then spent in the Shop (`BoostsView`) on Boost Coupons and Energy Cells. `Config/Products.storekit`
 defines the three consumable Token packs (`com.callmegreg.xpwaste.tokens.small/medium/large` →
-1,500 / 4,000 / 9,000 Tokens) and is wired into the `XPWaste` scheme's Run action, so purchases work
+500 / 3,000 / 7,500 Tokens) and is wired into the `XPWaste` scheme's Run action, so purchases work
 locally in the simulator when you run from **Xcode** (no App Store Connect needed). In production
 these map to the same real App Store Connect product IDs. `Store.grants` maps each product ID to its
 Token amount — keep it in sync with `Products.storekit`, and route grants in `XPWasteApp` (`onGrant`)

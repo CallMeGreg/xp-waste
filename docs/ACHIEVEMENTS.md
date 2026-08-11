@@ -216,17 +216,17 @@ costs many Feats' worth of Tokens.** Concrete anchors (all in `Balance.Rewards`)
 | One Easy Feat | 5 |
 | One Master Feat | 150 |
 | **Every Feat + every Diary-tier bonus (100% completion)** | **≈ 4,189** |
-| Smallest IAP (Pouch of Tokens, $1.99) | 1,500 |
-| Middle IAP (Sack, $4.99) | 4,000 |
-| Largest IAP (Chest, $9.99) | 9,000 |
+| Smallest IAP (Pouch of Tokens, $0.99) | 500 |
+| Middle IAP (Sack, $4.99) | 3,000 |
+| Largest IAP (Chest, $9.99) | 7,500 |
 
 What this produces:
 
 - **A Boost Coupon (250) costs ~2 Master Feats or ~50 Easy Feats.** An Energy Cell (100) is about one
   Master Feat. So achievement Tokens *do* buy real play — but deliberately slowly.
-- **The entire free game (~4,189 Tokens) sits between the Sack (4,000) and Chest (9,000).** A single
-  ~$5–10 purchase therefore exceeds *everything* you could ever earn from achievements → "paying gives
-  a lot more" ✓.
+- **The entire free game (~4,189 Tokens) sits between the Sack (3,000) and Chest (7,500).** The $9.99
+  Chest alone therefore exceeds *everything* you could ever earn from achievements, and even the $0.99
+  Pouch (500) buys more than three of the biggest single Feats → "paying gives a lot more" ✓.
 - Because Tokens only ever buy **time** (Boosts) and **Supercharge convenience** (Cells) — never a
   permanent multiplier — this stays consistent with the project's monetization ethic: "spend for time
   and multipliers, never for permanent power" ([GAME_DESIGN §12](GAME_DESIGN.md)).
@@ -335,12 +335,12 @@ credits Tokens.
 
 | Pack | Price | Grants | Role |
 |------|-------|--------|------|
-| **Pouch of Tokens** | $1.99 | **1,500** Tokens | Entry top-up — already ~6 Boost Coupons. |
-| **Sack of Tokens** | $4.99 | **4,000** Tokens | Mid tier — roughly the entire free-game achievement haul. |
-| **Chest of Tokens** | $9.99 | **9,000** Tokens | *Best value* — more than 100% Feat completion yields. |
+| **Pouch of Tokens** | $0.99 | **500** Tokens | Entry top-up — 2 Boost Coupons or 5 Energy Cells. |
+| **Sack of Tokens** | $4.99 | **3,000** Tokens | Mid tier — covers most of a full achievement clear. |
+| **Chest of Tokens** | $9.99 | **7,500** Tokens | *Best value* — more than 100% Feat completion yields. |
 
 - **Paying gives far more than grinding.** 100% Feat completion ≈ **4,189 Tokens**; the $4.99 Sack
-  alone (4,000) nearly matches it and the $9.99 Chest (9,000) more than doubles it. Achievements make
+  (3,000) covers most of it and the $9.99 Chest (7,500) exceeds it outright (~1.8×). Achievements make
   the currency *meaningful*; IAP makes it *fast*.
 - **Non-pay-to-win by construction.** Tokens only buy time (Boosts) and convenience (Cells) — mirroring
   how coupons/Energy Cells already "sell time and multipliers, never permanent power"
@@ -374,8 +374,8 @@ Each phase is centralized-constants-first, so balancing every one is a `Balance.
 
 `Balance.Rewards` centralizes the entire economy: **per-Feat Token grants** by tier
 (5/12/30/70/150), the **Diary-tier bonus** (50), **Shop prices** (`boostCouponCost` 250,
-`energyCellCost` 100), and **IAP grants** (`iapTokensSmall` 1,500, `iapTokensMedium` 4,000,
-`iapTokensLarge` 9,000). Per house rule, **re-balancing this system never touches gameplay or view
+`energyCellCost` 100), and **IAP grants** (`iapTokensSmall` 500, `iapTokensMedium` 3,000,
+`iapTokensLarge` 7,500). Per house rule, **re-balancing this system never touches gameplay or view
 code** — every number above is one edit here.
 
 ---
@@ -405,8 +405,8 @@ Settled during design review:
 3. **IAP — Token packs only.** Money buys the currency, not consumables directly; no XP-power or
    one-time-unlock products in this revision.
 4. **Scale — paying ≫ grinding.** Per-Feat 5–150; 100% completion ≈ 4,189 Tokens; Shop 250 (Boost) /
-   100 (Cell); IAP 1,500 / 4,000 / 9,000. A single ~$5–10 pack exceeds the entire achievement haul,
-   yet one Shop item still costs many Feats — so both paths feel worthwhile.
+   100 (Cell); IAP 500 / 3,000 / 7,500. The $9.99 pack exceeds the entire achievement haul, yet one
+   Shop item still costs many Feats — so both paths feel worthwhile.
 
 ### Still to tune (needs play-session data, not a design blocker)
 
