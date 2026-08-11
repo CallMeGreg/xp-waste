@@ -259,7 +259,8 @@ final class GameState: ObservableObject {
 
     // Gathering — idle engine
     var cacheChance: Double { buffRaw(.woodcutting) }
-    var energyProcChance: Double { buffRaw(.fishing) }
+    /// Fishing "Big Catch": multiplies the base per-tap Supercharge charge chance (0×→10×).
+    var energyChargeMultiplier: Double { buffRaw(.fishing) }
     var energyCapSeconds: Double { max(Balance.maxEnergySeconds, buffRaw(.mining)) }
     /// Farming "Patient Growth": multiplies offline passive XP retention (app closed).
     var offlineXPEfficiency: Double { buffRaw(.farming) }
@@ -350,7 +351,7 @@ final class GameState: ObservableObject {
         if isSupercharged(skill) { total *= Double(activeSuperchargeMultiplier(for: skill)) } // locked at activation
         if isDoubleXPActive { total *= doubleXPPotency }                 // Magic-boosted Daily Boost
         var gotEnergy = false
-        let chargeChance = Balance.baseEnergyTapChance + energyProcChance       // base + Fishing "Big Catch"
+        let chargeChance = Balance.baseEnergyTapChance * energyChargeMultiplier  // base × Fishing "Big Catch"
         if chargeChance > 0, Double.random(in: 0..<1) < chargeChance {
             bankEnergySeconds(Balance.energyTapProcSeconds * energyRateMultiplier, to: skill)  // Hitpoints "Vitality"
             gotEnergy = true
@@ -421,7 +422,7 @@ final class GameState: ObservableObject {
         case .superchargeBonus:    return String(format: "+%.0f Supercharge ×", v)
         case .doubleXPPotency:     return String(format: "%.2f× Daily Boost", v)
         case .cache:               return String(format: "%.0f%% bonus cache", v * 100)
-        case .energyProc:          return String(format: "+%.0f%% charge chance", v * 100)
+        case .energyProc:          return String(format: "%.2f%% charge chance", Balance.baseEnergyTapChance * v * 100)
         case .energyCap:           return String(format: "%.0fs Energy cap", max(Balance.maxEnergySeconds, v))
         case .offline:             return String(format: "×%.2f offline XP kept", v)
         case .offlineRate:         return String(format: "×%.2f offline XP rate", v)

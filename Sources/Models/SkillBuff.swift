@@ -13,7 +13,7 @@ enum BuffKind {
     case doubleXPPotency     // Magic: raises the Daily Boost multiplier above 1.5×
     // Gathering — feeds the idle engine
     case cache               // Woodcutting: chance per tap for a bonus-XP windfall
-    case energyProc          // Fishing: raises the per-tap chance to bank Supercharge Energy
+    case energyProc          // Fishing: multiplies the base per-tap chance to bank Supercharge Energy
     case energyCap           // Mining: raises the maximum bankable Energy
     case offline             // Farming: keeps more idle XP while the app is closed
     case offlineRate         // Hunter: multiplies OFFLINE passive XP (app closed)
@@ -74,7 +74,7 @@ extension SkillID {
                                  blurb: "Chance per tap for a bonus-XP windfall.")
         case .fishing:
             return SkillBuffInfo(kind: .energyProc, name: "Big Catch", icon: "drop.fill",
-                                 blurb: "Chance per tap to reel in bonus Energy.")
+                                 blurb: "Multiplies your chance to bank Supercharge Energy on every tap.")
         case .mining:
             return SkillBuffInfo(kind: .energyCap, name: "Deep Reserves", icon: "battery.100.bolt",
                                  blurb: "Raises your Energy cap for longer Supercharges.")

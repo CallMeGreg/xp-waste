@@ -77,7 +77,7 @@ Values below are **level 1 → level 99** (the full envelope). "Kind" is the `Bu
 |-------|------|------|-----------------|--------|
 | Woodcutting 🪓 | Bird's Nests | `cache` | `0 → 12%` | Chance per tap for a **bonus-XP windfall** (`15×` base method XP). |
 | Farming 🌱 | Patient Growth | `offline` | `×1.0 → ×2.0` | Keeps **more offline XP** while the app is closed. |
-| Fishing 🎣 | Big Catch | `energyProc` | `0 → 15%` | **Raises the per-tap chance** to bank Supercharge Energy above the ~2% base. |
+| Fishing 🎣 | Big Catch | `energyProc` | `×0 → ×10` | **Multiplies** the `0.1%` base per-tap chance to bank Supercharge Energy — `0%` untrained up to `1%` at Lv 99. |
 | Mining ⛏️ | Deep Reserves | `energyCap` | `30s → 60s` | Raises the **maximum bankable Energy** for longer Supercharges. |
 | Herblore 🧪 | Alchemist | `doubleXPDuration` | `+0 → +300s` | **Daily Boosts last longer.** |
 
@@ -115,7 +115,7 @@ Resolved in `GameState.rollTap(for:)`. Each tap:
 4. On a **Woodcutting** cache proc, add a `15×` base windfall.
 5. If supercharged, `× (Supercharge multiplier + Prayer bonus)`.
 6. If Daily Boost is active, `× Magic` Daily Boost potency.
-7. Side-effect: each tap has a **base chance** (`baseEnergyTapChance`, raised by **Fishing**) to
+7. Side-effect: each tap has a **base chance** (`baseEnergyTapChance`, *multiplied* by **Fishing**) to
    bank Supercharge Energy to the tapped skill, in an amount scaled by **Hitpoints**.
 
 `GameState.expectedTapGain(for:)` computes the deterministic *average* of this pipeline for
@@ -129,7 +129,7 @@ Beyond the `buffScaling` envelope, a few perks reference fixed constants in `Bal
 | Constant | Value | Used by |
 |----------|-------|---------|
 | `woodcuttingCacheMultiple` | `15×` base | Woodcutting cache windfall size |
-| `baseEnergyTapChance` | `2%` | Base per-tap chance to bank Supercharge Energy (Fishing adds to it) |
+| `baseEnergyTapChance` | `0.1%` | Unit per-tap chance to bank Supercharge Energy (Fishing multiplies it ×0→×10) |
 | `energyTapProcSeconds` | `1s` | Energy banked per tap-proc (scaled by Hitpoints) |
 | `agilityComboWindow` | `1.2s` | Max gap between taps to keep a combo chaining |
 | `agilityComboTapsToMax` | `20` | Taps to ramp a combo to its ceiling |
