@@ -24,8 +24,9 @@ layer of goals and a single spendable currency **around** it.
 
 Today's goal structure is a barbell: a trickle of frequent **method upgrades** (every ~15–20 levels)
 at one end, and the **very** long tail of "99 in everything → 200M in everything" at the other.
-In between there's little to chase, and the existing **Milestones** list
-(`StatsView.milestonesSection`) is a passive read-out — checkmarks that grant *nothing*.
+In between there's little to chase, and the plain **Milestones** checklist
+(now `LogMilestones`, formerly `StatsView.milestonesSection`) is a passive read-out — checkmarks
+that grant *nothing*.
 
 Four gaps:
 
@@ -259,9 +260,9 @@ with an overall **completion %**. This is the flex that gives the end-game its d
 The whole system rides existing patterns, so it feels native on day one and works on **iPhone and
 iPad** (a hard project requirement):
 
-- **Entry points** — a `book.closed.fill` toolbar button on Home opens the **Adventurer's Log** sheet
-  (earning); the existing **Shop** (`bag`) is where Tokens are spent. Both mirror how
-  `StatsView`/`BoostsView` already present.
+- **Entry points** — the **Log** tab in the bottom tab bar opens the **Adventurer's Log** (earning);
+  the **Shop** tab is where Tokens are spent. Both are top-level tabs alongside Skills, Raids, and
+  Settings.
 - **Log layout** — a segmented control: **Overview · Feats** (with *Collection* reserved for a future
   phase).
   - *Overview*: the Total-Level meter, Token balance, and progress summary.
@@ -277,8 +278,9 @@ iPad** (a hard project requirement):
   celebration.
 - **Home header** — a compact **Token chip** sits next to Total Level without crowding (the current
   supercharge/slots subtitle folds in).
-- **Migration** — `StatsView`'s Milestones section becomes a compact summary that **deep-links** into
-  the Completionist Diary, so nothing regresses for players who know it.
+- **Migration** — the old Stats screen's **Milestones** section now lives on the **Log** tab as
+  `LogMilestones` (in the Log Overview), so that checklist doesn't regress for players who know it.
+  The rest of the old Stats screen moved into **Settings**, and the standalone Stats screen is gone.
 
 ---
 

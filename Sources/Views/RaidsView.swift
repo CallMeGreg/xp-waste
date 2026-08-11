@@ -5,7 +5,6 @@ import SwiftUI
 /// of its skills. Universal & responsive: width-capped and centered, adaptive to iPhone / iPad.
 struct RaidsView: View {
     @EnvironmentObject private var game: GameState
-    @Binding var tab: AppTab
     @State private var raidingGroup: SkillCategory?
     @State private var applyGroup: SkillCategory?
 
@@ -27,13 +26,8 @@ struct RaidsView: View {
                 .frame(maxWidth: .infinity)
             }
             .background(GameBackground())
-            .navigationTitle("")
+            .navigationTitle("Raids")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    TabSwitcher(selection: $tab)
-                }
-            }
             .fullScreenCover(item: $raidingGroup) { group in
                 RaidSessionView(group: group)
             }

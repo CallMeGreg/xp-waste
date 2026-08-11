@@ -8,7 +8,6 @@ import SwiftUI
 /// reads well on iPad as well as iPhone.
 struct AdventurersLogView: View {
     @EnvironmentObject private var game: GameState
-    @Environment(\.dismiss) private var dismiss
     @State private var tab: Tab = .overview
     @State private var path: [FeatDiary] = []
 
@@ -22,31 +21,37 @@ struct AdventurersLogView: View {
         NavigationStack(path: $path) {
             ZStack {
                 GameBackground()
-                ScrollView {
-                    VStack(spacing: 16) {
-                        TokenBalanceCard()
-                        Picker("View", selection: $tab) {
-                            ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }
-                        }
-                        .pickerStyle(.segmented)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(spacing: 16) {
+                            TokenBalanceCard()
+                            Picker("View", selection: $tab) {
+                                ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }
+                            }
+                            .pickerStyle(.segmented)
 
-                        switch tab {
-                        case .overview: LogOverview()
-                        case .feats:    LogFeatList()
+                            switch tab {
+                            case .overview: LogOverview()
+                            case .feats:    LogFeatList()
+                            }
+                        }
+                        .padding(16)
+                        .frame(maxWidth: 720)
+                        .frame(maxWidth: .infinity)
+                    }
+                    #if DEBUG
+                    .onAppear {
+                        // Deterministic screenshots of the migrated MILESTONES checklist.
+                        guard ProcessInfo.processInfo.environment["LOG_SCROLL"] == "milestones" else { return }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            withAnimation { proxy.scrollTo("logMilestones", anchor: .bottom) }
                         }
                     }
-                    .padding(16)
-                    .frame(maxWidth: 720)
-                    .frame(maxWidth: .infinity)
+                    #endif
                 }
             }
             .navigationTitle("Adventurer's Log")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
-            }
             .navigationDestination(for: FeatDiary.self) { diary in
                 FeatDiaryDetailView(diary: diary)
             }
@@ -114,6 +119,11 @@ private struct LogOverview: View {
                     }
                 }
             }
+            VStack(alignment: .leading, spacing: 10) {
+                sectionHeader("MILESTONES", systemImage: "flag.checkered")
+                LogMilestones()
+            }
+            .id("logMilestones")
         }
     }
 
@@ -136,6 +146,73 @@ private struct LogOverview: View {
         }
         .padding(16)
         .logCard()
+    }
+}
+
+// MARK: - Milestones (passive achievement checklist)
+
+/// The lifetime-progress checklist migrated from the former Stats screen: category clears, AFK-slot
+/// unlocks, the max cape, and 200M-XP goals. A passive read-out — a companion to the Feats that
+/// actually pay Tokens.
+private struct LogMilestones: View {
+    @EnvironmentObject private var game: GameState
+
+    var body: some View {
+        VStack(spacing: 0) {
+            milestoneRow("First level 99", done: game.maxedSkillCount >= 1)
+            divider
+            milestoneRow("All combat skills 99",
+                         done: SkillID.skills(in: .combat).allSatisfy { game.isMaxed($0) })
+            divider
+            milestoneRow("All production skills 99",
+                         done: SkillID.skills(in: .production).allSatisfy { game.isMaxed($0) })
+            divider
+            milestoneRow("All utility skills 99",
+                         done: SkillID.skills(in: .utility).allSatisfy { game.isMaxed($0) })
+            divider
+            milestoneRow("All gathering skills 99",
+                         done: SkillID.skills(in: .gathering).allSatisfy { game.isMaxed($0) })
+            divider
+            ForEach(Array(Balance.slotUnlockTotalLevels.enumerated()), id: \.offset) { i, threshold in
+                milestoneRow("Unlock \(slotOrdinal(i + 2)) AFK slot (total \(threshold))",
+                             done: game.totalLevel >= threshold)
+                divider
+            }
+            milestoneRow("Max cape — every skill 99", done: game.isFullyMaxed)
+            divider
+            milestoneRow("200M XP in a skill", done: game.hasAnyMaxXPSkill)
+            divider
+            milestoneRow("200M XP in every skill (\(game.maxXPSkillCount)/\(SkillID.allCases.count))",
+                         done: game.isFullyMaxXP)
+        }
+        .padding(.vertical, 4)
+        .logCard(cornerRadius: 14)
+    }
+
+    private var divider: some View {
+        Divider().overlay(Color.white.opacity(0.06)).padding(.leading, 42)
+    }
+
+    private func milestoneRow(_ text: String, done: Bool) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: done ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 18))
+                .foregroundStyle(done ? .green : .secondary)
+                .frame(width: 22)
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(done ? .primary : .secondary)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+    }
+
+    private func slotOrdinal(_ n: Int) -> String {
+        switch n {
+        case 2: return "2nd"
+        case 3: return "3rd"
+        default: return "\(n)th"
+        }
     }
 }
 

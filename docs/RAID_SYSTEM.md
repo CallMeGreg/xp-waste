@@ -30,7 +30,7 @@ about **1.5× the XP you'd have earned tapping that skill for the raid's duratio
 | Deliverable | **This document only** (design). Implementation is a follow-up. |
 | Structure | **One raid per `SkillCategory`** (Combat, Production, Utility, Gathering). |
 | Difficulty & reward scaling | **Auto-scales with the group's combined level** (no manual tier picking). |
-| Placement | **New "Raids" tab** in a root `TabView` (Skills \| Raids). |
+| Placement | **"Raids" tab** in the app's bottom tab bar (Skills · Raids · Shop · Log · Settings). |
 | XP during play | **None.** The raid is a minigame; the reward is the lamp. |
 | Frequency | **1 raid per group per day** (up to 4/day across the four groups). |
 | Reward variance | **Pass/fail.** Clear the success threshold → full lamp; fall short → nothing. |
@@ -45,15 +45,20 @@ Today `RootView` shows `OnboardingView` until `hasSeenOnboarding`, then `HomeVie
 `NavigationStack`, with global level-up / notice toasts and the offline-progress sheet layered on
 top.
 
-**Change:** once onboarding is complete, wrap the game in a **`TabView`** with two tabs:
+**Change:** once onboarding is complete, the game lives behind a **custom bottom tab bar**
+(`AppTabBar`, in place of the native `TabView` so the bar sits at the bottom on iPad too). Raids is
+one of its five tabs:
 
 | Tab | View | Icon (SF Symbol) |
 |-----|------|------------------|
-| **Skills** | today's `HomeView` (unchanged hub) | `square.grid.2x2.fill` |
-| **Raids** | new `RaidsView` | `flag.checkered` / `shield.lefthalf.filled` |
+| **Skills** | `HomeView` (the hub) | `square.grid.2x2.fill` |
+| **Raids** | `RaidsView` | `shield.fill` |
+| **Shop** | `BoostsView` | `cart.fill` |
+| **Log** | `AdventurersLogView` | `book.closed.fill` |
+| **Settings** | `SettingsView` | `gearshape.fill` |
 
 The level-up toast, notice toast, and `offlineProgress` sheet stay at the **root ZStack** so they
-overlay both tabs. Onboarding optionally gains a 5th card introducing raids (kept short — see the
+overlay every tab. Onboarding optionally gains a 5th card introducing raids (kept short — see the
 onboarding-overload note in the game design doc).
 
 > Universal-app rules still apply everywhere: no hard-coded sizes, width-capped & centered content
@@ -380,7 +385,7 @@ the four loops, the result screen, and the lamp-apply sheet.
 3. `GameState` — §8 `SaveData` optional fields, `RaidLampRecord`, derived getters, and the
    `beginRaid` / `finishRaid` / `applyLamp` actions (route XP through `addXP`).
 4. `Artwork.swift` — any new vector emblems (boss, forge, mask, resource node).
-5. `RootView` — introduce the two-tab `TabView`; keep toasts + offline sheet at the root.
+5. `RootView` — host the custom bottom tab bar (`AppTabBar`); keep toasts + offline sheet at the root.
 6. `RaidsView`, `RaidSessionView` (four loops), and the lamp-apply sheet — responsive, width-capped,
    universal.
 7. `#if DEBUG` hooks (§10).
