@@ -126,5 +126,10 @@ Pass them to the simulator via the `SIMCTL_CHILD_` prefix, e.g.
 - Comment only where intent isn't obvious.
 - Save schema (`SaveData` in `GameState`) uses optional fields for additive changes so older
   saves keep decoding — preserve backward compatibility when adding persisted state.
+- **Any PR that changes UI components must include screenshots of the affected UI in the PR
+  description.** Show representative examples of the new/updated screens, and because this is a
+  universal app, include **both iPhone and iPad** captures (and any relevant orientation/size-class
+  variants). Use the debug hooks above (`SEED_DEMO`, `OPEN_SKILL`, `OPEN_SHEET`, `OFFLINE_DEMO`) to
+  produce deterministic screenshots.
 - Commit messages include:
   `Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>`.
