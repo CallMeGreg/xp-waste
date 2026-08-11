@@ -93,13 +93,7 @@ struct BoostsView: View {
                 .monospacedDigit()
                 .foregroundStyle(tint)
                 .frame(minWidth: 34, alignment: .leading)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(kind.itemName(pack.amount)).font(.subheadline.weight(.semibold))
-                if pack.bestValue {
-                    Text(kind == .coupons ? "Most coupons per dollar" : "Most cells per dollar")
-                        .font(.caption2).foregroundStyle(tint)
-                }
-            }
+            Text(kind.itemName(pack.amount)).font(.subheadline.weight(.semibold))
             Spacer()
             BuyButton(pack: pack, tint: tint)
         }
