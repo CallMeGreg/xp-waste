@@ -192,17 +192,17 @@ enum Balance {
     static let raidRapidTapsPerMinute: Double = 300
 
     /// A raid lamp is worth ~this multiple of the XP you'd earn tapping the target skill for the
-    /// raid's duration. The headline "raids ≈ 5× tapping" lever — deliberately generous so a
+    /// raid's duration. The headline "raids ≈ 3× tapping" lever — deliberately generous so a
     /// cleared raid outweighs rapid tapping even once a group's skills reach the top (Rune) tier.
-    static let raidRewardMultiplier: Double = 5.0
+    static let raidRewardMultiplier: Double = 3.0
 
     /// How many raids each skill group can be attempted per calendar day. One shot: a completed
     /// attempt (win *or* loss) spends the day for that group.
     static let raidsPerGroupPerDay: Int = 1
 
-    /// Explicit, default-neutral per-tier reward multiplier (index = raid tier 0…5). Lets a designer
-    /// make higher-tier raids extra-rewarding without touching gameplay or view code.
-    static let raidTierRewardBonus: [Double] = [1, 1, 1, 1, 1, 1]
+    /// Explicit per-tier reward multiplier (index = raid tier 0…5, i.e. Bronze → Rune). Lets a
+    /// designer make higher-tier raids extra-rewarding without touching gameplay or view code.
+    static let raidTierRewardBonus: [Double] = [1.0, 1.2, 1.5, 2.0, 3.0, 5.0]
 
     /// Per-tier difficulty knobs the four raid loops read, selected by a group's raid tier (0…5).
     /// Ascending difficulty: the goal climbs while the windows tighten and decoys multiply.
