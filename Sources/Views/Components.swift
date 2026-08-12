@@ -40,7 +40,7 @@ extension Color {
     /// yellow slot / orange Supercharge colors).
     static let doubleXP = Color(red: 0.60, green: 0.36, blue: 0.98)
 
-    /// Gold accent for Reward Tokens and the Adventurer's Log.
+    /// Gold accent for Reward Tokens and the Diary.
     static let rewardToken = Color(red: 0.95, green: 0.79, blue: 0.36)
 }
 

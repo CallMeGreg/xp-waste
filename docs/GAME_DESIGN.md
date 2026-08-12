@@ -131,7 +131,7 @@ re-balancing a perk is a one-line change that never touches gameplay or view cod
   Juggle three passive skills + active tapping + Supercharge bursts, and push skills
   into their tier-4 methods (level 50, +12/tap).
 - **Late (total 300–2277):** Tier-5/6 methods (level 70/90) accelerate the brutal
-  OSRS tail. Milestones: first 99 → all combat 99 → all production 99 → all utility 99 → all
+  OSRS tail. Long-tail Tasks: first 99 → all combat 99 → all production 99 → all utility 99 → all
   gathering 99 → **max cape (2277)** → 200M XP in a skill → **200M XP in every skill**.
 
 ## 6. Screens & UX
@@ -151,7 +151,7 @@ re-balancing a perk is a one-line change that never touches gameplay or view cod
    multiplier. Tap "+X" pops highlight **crits, extra hits, and cache windfalls**. On iPad /
    regular width this becomes a **two-pane** layout (object left, method + controls right); on
    iPhone it's a single vertical column.
-5. **Stats / Milestones** — total level, per-skill levels, unlock thresholds, a milestone
+5. **Stats / Tasks** — total level, per-skill levels, unlock thresholds, the Diary's achievement-Task
    checklist, and each skill's **current perk** (icon, name, and live magnitude) so you can see
    exactly what every level is buying you.
 6. **Settings** — haptics/sound toggles, reset progress, about + OSRS-inspired disclaimer.
@@ -234,7 +234,7 @@ constants; the first post-launch pass is pure balancing.
 - Yield-scaling / prestige upgrades (including boosts to the offline XP rate/cap).
 - Custom art & animation per skill; SFX and music.
 - Achievements, daily goals, and a "max cape" celebration. **Designed:** see
-  [ACHIEVEMENTS.md](ACHIEVEMENTS.md) (the Adventurer's Log — Feats, Reward Tokens, XP Lamps, capes).
+  [ACHIEVEMENTS.md](ACHIEVEMENTS.md) (the Diary — Tasks, Reward Tokens, XP Lamps, capes).
 - iCloud sync; Game Center leaderboards for total level.
 - Skill interactions (e.g., gathering feeds a crafting loop).
 

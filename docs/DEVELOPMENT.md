@@ -47,15 +47,15 @@ Sources/
             XPTable.swift               # OSRS XP curve
             Balance.swift               # ALL tunable constants (tiers, slots, supercharge, perks…)
             GameState.swift             # source of truth: XP, slots, energy, supercharge, coupons, energy cells
-            GameState+Rewards.swift     # Adventurer's Log engine: Feat evaluation, Token payouts, queries
+            GameState+Rewards.swift     # Diary reward engine: Task evaluation, Token payouts, queries
             SkillBuff.swift             # per-skill unique account-wide perks (BuffKind + theming)
-            Feat.swift                  # Adventurer's Log: Feat/Diary/Tier model + full Feat catalog
+            Task.swift                  # Diary rewards: Task/Diary/Tier model + full Task catalog
             Store.swift                 # StoreKit 2 in-app purchases (Token packs; tokens buy consumables)
             SoundManager.swift          # SFX engine: pooled AVAudioPlayers, one cue per game moment
   Views/    RootView / Onboarding / Home / SkillTile
             SkillTrainingView / SettingsView / Components
             BoostsView                  # the Shop tab: activate Boost, spend Tokens on Coupons/Cells, buy Token packs
-            AdventurersLogView          # the Log tab: Overview (+ Milestones), Feats, Diaries, Reward Tokens
+            DiaryView                   # the Diary tab: Overview + All Tasks (themed Diaries, tiers, Reward Tokens)
   Resources/Sounds/                     # bundled OSRS-inspired SFX (sfx_*.wav) — see SOUND_DESIGN.md
   Assets.xcassets                       # app icon + accent color
 Config/     Products.storekit           # local StoreKit config for testing IAP (Token packs)
@@ -77,21 +77,21 @@ docs/       GAME_DESIGN.md, DEVELOPMENT.md, SKILL_BUFFS.md, SOUND_DESIGN.md, ACH
 - **`SkillBuff.swift`** maps each of the 23 skills to a **unique account-wide perk**; the scaling
   envelopes live in `Balance.buffScaling` and the effects are applied in `GameState` (see
   [SKILL_BUFFS.md](SKILL_BUFFS.md)).
-- **`Feat.swift`** + **`GameState+Rewards.swift`** implement the **Adventurer's Log**: a catalog of
-  Feats grouped into themed Diaries and difficulty tiers, evaluated live from gameplay counters,
-  paying out **Tokens**. Tokens are the game's single currency — earned from Feats, bought via IAP,
+- **`Task.swift`** + **`GameState+Rewards.swift`** implement the **Diary** reward system: a catalog of
+  Tasks grouped into themed Diaries and difficulty tiers, evaluated live from gameplay counters,
+  paying out **Tokens**. Tokens are the game's single currency — earned from Tasks, bought via IAP,
   and **spent in the Shop** (`BoostsView`) on Boost Coupons and Energy Cells. All economy numbers
-  (Feat grants, Diary-tier bonus, Shop prices, IAP grants) live in `Balance.Rewards`; the earning UI
-  is `AdventurersLogView` (see [ACHIEVEMENTS.md](ACHIEVEMENTS.md)).
+  (Task grants, Diary-tier bonus, Shop prices, IAP grants) live in `Balance.Rewards`; the earning UI
+  is `DiaryView` (see [ACHIEVEMENTS.md](ACHIEVEMENTS.md)).
 - **Navigation** — `RootView` shows `OnboardingView` until `hasSeenOnboarding`, then a **custom
   bottom tab bar** (`AppTabBar`) with five tabs: **Skills** (`HomeView`) · **Raids** (`RaidsView`)
-  · **Shop** (`BoostsView`) · **Log** (`AdventurersLogView`) · **Settings** (`SettingsView`). The
+  · **Shop** (`BoostsView`) · **Diary** (`DiaryView`) · **Settings** (`SettingsView`). The
   native `TabView` bar floats at the top on iPadOS, so the app uses a hand-rolled bar pinned via
   `.safeAreaInset(edge: .bottom)` — identical placement on iPhone and iPad. Each tab keeps its own
-  `NavigationStack`; the level-up / notice / Feat toasts and the offline-progress sheet live at the
+  `NavigationStack`; the level-up / notice / Task toasts and the offline-progress sheet live at the
   root `ZStack` so they overlay every tab. There is **no standalone Stats screen** — its content is
-  split across tabs: overview stats → **Settings**, the Milestones (achievements) checklist →
-  **Log** (`LogMilestones`), per-skill buff descriptors → **Skills**. The Skills tab **pins** the
+  split across tabs: overview stats → **Settings**, the achievements checklist folded into **Tasks**
+  in the **Diary** tab, per-skill buff descriptors → **Skills**. The Skills tab **pins** the
   Total-Level header (and, when active, an **XP Boost** banner) above its scroll view so both stay
   visible while scrolling.
 
@@ -124,25 +124,23 @@ to `creditPurchasedTokens`. Spending is handled entirely in-game by `GameState.b
 Used for deterministic screenshots / UI checks:
 
 - `SEED_DEMO=ready|super` — seeds representative levels, slots, energy, coupons, and Energy Cells
-  (and, for `super`, an active Supercharge + Daily Boost). Also seeds a modest Adventurer's Log
-  (counters + Reward Tokens) so the Log isn't empty in demo screenshots.
-- `SEED_REWARDS=1` — seeds a **rich Adventurer's Log**: enough levels to unlock all 5 AFK slots,
-  representative lifetime counters, every currently-satisfied Feat marked complete, cleared
+  (and, for `super`, an active Supercharge + Daily Boost). Also seeds a modest Diary
+  (counters + Reward Tokens) so the Diary isn't empty in demo screenshots.
+- `SEED_REWARDS=1` — seeds a **rich Diary**: enough levels to unlock all 5 AFK slots,
+  representative lifetime counters, every currently-satisfied Task marked complete, cleared
   Diary tiers, and a healthy Reward Token balance. Ideal for reward-system screenshots.
-- `OPEN_TAB=<skills|raids|shop|log|settings>` — launches directly on that bottom tab.
+- `OPEN_TAB=<skills|raids|shop|diary|settings>` — launches directly on that bottom tab.
 - `OPEN_SKILL=<rawValue>` — selects the **Skills** tab and deep-links straight into a skill's
   training screen.
 - `OPEN_SHEET=doublexp` — selects the **Shop** tab (Boost status, Spend Tokens, Token packs).
 - `SHOP_SCROLL=tokens` — after landing on the Shop, auto-scrolls to the bottom (Energy Cells + IAP
   **Token Packs**) so the below-the-fold section can be screenshotted from the CLI (which can't
   inject scroll gestures). Pairs with `OPEN_SHEET=doublexp`.
-- `OPEN_SHEET=log` — selects the **Log** tab (Overview, Feats & Reward Tokens).
-- `LOG_TAB=feats` — opens the Log on the **Feats** tab (Diary list) instead of Overview.
-- `LOG_SCROLL=milestones` — on the Log Overview, auto-scrolls down to the migrated **Milestones**
-  (achievements) checklist so it can be screenshotted from the CLI.
-- `OPEN_DIARY=<rawValue>` — selects the Log tab and pushes straight into one Diary's detail
-  (e.g. `combat`, `gathering`, `tycoon`, `completionist`). Implies the Log tab.
-- `FEAT_TOAST=1` — surfaces a sample Feat-completion toast on launch (pairs with `SEED_REWARDS`).
+- `OPEN_SHEET=diary` — selects the **Diary** tab (Overview, All Tasks & Reward Tokens).
+- `DIARY_TAB=tasks` — opens the Diary on the **All Tasks** tab (themed Diary list) instead of Overview.
+- `OPEN_DIARY=<rawValue>` — selects the Diary tab and pushes straight into one Diary's detail
+  (e.g. `combat`, `gathering`, `tycoon`, `completionist`). Implies the Diary tab.
+- `TASK_TOAST=1` — surfaces a sample Task-completion toast on launch (pairs with `SEED_REWARDS`).
 - `OFFLINE_DEMO=1` — seeds a representative **"welcome back"** offline-earnings summary (per-skill
   XP + level-ups) so the sheet can be screenshotted deterministically.
 

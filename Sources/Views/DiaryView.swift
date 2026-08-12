@@ -1,19 +1,19 @@
 import SwiftUI
 
-/// The Adventurer's Log — the player-facing home of the achievement/reward system. Two tabs:
-/// an **Overview** (Reward Token balance, overall completion, and the Feats you're closest to
-/// finishing) and **Feats** (drill into a Diary to see every Feat and its live progress).
+/// The Diary — the player-facing home of the achievement/reward system. Two tabs:
+/// an **Overview** (Reward Token balance, overall completion, and the Tasks you're closest to
+/// finishing) and **All Tasks** (drill into a themed Diary to see every Task and its live progress).
 ///
 /// Styled to match the app's dark translucent-card aesthetic and width-capped/centered so it
 /// reads well on iPad as well as iPhone.
-struct AdventurersLogView: View {
+struct DiaryView: View {
     @EnvironmentObject private var game: GameState
     @State private var tab: Tab = .overview
-    @State private var path: [FeatDiary] = []
+    @State private var path: [TaskDiary] = []
 
     enum Tab: String, CaseIterable, Identifiable {
         case overview = "Overview"
-        case feats = "Feats"
+        case tasks = "All Tasks"
         var id: String { rawValue }
     }
 
@@ -21,46 +21,35 @@ struct AdventurersLogView: View {
         NavigationStack(path: $path) {
             ZStack {
                 GameBackground()
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(spacing: 16) {
-                            TokenBalanceCard()
-                            Picker("View", selection: $tab) {
-                                ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }
-                            }
-                            .pickerStyle(.segmented)
+                ScrollView {
+                    VStack(spacing: 16) {
+                        TokenBalanceCard()
+                        Picker("View", selection: $tab) {
+                            ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
 
-                            switch tab {
-                            case .overview: LogOverview()
-                            case .feats:    LogFeatList()
-                            }
-                        }
-                        .padding(16)
-                        .frame(maxWidth: 720)
-                        .frame(maxWidth: .infinity)
-                    }
-                    #if DEBUG
-                    .onAppear {
-                        // Deterministic screenshots of the migrated MILESTONES checklist.
-                        guard ProcessInfo.processInfo.environment["LOG_SCROLL"] == "milestones" else { return }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            withAnimation { proxy.scrollTo("logMilestones", anchor: .bottom) }
+                        switch tab {
+                        case .overview: DiaryOverview()
+                        case .tasks:    DiaryTaskList()
                         }
                     }
-                    #endif
+                    .padding(16)
+                    .frame(maxWidth: 720)
+                    .frame(maxWidth: .infinity)
                 }
             }
-            .navigationTitle("Adventurer's Log")
+            .navigationTitle("Diary")
             .navigationBarTitleDisplayMode(.inline)
-            .navigationDestination(for: FeatDiary.self) { diary in
-                FeatDiaryDetailView(diary: diary)
+            .navigationDestination(for: TaskDiary.self) { diary in
+                TaskDiaryDetailView(diary: diary)
             }
             .onAppear {
                 #if DEBUG
-                if ProcessInfo.processInfo.environment["LOG_TAB"] == "feats" { tab = .feats }
+                if ProcessInfo.processInfo.environment["DIARY_TAB"] == "tasks" { tab = .tasks }
                 if let raw = ProcessInfo.processInfo.environment["OPEN_DIARY"],
-                   let diary = FeatDiary(rawValue: raw) {
-                    tab = .feats
+                   let diary = TaskDiary(rawValue: raw) {
+                    tab = .tasks
                     path = [diary]
                 }
                 #endif
@@ -85,25 +74,25 @@ private struct TokenBalanceCard: View {
                 Text("REWARD TOKENS").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
                 Text("\(game.tokens)")
                     .font(.system(size: 30, weight: .heavy, design: .rounded)).monospacedDigit()
-                Text("Earned by completing Feats").font(.caption2).foregroundStyle(.secondary)
+                Text("Earned by completing Tasks").font(.caption2).foregroundStyle(.secondary)
             }
             Spacer()
         }
         .padding(16)
-        .logCard()
+        .diaryCard()
     }
 }
 
 // MARK: - Overview tab
 
-private struct LogOverview: View {
+private struct DiaryOverview: View {
     @EnvironmentObject private var game: GameState
 
-    /// Incomplete Feats you're closest to finishing — targets to chase.
-    private var closest: [Feat] {
-        FeatCatalog.all
-            .filter { !game.isFeatComplete($0) }
-            .sorted { game.featFraction($0) > game.featFraction($1) }
+    /// Incomplete Tasks you're closest to finishing — targets to chase.
+    private var closest: [Task] {
+        TaskCatalog.all
+            .filter { !game.isTaskComplete($0) }
+            .sorted { game.taskFraction($0) > game.taskFraction($1) }
             .prefix(4)
             .map { $0 }
     }
@@ -113,23 +102,18 @@ private struct LogOverview: View {
             overallCard
             if !closest.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
-                    sectionHeader("CLOSEST FEATS", systemImage: "target")
+                    sectionHeader("CLOSEST TASKS", systemImage: "target")
                     VStack(spacing: 10) {
-                        ForEach(closest) { FeatRow(feat: $0) }
+                        ForEach(closest) { TaskRow(task: $0) }
                     }
                 }
             }
-            VStack(alignment: .leading, spacing: 10) {
-                sectionHeader("MILESTONES", systemImage: "flag.checkered")
-                LogMilestones()
-            }
-            .id("logMilestones")
         }
     }
 
     private var overallCard: some View {
-        let done = game.totalFeatsCompleted
-        let total = FeatCatalog.all.count
+        let done = game.totalTasksCompleted
+        let total = TaskCatalog.all.count
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Label("OVERALL", systemImage: "checkmark.seal.fill")
@@ -140,89 +124,22 @@ private struct LogOverview: View {
             }
             XPProgressBar(progress: total > 0 ? Double(done) / Double(total) : 0,
                           tint: .rewardToken, height: 8)
-            Text(done == total ? "Every Feat complete — you legend."
-                               : "Complete Feats to earn Reward Tokens.")
+            Text(done == total ? "Every Task complete — you legend."
+                               : "Complete Tasks to earn Reward Tokens.")
                 .font(.caption2).foregroundStyle(.secondary)
         }
         .padding(16)
-        .logCard()
+        .diaryCard()
     }
 }
 
-// MARK: - Milestones (passive achievement checklist)
+// MARK: - All Tasks tab (Diary list)
 
-/// The lifetime-progress checklist migrated from the former Stats screen: category clears, AFK-slot
-/// unlocks, the max cape, and 200M-XP goals. A passive read-out — a companion to the Feats that
-/// actually pay Tokens.
-private struct LogMilestones: View {
-    @EnvironmentObject private var game: GameState
-
-    var body: some View {
-        VStack(spacing: 0) {
-            milestoneRow("First level 99", done: game.maxedSkillCount >= 1)
-            divider
-            milestoneRow("All combat skills 99",
-                         done: SkillID.skills(in: .combat).allSatisfy { game.isMaxed($0) })
-            divider
-            milestoneRow("All production skills 99",
-                         done: SkillID.skills(in: .production).allSatisfy { game.isMaxed($0) })
-            divider
-            milestoneRow("All utility skills 99",
-                         done: SkillID.skills(in: .utility).allSatisfy { game.isMaxed($0) })
-            divider
-            milestoneRow("All gathering skills 99",
-                         done: SkillID.skills(in: .gathering).allSatisfy { game.isMaxed($0) })
-            divider
-            ForEach(Array(Balance.slotUnlockTotalLevels.enumerated()), id: \.offset) { i, threshold in
-                milestoneRow("Unlock \(slotOrdinal(i + 2)) AFK slot (total \(threshold))",
-                             done: game.totalLevel >= threshold)
-                divider
-            }
-            milestoneRow("Max cape — every skill 99", done: game.isFullyMaxed)
-            divider
-            milestoneRow("200M XP in a skill", done: game.hasAnyMaxXPSkill)
-            divider
-            milestoneRow("200M XP in every skill (\(game.maxXPSkillCount)/\(SkillID.allCases.count))",
-                         done: game.isFullyMaxXP)
-        }
-        .padding(.vertical, 4)
-        .logCard(cornerRadius: 14)
-    }
-
-    private var divider: some View {
-        Divider().overlay(Color.white.opacity(0.06)).padding(.leading, 42)
-    }
-
-    private func milestoneRow(_ text: String, done: Bool) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: done ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 18))
-                .foregroundStyle(done ? .green : .secondary)
-                .frame(width: 22)
-            Text(text)
-                .font(.subheadline)
-                .foregroundStyle(done ? .primary : .secondary)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 14).padding(.vertical, 10)
-    }
-
-    private func slotOrdinal(_ n: Int) -> String {
-        switch n {
-        case 2: return "2nd"
-        case 3: return "3rd"
-        default: return "\(n)th"
-        }
-    }
-}
-
-// MARK: - Feats tab (Diary list)
-
-private struct LogFeatList: View {
+private struct DiaryTaskList: View {
     @EnvironmentObject private var game: GameState
     var body: some View {
         VStack(spacing: 12) {
-            ForEach(FeatDiary.allCases) { diary in
+            ForEach(TaskDiary.allCases) { diary in
                 NavigationLink(value: diary) {
                     DiaryCard(diary: diary)
                 }
@@ -234,10 +151,10 @@ private struct LogFeatList: View {
 
 private struct DiaryCard: View {
     @EnvironmentObject private var game: GameState
-    let diary: FeatDiary
+    let diary: TaskDiary
 
     var body: some View {
-        let feats = FeatCatalog.feats(in: diary)
+        let tasks = TaskCatalog.tasks(in: diary)
         let done = game.completedCount(in: diary)
         return HStack(spacing: 14) {
             ZStack {
@@ -250,29 +167,29 @@ private struct DiaryCard: View {
                 HStack {
                     Text(diary.title).font(.subheadline.weight(.bold)).foregroundStyle(.primary)
                     Spacer()
-                    Text("\(done)/\(feats.count)")
+                    Text("\(done)/\(tasks.count)")
                         .font(.caption.weight(.bold)).monospacedDigit()
-                        .foregroundStyle(done == feats.count ? .green : .secondary)
+                        .foregroundStyle(done == tasks.count ? .green : .secondary)
                 }
                 Text(diary.subtitle).font(.caption2).foregroundStyle(.secondary)
-                XPProgressBar(progress: feats.isEmpty ? 0 : Double(done) / Double(feats.count),
+                XPProgressBar(progress: tasks.isEmpty ? 0 : Double(done) / Double(tasks.count),
                               tint: diary.tint, height: 5)
             }
             Image(systemName: "chevron.right").font(.caption.weight(.bold)).foregroundStyle(.tertiary)
         }
         .padding(14)
         .contentShape(Rectangle())
-        .logCard(cornerRadius: 14)
+        .diaryCard(cornerRadius: 14)
     }
 }
 
-// MARK: - Diary detail (all Feats in one Diary, grouped by tier)
+// MARK: - Diary detail (all Tasks in one Diary, grouped by tier)
 
-struct FeatDiaryDetailView: View {
+struct TaskDiaryDetailView: View {
     @EnvironmentObject private var game: GameState
-    let diary: FeatDiary
+    let diary: TaskDiary
 
-    private let tiers = FeatTier.allCases.sorted { $0.order < $1.order }
+    private let tiers = TaskTier.allCases.sorted { $0.order < $1.order }
 
     var body: some View {
         ZStack {
@@ -281,12 +198,12 @@ struct FeatDiaryDetailView: View {
                 VStack(spacing: 16) {
                     header
                     ForEach(tiers) { tier in
-                        let feats = FeatCatalog.group(diary, tier)
-                        if !feats.isEmpty {
+                        let tasks = TaskCatalog.group(diary, tier)
+                        if !tasks.isEmpty {
                             VStack(alignment: .leading, spacing: 10) {
-                                tierHeader(tier, feats: feats)
+                                tierHeader(tier, tasks: tasks)
                                 VStack(spacing: 10) {
-                                    ForEach(feats) { FeatRow(feat: $0) }
+                                    ForEach(tasks) { TaskRow(task: $0) }
                                 }
                             }
                         }
@@ -302,7 +219,7 @@ struct FeatDiaryDetailView: View {
     }
 
     private var header: some View {
-        let feats = FeatCatalog.feats(in: diary)
+        let tasks = TaskCatalog.tasks(in: diary)
         let done = game.completedCount(in: diary)
         return HStack(spacing: 14) {
             ZStack {
@@ -312,17 +229,17 @@ struct FeatDiaryDetailView: View {
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(diary.subtitle).font(.subheadline.weight(.semibold))
-                XPProgressBar(progress: feats.isEmpty ? 0 : Double(done) / Double(feats.count),
+                XPProgressBar(progress: tasks.isEmpty ? 0 : Double(done) / Double(tasks.count),
                               tint: diary.tint, height: 7)
-                Text("\(done) / \(feats.count) Feats complete")
+                Text("\(done) / \(tasks.count) Tasks complete")
                     .font(.caption2).foregroundStyle(.secondary)
             }
         }
         .padding(16)
-        .logCard()
+        .diaryCard()
     }
 
-    private func tierHeader(_ tier: FeatTier, feats: [Feat]) -> some View {
+    private func tierHeader(_ tier: TaskTier, tasks: [Task]) -> some View {
         let complete = game.isDiaryTierComplete(diary, tier)
         return HStack(spacing: 8) {
             Text(tier.displayName.uppercased())
@@ -342,41 +259,41 @@ struct FeatDiaryDetailView: View {
     }
 }
 
-// MARK: - Shared Feat row
+// MARK: - Shared Task row
 
-private struct FeatRow: View {
+private struct TaskRow: View {
     @EnvironmentObject private var game: GameState
-    let feat: Feat
+    let task: Task
 
     var body: some View {
-        let done = game.isFeatComplete(feat)
-        let progress = game.featProgress(feat)
+        let done = game.isTaskComplete(task)
+        let progress = game.taskProgress(task)
         return HStack(spacing: 12) {
             ZStack {
-                Circle().fill((done ? Color.green : feat.tier.tint).opacity(0.18))
+                Circle().fill((done ? Color.green : task.tier.tint).opacity(0.18))
                     .frame(width: 34, height: 34)
-                Image(systemName: done ? "checkmark" : feat.diary.icon)
+                Image(systemName: done ? "checkmark" : task.diary.icon)
                     .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(done ? .green : feat.tier.tint)
+                    .foregroundStyle(done ? .green : task.tier.tint)
             }
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    Text(feat.title).font(.subheadline.weight(.semibold))
+                    Text(task.title).font(.subheadline.weight(.semibold))
                         .foregroundStyle(done ? .secondary : .primary)
                     Spacer()
-                    TokenTag(amount: feat.tokenReward, earned: done)
+                    TokenTag(amount: task.tokenReward, earned: done)
                 }
-                Text(feat.detail).font(.caption2).foregroundStyle(.secondary)
+                Text(task.detail).font(.caption2).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                if feat.isCounter && !done {
-                    XPProgressBar(progress: game.featFraction(feat), tint: feat.tier.tint, height: 5)
-                    Text("\(progress) / \(feat.goal)")
+                if task.isCounter && !done {
+                    XPProgressBar(progress: game.taskFraction(task), tint: task.tier.tint, height: 5)
+                    Text("\(progress) / \(task.goal)")
                         .font(.caption2.weight(.medium)).monospacedDigit().foregroundStyle(.secondary)
                 }
             }
         }
         .padding(12)
-        .logCard(cornerRadius: 12)
+        .diaryCard(cornerRadius: 12)
     }
 }
 
@@ -403,8 +320,8 @@ private func sectionHeader(_ title: String, systemImage: String) -> some View {
 }
 
 private extension View {
-    /// The app's translucent card treatment used throughout the Log.
-    func logCard(cornerRadius: CGFloat = 16) -> some View {
+    /// The app's translucent card treatment used throughout the Diary.
+    func diaryCard(cornerRadius: CGFloat = 16) -> some View {
         background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: cornerRadius))
             .overlay(RoundedRectangle(cornerRadius: cornerRadius).strokeBorder(Color.white.opacity(0.08)))
     }

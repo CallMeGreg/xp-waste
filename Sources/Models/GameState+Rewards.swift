@@ -1,28 +1,28 @@
 import Foundation
 
-/// The Adventurer's Log reward engine: lifetime counter bookkeeping, Feat evaluation, Reward Token
-/// payouts, and the query helpers the Log UI reads. The *state* (tokens, counters, completed feats)
+/// The Diary reward engine: lifetime counter bookkeeping, Task evaluation, Reward Token
+/// payouts, and the query helpers the Diary UI reads. The *state* (tokens, counters, completed tasks)
 /// lives on `GameState` so it persists with the save; the *logic* lives here to keep the core
 /// `GameState.swift` focused on gameplay. See `docs/ACHIEVEMENTS.md`.
 ///
-/// Everything is `@MainActor` (inherited from `GameState`), so Feat progress closures — which read
+/// Everything is `@MainActor` (inherited from `GameState`), so Task progress closures — which read
 /// game state — are always evaluated on the main actor.
 extension GameState {
 
     // MARK: - Counters
 
-    /// Current value of a lifetime tally (0 if never incremented). Read by Feat progress closures.
-    func featCounter(_ key: String) -> Int { featCounters[key] ?? 0 }
+    /// Current value of a lifetime tally (0 if never incremented). Read by Task progress closures.
+    func taskCounter(_ key: String) -> Int { taskCounters[key] ?? 0 }
 
-    /// Increment a lifetime tally by `amount` (default 1). Keys come from `FeatCounter`.
+    /// Increment a lifetime tally by `amount` (default 1). Keys come from `TaskCounter`.
     func bumpCounter(_ key: String, by amount: Int = 1) {
         guard amount != 0 else { return }
-        featCounters[key, default: 0] += amount
+        taskCounters[key, default: 0] += amount
     }
 
     /// Raise a high-water-mark tally to `value` (only grows). Used for "best combo", "best offline".
     func raiseCounter(_ key: String, to value: Int) {
-        if value > (featCounters[key] ?? 0) { featCounters[key] = value }
+        if value > (taskCounters[key] ?? 0) { taskCounters[key] = value }
     }
 
     // MARK: - Tokens
@@ -33,103 +33,103 @@ extension GameState {
         tokens += count
     }
 
-    // MARK: - Feat evaluation
+    // MARK: - Task evaluation
 
     /// Convenience for the many single-trigger hooks.
-    func evaluateFeats(_ trigger: FeatTrigger) { evaluateFeats([trigger]) }
+    func evaluateTasks(_ trigger: TaskTrigger) { evaluateTasks([trigger]) }
 
-    /// Re-check every Feat registered for any of `triggers`, complete any whose progress has reached
+    /// Re-check every Task registered for any of `triggers`, complete any whose progress has reached
     /// its goal, pay out Tokens (plus any Diary-tier completion bonus newly earned), and surface a
-    /// single celebratory `featEvent` for the batch. Cheap and idempotent — safe to call on every
+    /// single celebratory `taskEvent` for the batch. Cheap and idempotent — safe to call on every
     /// relevant hook. Persists via `save()` only when something actually changes.
-    func evaluateFeats(_ triggers: Set<FeatTrigger>) {
+    func evaluateTasks(_ triggers: Set<TaskTrigger>) {
         guard !triggers.isEmpty else { return }
 
         var considered = Set<String>()
-        var newlyCompleted: [Feat] = []
+        var newlyCompleted: [Task] = []
         for trigger in triggers {
-            for feat in FeatCatalog.byTrigger[trigger] ?? [] {
-                guard !completedFeats.contains(feat.id),
-                      considered.insert(feat.id).inserted else { continue }
-                if feat.progress(self) >= feat.goal { newlyCompleted.append(feat) }
+            for task in TaskCatalog.byTrigger[trigger] ?? [] {
+                guard !completedTasks.contains(task.id),
+                      considered.insert(task.id).inserted else { continue }
+                if task.progress(self) >= task.goal { newlyCompleted.append(task) }
             }
         }
         guard !newlyCompleted.isEmpty else { return }
 
         var awarded = 0
-        for feat in newlyCompleted {
-            completedFeats.insert(feat.id)
-            awarded += feat.tokenReward
+        for task in newlyCompleted {
+            completedTasks.insert(task.id)
+            awarded += task.tokenReward
         }
 
         // Any (diary, tier) group that just became fully complete pays a landmark bonus once.
-        var completedGroups: [(diary: FeatDiary, tier: FeatTier)] = []
+        var completedGroups: [(diary: TaskDiary, tier: TaskTier)] = []
         var checkedGroups = Set<String>()
-        for feat in newlyCompleted {
-            let key = groupKey(feat.diary, feat.tier)
+        for task in newlyCompleted {
+            let key = groupKey(task.diary, task.tier)
             guard checkedGroups.insert(key).inserted, !claimedDiaryTiers.contains(key) else { continue }
-            if FeatCatalog.group(feat.diary, feat.tier).allSatisfy({ completedFeats.contains($0.id) }) {
+            if TaskCatalog.group(task.diary, task.tier).allSatisfy({ completedTasks.contains($0.id) }) {
                 claimedDiaryTiers.insert(key)
                 awarded += Balance.Rewards.diaryTierBonus
-                completedGroups.append((feat.diary, feat.tier))
+                completedGroups.append((task.diary, task.tier))
             }
         }
 
         addTokens(awarded)
-        featEvent = makeFeatEvent(feats: newlyCompleted, groups: completedGroups, tokens: awarded)
+        taskEvent = makeTaskEvent(tasks: newlyCompleted, groups: completedGroups, tokens: awarded)
         save()
     }
 
-    private func groupKey(_ diary: FeatDiary, _ tier: FeatTier) -> String {
+    private func groupKey(_ diary: TaskDiary, _ tier: TaskTier) -> String {
         "\(diary.rawValue).\(tier.rawValue)"
     }
 
     /// Builds the toast for a batch of completions, leading with the biggest news (a Diary-tier
-    /// clear beats a single Feat, which beats a generic multi-Feat batch).
-    private func makeFeatEvent(feats: [Feat], groups: [(diary: FeatDiary, tier: FeatTier)],
-                               tokens: Int) -> FeatEvent {
+    /// clear beats a single Task, which beats a generic multi-Task batch).
+    private func makeTaskEvent(tasks: [Task], groups: [(diary: TaskDiary, tier: TaskTier)],
+                               tokens: Int) -> TaskEvent {
         if let group = groups.last {
-            return FeatEvent(
+            return TaskEvent(
                 title: "\(group.diary.title) — \(group.tier.displayName) complete!",
-                subtitle: feats.count == 1 ? feats[0].title : "\(feats.count) Feats cleared",
+                subtitle: tasks.count == 1 ? tasks[0].title : "\(tasks.count) Tasks cleared",
                 tokens: tokens, icon: "rosette", tint: group.tier.tint)
         }
-        if feats.count == 1 {
-            let feat = feats[0]
-            return FeatEvent(title: feat.title, subtitle: "\(feat.diary.title) • \(feat.tier.displayName) Feat",
-                             tokens: tokens, icon: feat.diary.icon, tint: feat.tier.tint)
+        if tasks.count == 1 {
+            let task = tasks[0]
+            return TaskEvent(title: task.title, subtitle: "\(task.diary.title) • \(task.tier.displayName) Task",
+                             tokens: tokens, icon: task.diary.icon, tint: task.tier.tint)
         }
-        return FeatEvent(title: "\(feats.count) Feats complete!", subtitle: "Adventurer's Log",
-                         tokens: tokens, icon: "checkmark.seal.fill", tint: FeatTier.elite.tint)
+        return TaskEvent(title: "\(tasks.count) Tasks complete!", subtitle: "Diary",
+                         tokens: tokens, icon: "checkmark.seal.fill", tint: TaskTier.elite.tint)
     }
 
     // MARK: - UI queries
 
-    /// Whether a Feat has been completed.
-    func isFeatComplete(_ feat: Feat) -> Bool { completedFeats.contains(feat.id) }
+    /// Whether a Task has been completed.
+    func isTaskComplete(_ task: Task) -> Bool { completedTasks.contains(task.id) }
 
-    /// Live progress toward a Feat's goal, clamped to `[0, goal]` for display.
-    func featProgress(_ feat: Feat) -> Int { min(max(feat.progress(self), 0), feat.goal) }
+    /// Live progress toward a Task's goal, clamped to `[0, goal]` for display.
+    func taskProgress(_ task: Task) -> Int { min(max(task.progress(self), 0), task.goal) }
 
-    /// Fractional progress `[0, 1]` toward a Feat's goal, for progress bars.
-    func featFraction(_ feat: Feat) -> Double {
-        guard feat.goal > 0 else { return 0 }
-        return Double(featProgress(feat)) / Double(feat.goal)
+    /// Fractional progress `[0, 1]` toward a Task's goal, for progress bars.
+    func taskFraction(_ task: Task) -> Double {
+        guard task.goal > 0 else { return 0 }
+        return Double(taskProgress(task)) / Double(task.goal)
     }
 
-    /// Completed Feats within one Diary (counts against the live catalog, ignoring any stale IDs).
-    func completedCount(in diary: FeatDiary) -> Int {
-        FeatCatalog.feats(in: diary).reduce(0) { $0 + (completedFeats.contains($1.id) ? 1 : 0) }
+    /// Completed Tasks within one Diary (counts against the live catalog, ignoring any stale IDs).
+    func completedCount(in diary: TaskDiary) -> Int {
+        TaskCatalog.tasks(in: diary).reduce(0) { $0 + (completedTasks.contains($1.id) ? 1 : 0) }
     }
 
-    /// Whether every Feat in a (Diary, tier) group is complete.
-    func isDiaryTierComplete(_ diary: FeatDiary, _ tier: FeatTier) -> Bool {
-        let group = FeatCatalog.group(diary, tier)
-        return !group.isEmpty && group.allSatisfy { completedFeats.contains($0.id) }
+    /// Whether every Task in a (Diary, tier) group is complete.
+    func isDiaryTierComplete(_ diary: TaskDiary, _ tier: TaskTier) -> Bool {
+        let group = TaskCatalog.group(diary, tier)
+        return !group.isEmpty && group.allSatisfy { completedTasks.contains($0.id) }
     }
 
-    /// Total Feats completed across the whole game (vs. `FeatCatalog.all.count`).
-    var totalFeatsCompleted: Int {
-        FeatCatalog.all.reduce(0) { $0 + (completedFeats.contains($1.id) ? 1 : 0) }
+    /// Total Tasks completed across the whole game (vs. `TaskCatalog.all.count`).
+    var totalTasksCompleted: Int {
+        TaskCatalog.all.reduce(0) { $0 + (completedTasks.contains($1.id) ? 1 : 0) }
     }
 }

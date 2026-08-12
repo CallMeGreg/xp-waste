@@ -238,40 +238,40 @@ enum Balance {
         raidTierRewardBonus[min(max(tier, 0), raidTierRewardBonus.count - 1)]
     }
 
-    // MARK: Rewards (Adventurer's Log — Feats & universal Tokens)
+    // MARK: Rewards (Diary — Tasks & universal Tokens)
 
     /// Every tunable for the achievement/reward economy. Re-balancing payouts, shop prices, or IAP
-    /// grants is a one-line change here and never touches Feat definitions, gameplay, or view code.
+    /// grants is a one-line change here and never touches Task definitions, gameplay, or view code.
     /// See docs/ACHIEVEMENTS.md.
     ///
     /// **One currency.** Tokens are the single spendable currency. They are *earned* by completing
-    /// Feats and *bought* via IAP (`iapTokens*`), then *spent* in the Shop on Boost Coupons and
+    /// Tasks and *bought* via IAP (`iapTokens*`), then *spent* in the Shop on Boost Coupons and
     /// Energy Cells (`*Cost`). The scale is deliberately tiered so that paying yields far more than
-    /// grinding achievements: the entire Feat catalog pays out ≈ 4,200 Tokens, a single Feat pays
-    /// 5–150, one shop item costs 100–250 (so it takes many Feats to afford one), and even the
-    /// smallest IAP pack (500) dwarfs any single Feat and buys several shop items outright.
+    /// grinding achievements: the entire Task catalog pays out ≈ 4,200 Tokens, a single Task pays
+    /// 5–150, one shop item costs 100–250 (so it takes many Tasks to afford one), and even the
+    /// smallest IAP pack (500) dwarfs any single Task and buys several shop items outright.
     enum Rewards {
-        /// Tokens granted for completing a single Feat, by difficulty tier.
+        /// Tokens granted for completing a single Task, by difficulty tier.
         static let tokensEasy = 5
         static let tokensMedium = 12
         static let tokensHard = 30
         static let tokensElite = 70
         static let tokensMaster = 150
 
-        /// Flat Token bonus for completing *every* Feat in one Diary tier (a landmark reward).
+        /// Flat Token bonus for completing *every* Task in one Diary tier (a landmark reward).
         static let diaryTierBonus = 50
 
         // MARK: Shop prices — Tokens spent to acquire a consumable
 
         /// Tokens to buy one **Boost Coupon** (a timed all-skill XP multiplier). Pricier than a Cell
-        /// because a Boost affects every skill at once. ≈ one Master Feat, or a long run of easy ones.
+        /// because a Boost affects every skill at once. ≈ one Master Task, or a long run of easy ones.
         static let boostCouponCost = 250
         /// Tokens to buy one **Energy Cell** (an instant single-skill Supercharge fill).
         static let energyCellCost = 100
 
         // MARK: IAP — Tokens granted per real-money pack
 
-        /// Tokens granted by the small / medium / large Token packs. Each dwarfs a single Feat so
+        /// Tokens granted by the small / medium / large Token packs. Each dwarfs a single Task so
         /// buying is a big jump, and the large pack alone exceeds a full achievement clear.
         static let iapTokensSmall = 500
         static let iapTokensMedium = 3_000
