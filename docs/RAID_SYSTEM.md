@@ -3,7 +3,7 @@
 A new **Raids** feature: one thematic raid per skill **category**, gated to **once per group per
 day**, whose **difficulty and reward tier scale with that group's combined skill level**. A raid
 grants **no XP while you play** — clearing it awards a **Skill Lamp** bound to that group, worth
-about **5× the XP you'd have earned tapping that skill for the raid's duration**.
+about **3× the XP you'd have earned tapping that skill for the raid's duration**.
 
 > **Status:** design only. Nothing here is implemented yet. This document is the spec; the
 > implementation PR that follows must obey the repo's universal-app and screenshot rules
@@ -192,43 +192,48 @@ Clearing a raid awards **one Skill Lamp bound to that group** (a "Combat Lamp", 
   on" true.
 
 ### 6.2 Value formula
-The lamp is worth ~**5×** the XP you'd earn **tapping the target skill** for the raid's duration:
+The lamp is worth ~**3×** the XP you'd earn **tapping the target skill** for the raid's duration:
 
 ```
 tapYieldPerMinute(S) = Balance.raidRapidTapsPerMinute × baseXPPerAction(S)   // S at its current tier
-lampXP(S, tier)      = round( Balance.raidRewardMultiplier              // 5.0
+lampXP(S, tier)      = round( Balance.raidRewardMultiplier              // 3.0
                               × raidMinutes                             // raidDurationSeconds / 60
                               × tapYieldPerMinute(S)
-                              × Balance.raidTierRewardBonus[tier] )     // default 1.0 (neutral)
+                              × Balance.raidTierRewardBonus[tier] )     // Bronze→Rune: 1.0…5.0
 ```
 
 - `baseXPPerAction(S)` already scales with **S's method tier** (`1/3/6/12/25/50`), i.e. with S's
   level — so **"amount depends on the level of the skill it's used on."** ✓
 - The **raid tier** matters two ways: (a) you can only earn a higher-tier lamp once the group's
-  skills are high enough to spend it on (correlated payoff), and (b) the explicit, **default-neutral**
-  `raidTierRewardBonus[tier]` lever lets designers make higher tiers extra-rewarding **without
-  touching code.** ✓
+  skills are high enough to spend it on (correlated payoff), and (b) the explicit
+  `raidTierRewardBonus[tier]` lever makes higher tiers extra-rewarding (Bronze `1.0` → Rune `5.0`)
+  **without touching code.** ✓
 - Because the value is computed **at application time** from the target skill's current tier, a
   lamp banked early and spent late is worth more — exactly like an OSRS XP lamp.
 
 ### 6.3 Example payouts
-With defaults `raidRewardMultiplier = 5.0`, `raidDurationSeconds = 180` (3 min),
-`raidRapidTapsPerMinute = 300`, `raidTierRewardBonus = 1.0` → `lampXP = 4500 × baseXPPerAction(S)`:
+With defaults `raidRewardMultiplier = 3.0`, `raidDurationSeconds = 180` (3 min),
+`raidRapidTapsPerMinute = 300`, and a **Bronze-tier** lamp (`raidTierRewardBonus = 1.0`) →
+`lampXP = 2700 × baseXPPerAction(S)`:
 
 | Target skill's method tier | XP/tap | Lamp XP | For scale (OSRS curve) |
 |----------------------------|--------|---------|------------------------|
-| 1 (lv 1–14)  | 1  | **4,500**   | a big early-game jump |
-| 2 (lv 15–29) | 3  | **13,500**  | several early levels |
-| 3 (lv 30–49) | 6  | **27,000**  | ~a level in the 30s–40s |
-| 4 (lv 50–69) | 12 | **54,000**  | a solid chunk of a 50s level |
-| 5 (lv 70–89) | 25 | **112,500** | meaningful in the 70s |
-| 6 (lv 90–99) | 50 | **225,000** | ~a quarter-level near 99 |
+| 1 (lv 1–14)  | 1  | **2,700**   | a big early-game jump |
+| 2 (lv 15–29) | 3  | **8,100**   | several early levels |
+| 3 (lv 30–49) | 6  | **16,200**  | ~a level in the 30s–40s |
+| 4 (lv 50–69) | 12 | **32,400**  | a solid chunk of a 50s level |
+| 5 (lv 70–89) | 25 | **67,500**  | meaningful in the 70s |
+| 6 (lv 90–99) | 50 | **135,000** | ~a chunk of a level near 99 |
 
-All three inputs (`5.0`, the duration, the reference taps/minute) are one-line `Balance.swift`
-edits, so re-tuning the 5× promise never touches gameplay or view code.
+Higher **raid tiers** scale these further via `raidTierRewardBonus` (Bronze `1.0`, Iron `1.2`,
+Steel `1.5`, Mithril `2.0`, Adamant `3.0`, Rune `5.0`) — e.g. a Rune-tier lamp on a top-tier skill
+is `135,000 × 5.0 = 675,000` XP.
+
+All three inputs (`3.0`, the duration, the reference taps/minute) are one-line `Balance.swift`
+edits, so re-tuning the 3× promise never touches gameplay or view code.
 
 > **Calibration note:** `raidRapidTapsPerMinute` (default 300 ≈ 5 taps/s) anchors "clicking
-> rapidly." It's a deliberate reference rate, not a measurement of any given player. At the 5×
+> rapidly." It's a deliberate reference rate, not a measurement of any given player. At the 3×
 > multiplier a cleared raid comfortably out-earns rapid tapping at every tier — including once a
 > group reaches the top (Rune) tier — while staying gated to one attempt per group per day. Tune
 > per playtest.
@@ -240,12 +245,12 @@ edits, so re-tuning the 5× promise never touches gameplay or view code.
 ```swift
 // MARK: Raids
 static let raidDurationSeconds: Double = 180          // ~3 min per raid (a few minutes)
-static let raidRapidTapsPerMinute: Double = 300       // reference "rapid tapping" rate for the 5× promise
-static let raidRewardMultiplier: Double = 5.0         // lamp ≈ 5× tapping-for-duration
+static let raidRapidTapsPerMinute: Double = 300       // reference "rapid tapping" rate for the 3× promise
+static let raidRewardMultiplier: Double = 3.0         // lamp ≈ 3× tapping-for-duration
 static let raidsPerGroupPerDay: Int = 1               // one shot per group per day
 
-/// Explicit, default-neutral per-tier reward lever (index = raidTier 0…5).
-static let raidTierRewardBonus: [Double] = [1, 1, 1, 1, 1, 1]
+/// Explicit per-tier reward lever (index = raidTier 0…5, Bronze→Rune).
+static let raidTierRewardBonus: [Double] = [1.0, 1.2, 1.5, 2.0, 3.0, 5.0]
 
 /// Per-tier difficulty knobs consumed by the four loops. Index = raidTier 0…5.
 struct RaidTierParams {
