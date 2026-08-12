@@ -12,6 +12,7 @@ struct RaidsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 14) {
+                    RaidsOverviewCard()
                     ForEach(SkillCategory.allCases) { group in
                         RaidCard(
                             group: group,
@@ -52,6 +53,30 @@ struct RaidsView: View {
     }
 }
 
+/// A single explainer at the top of the Raids tab so each card doesn't have to repeat the rules.
+private struct RaidsOverviewCard: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle().fill(Color.white.opacity(0.08)).frame(width: 40, height: 40)
+                Image(systemName: "shield.lefthalf.filled")
+                    .font(.headline.weight(.bold)).foregroundStyle(.secondary)
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Raids").font(.subheadline.weight(.bold))
+                Text("One raid per skill group, once a day. Clear it to bank an XP lamp you can spend on any skill in that group. Difficulty & rewards scale with a group's level.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.white.opacity(0.10)))
+    }
+}
+
 /// One raid's card: identity, tier + combined-level progress, availability CTA, and lamp inventory.
 private struct RaidCard: View {
     @EnvironmentObject private var game: GameState
@@ -64,7 +89,11 @@ private struct RaidCard: View {
         let combined = game.raidCombinedLevel(group)
         let maxCombined = game.raidMaxCombinedLevel(group)
         let available = game.isRaidAvailableToday(group)
-        let lampCount = game.lamps(for: group).count
+        let lamps = game.lamps(for: group)
+        // Distinct tiers present, best first, so mixed-tier inventories read clearly.
+        let lampsByTier = Dictionary(grouping: lamps, by: { $0.tier })
+            .map { (tier: $0.key, count: $0.value.count) }
+            .sorted { $0.tier > $1.tier }
 
         return VStack(alignment: .leading, spacing: 12) {
             // Title row
@@ -101,39 +130,38 @@ private struct RaidCard: View {
                     }
                 }
                 XPProgressBar(progress: game.raidTierProgress(group), tint: group.raidTint, height: 6)
-                Text("Difficulty & lamp reward scale with this group's level")
-                    .font(.caption2).foregroundStyle(.secondary.opacity(0.8))
             }
 
             // Actions
-            HStack(spacing: 10) {
-                Button(action: onRaid) {
-                    Label(available ? "Raid" : "Raided today", systemImage: available ? "play.fill" : "checkmark")
-                        .font(.subheadline.weight(.bold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background(available ? group.raidTint : Color.white.opacity(0.08),
-                                    in: RoundedRectangle(cornerRadius: 12))
-                        .foregroundStyle(available ? .white : .secondary)
-                }
-                .buttonStyle(PressableStyle(scale: 0.97))
-                .disabled(!available)
+            Button(action: onRaid) {
+                Label(available ? "Raid" : "Raided today", systemImage: available ? "play.fill" : "checkmark")
+                    .font(.subheadline.weight(.bold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 11)
+                    .background(available ? group.raidTint : Color.white.opacity(0.08),
+                                in: RoundedRectangle(cornerRadius: 12))
+                    .foregroundStyle(available ? .white : .secondary)
+            }
+            .buttonStyle(PressableStyle(scale: 0.97))
+            .disabled(!available)
 
-                if lampCount > 0 {
-                    Button(action: onApply) {
-                        HStack(spacing: 6) {
-                            ArtworkView(art: .vector(.genieLamp), size: 17, color: .yellow)
-                            Text("\(lampCount)").monospacedDigit()
+            // Lamp inventory — one chip per tier, color-coded so multiple tiers are distinguishable.
+            if !lamps.isEmpty {
+                Button(action: onApply) {
+                    HStack(spacing: 8) {
+                        ForEach(lampsByTier, id: \.tier) { entry in
+                            lampChip(tier: entry.tier, count: entry.count)
                         }
-                        .font(.subheadline.weight(.bold))
-                        .padding(.horizontal, 14).padding(.vertical, 11)
-                        .background(Color.yellow.opacity(0.16), in: RoundedRectangle(cornerRadius: 12))
-                        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.yellow.opacity(0.4)))
-                        .foregroundStyle(.yellow)
+                        Spacer(minLength: 0)
+                        Text("Apply").font(.caption.weight(.bold)).foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
                     }
-                    .buttonStyle(PressableStyle(scale: 0.97))
-                    .accessibilityLabel("Apply \(lampCount) \(group.rawValue) lamps")
+                    .padding(.horizontal, 12).padding(.vertical, 9)
+                    .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.white.opacity(0.12)))
                 }
+                .buttonStyle(PressableStyle(scale: 0.98))
+                .accessibilityLabel("Apply \(lamps.count) \(group.rawValue) lamps")
             }
 
             if !available {
@@ -144,6 +172,19 @@ private struct RaidCard: View {
         .padding(14)
         .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(group.raidTint.opacity(0.25)))
+    }
+
+    /// A tier-colored lamp count chip (e.g. a Rune lamp reads runite-colored, an Iron lamp iron-colored).
+    private func lampChip(tier: Int, count: Int) -> some View {
+        let c = SkillCategory.raidTierColor(tier)
+        return HStack(spacing: 4) {
+            ArtworkView(art: .vector(.genieLamp), size: 16, color: c)
+            Text("\(count)").font(.subheadline.weight(.bold)).monospacedDigit().foregroundStyle(c)
+        }
+        .padding(.horizontal, 9).padding(.vertical, 5)
+        .background(c.opacity(0.16), in: Capsule())
+        .overlay(Capsule().strokeBorder(c.opacity(0.45)))
+        .accessibilityLabel("\(count) \(SkillCategory.raidTierName(tier)) lamp\(count == 1 ? "" : "s")")
     }
 
     private func tierBadge(_ tier: Int) -> some View {
@@ -166,14 +207,21 @@ private struct LampApplySheet: View {
     @EnvironmentObject private var game: GameState
     @Environment(\.dismiss) private var dismiss
     let group: SkillCategory
+    @State private var selectedTier: Int?
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
                     let lamps = game.lamps(for: group)
-                    header(remaining: lamps.count)
-                    if let lamp = lamps.first {
+                    let tiers = distinctTiers(lamps)
+                    let activeTier = effectiveTier(tiers)
+                    let lamp = lamps.first(where: { $0.tier == activeTier }) ?? lamps.first
+                    header(remaining: lamps.count, activeTier: activeTier)
+                    if tiers.count > 1 {
+                        tierPicker(lamps: lamps, tiers: tiers, activeTier: activeTier)
+                    }
+                    if let lamp {
                         ForEach(SkillID.skills(in: group)) { skill in
                             skillRow(skill: skill, lamp: lamp)
                         }
@@ -194,20 +242,57 @@ private struct LampApplySheet: View {
         }
     }
 
-    private func header(remaining: Int) -> some View {
-        HStack(spacing: 10) {
-            ArtworkView(art: .vector(.genieLamp), size: 24, color: .yellow)
+    /// Tiers present in the inventory, best first.
+    private func distinctTiers(_ lamps: [RaidLampRecord]) -> [Int] {
+        Array(Set(lamps.map { $0.tier })).sorted(by: >)
+    }
+
+    /// The tier currently being spent — the player's pick if still in stock, else the best available.
+    private func effectiveTier(_ tiers: [Int]) -> Int {
+        if let selectedTier, tiers.contains(selectedTier) { return selectedTier }
+        return tiers.first ?? 0
+    }
+
+    /// Color-coded tier selector, shown only when the group holds lamps of more than one tier.
+    private func tierPicker(lamps: [RaidLampRecord], tiers: [Int], activeTier: Int) -> some View {
+        HStack(spacing: 8) {
+            ForEach(tiers, id: \.self) { tier in
+                let c = SkillCategory.raidTierColor(tier)
+                let selected = tier == activeTier
+                let count = lamps.filter { $0.tier == tier }.count
+                Button { selectedTier = tier } label: {
+                    HStack(spacing: 5) {
+                        ArtworkView(art: .vector(.genieLamp), size: 15, color: c)
+                        Text("\(SkillCategory.raidTierName(tier)) ×\(count)")
+                            .font(.caption.weight(.bold)).foregroundStyle(c)
+                    }
+                    .padding(.horizontal, 10).padding(.vertical, 7)
+                    .background(c.opacity(selected ? 0.24 : 0.10), in: Capsule())
+                    .overlay(Capsule().strokeBorder(c.opacity(selected ? 0.85 : 0.3), lineWidth: selected ? 2 : 1))
+                }
+                .buttonStyle(PressableStyle(scale: 0.96))
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func header(remaining: Int, activeTier: Int) -> some View {
+        let c = SkillCategory.raidTierColor(activeTier)
+        let tierName = SkillCategory.raidTierName(activeTier)
+        let article = ["A", "E", "I", "O", "U"].contains(tierName.prefix(1).uppercased()) ? "an" : "a"
+        return HStack(spacing: 10) {
+            ArtworkView(art: .vector(.genieLamp), size: 24, color: c)
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(remaining) lamp\(remaining == 1 ? "" : "s") to spend")
                     .font(.subheadline.weight(.bold))
-                Text("Pick a \(group.rawValue.lowercased()) skill. XP scales with the skill's tier.")
+                Text("Spending \(article) \(tierName) lamp. Pick a \(group.rawValue.lowercased()) skill — XP scales with the skill's tier.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
         }
         .padding(12)
-        .background(Color.yellow.opacity(0.10), in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.yellow.opacity(0.3)))
+        .background(c.opacity(0.10), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(c.opacity(0.3)))
     }
 
     private func skillRow(skill: SkillID, lamp: RaidLampRecord) -> some View {
@@ -216,6 +301,7 @@ private struct LampApplySheet: View {
         let gain = game.projectedLampXP(lamp, on: skill)
         let newLevel = XPTable.level(forXP: min(currentXP + gain, XPTable.xpCap))
         let method = game.currentMethod(for: skill)
+        let tierColor = SkillCategory.raidTierColor(lamp.tier)
         return Button {
             _ = game.applyLamp(lamp, to: skill)
             SoundManager.shared.play(.levelUp, enabled: game.soundEnabled)
@@ -235,7 +321,7 @@ private struct LampApplySheet: View {
                 Spacer()
                 Text("+\(Format.abbrev(gain)) XP")
                     .font(.subheadline.weight(.bold)).monospacedDigit()
-                    .foregroundStyle(.yellow)
+                    .foregroundStyle(tierColor)
             }
             .padding(.horizontal, 12).padding(.vertical, 10)
             .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))

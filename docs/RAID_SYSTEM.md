@@ -3,7 +3,7 @@
 A new **Raids** feature: one thematic raid per skill **category**, gated to **once per group per
 day**, whose **difficulty and reward tier scale with that group's combined skill level**. A raid
 grants **no XP while you play** — clearing it awards a **Skill Lamp** bound to that group, worth
-about **1.5× the XP you'd have earned tapping that skill for the raid's duration**.
+about **5× the XP you'd have earned tapping that skill for the raid's duration**.
 
 > **Status:** design only. Nothing here is implemented yet. This document is the spec; the
 > implementation PR that follows must obey the repo's universal-app and screenshot rules
@@ -135,30 +135,28 @@ selected by `raidTier(group)` from a centralized per-tier table (§7). All are f
 ### 4.3 Utility — **The Heist** (stealth-agility gauntlet)
 *Agility · Hunter · Slayer · Thieving · Prayer*
 
-- Sneak through a series of **rooms** with mixed, timed prompts: **vault** obstacles exactly on
-  cue (Agility), **pickpocket / loot** only while the guard is turned away (Thieving — tapping while
-  watched = caught), **spring a trap** at the right moment (Hunter), **hold steady** to avoid
-  detection (Prayer). A **restraint** element: do **not** tap decoys/traps.
-- **Pass:** reach the vault (clear all rooms) before the timer with **fewer than N** times caught.
-- **Tier ramp:** more rooms, shorter safe windows, faster guard cycles, more decoys, fewer allowed
-  slip-ups.
+- A guard alternates between **WATCHING** and **DISTRACTED**. **Loot only while the guard is turned
+  away** — tapping while watched trips the alarm (a mistake). It's purely **timing-based**: every tap
+  during a distracted window counts, so you can land **several loots per window**, but mashing risks a
+  tap landing the instant the guard turns back. A **restraint** element: don't tap while watched.
+- **Pass:** loot the quota before the timer with **fewer than N** alarms tripped.
+- **Tier ramp:** shorter safe windows, faster guard cycles, fewer allowed slip-ups.
 
 ### 4.4 Gathering — **The Expedition** (correct-resource collection)
 *Woodcutting · Farming · Fishing · Mining · Herblore*
 
-- A resource field of **nodes**. A **target resource** is indicated ("catch the trout", "mine the
-  coal", "chop the willow"); **tap the correct nodes** among decoys. Fish **surface briefly**
-  (timing), rocks/trees need a couple taps to **deplete** (rhythm), herbs **wilt** if you're slow;
-  wrong species **waste time / cost a strike**.
+- A resource field of **nodes** laid out in **full rows** — the grid fits the screen width on iPhone
+  and iPad and never leaves a stray single-item row. A **target resource** is indicated ("catch the
+  trout", "mine the coal", "chop the willow"); **tap the correct nodes** among decoys. Tapped nodes
+  respawn; wrong species **cost a strike**. The **called resource rotates every 10 correct gathers**.
 - **Pass:** gather a **quota** of correct resources before the timer.
-- **Tier ramp:** quota ↑, more decoys, faster surfacing/wilting, shorter windows, target switches
-  more often.
+- **Tier ramp:** quota ↑, more decoys, shorter windows.
 
 | Group | Raid | Core verb | Pass condition | Primary fail |
 |-------|------|-----------|----------------|--------------|
 | Combat | The Colosseum | Precise/fast target taps + dodge | Boss HP → 0 & survive | Timer out / raid HP → 0 |
 | Production | The Grand Forge | Rhythm/timing strikes | Product quota met | Quota missed by timer |
-| Utility | The Heist | Reaction + restraint | Vault reached, few catches | Caught too often / timer out |
+| Utility | The Heist | Reaction + restraint | Loot quota met, few alarms | Caught too often / timer out |
 | Gathering | The Expedition | Recognition + speed | Resource quota met | Quota missed by timer |
 
 ---
@@ -194,11 +192,11 @@ Clearing a raid awards **one Skill Lamp bound to that group** (a "Combat Lamp", 
   on" true.
 
 ### 6.2 Value formula
-The lamp is worth ~**1.5×** the XP you'd earn **tapping the target skill** for the raid's duration:
+The lamp is worth ~**5×** the XP you'd earn **tapping the target skill** for the raid's duration:
 
 ```
 tapYieldPerMinute(S) = Balance.raidRapidTapsPerMinute × baseXPPerAction(S)   // S at its current tier
-lampXP(S, tier)      = round( Balance.raidRewardMultiplier              // 1.5
+lampXP(S, tier)      = round( Balance.raidRewardMultiplier              // 5.0
                               × raidMinutes                             // raidDurationSeconds / 60
                               × tapYieldPerMinute(S)
                               × Balance.raidTierRewardBonus[tier] )     // default 1.0 (neutral)
@@ -214,25 +212,26 @@ lampXP(S, tier)      = round( Balance.raidRewardMultiplier              // 1.5
   lamp banked early and spent late is worth more — exactly like an OSRS XP lamp.
 
 ### 6.3 Example payouts
-With defaults `raidRewardMultiplier = 1.5`, `raidDurationSeconds = 180` (3 min),
-`raidRapidTapsPerMinute = 300`, `raidTierRewardBonus = 1.0` → `lampXP = 1350 × baseXPPerAction(S)`:
+With defaults `raidRewardMultiplier = 5.0`, `raidDurationSeconds = 180` (3 min),
+`raidRapidTapsPerMinute = 300`, `raidTierRewardBonus = 1.0` → `lampXP = 4500 × baseXPPerAction(S)`:
 
 | Target skill's method tier | XP/tap | Lamp XP | For scale (OSRS curve) |
 |----------------------------|--------|---------|------------------------|
-| 1 (lv 1–14)  | 1  | **1,350**  | ~level 1 → 11 early on |
-| 2 (lv 15–29) | 3  | **4,050**  | a few early levels |
-| 3 (lv 30–49) | 6  | **8,100**  | ~a level in the 30s |
-| 4 (lv 50–69) | 12 | **16,200** | a chunk of a 50s level |
-| 5 (lv 70–89) | 25 | **33,750** | meaningful in the 70s |
-| 6 (lv 90–99) | 50 | **67,500** | ~5% of a level near 99 |
+| 1 (lv 1–14)  | 1  | **4,500**   | a big early-game jump |
+| 2 (lv 15–29) | 3  | **13,500**  | several early levels |
+| 3 (lv 30–49) | 6  | **27,000**  | ~a level in the 30s–40s |
+| 4 (lv 50–69) | 12 | **54,000**  | a solid chunk of a 50s level |
+| 5 (lv 70–89) | 25 | **112,500** | meaningful in the 70s |
+| 6 (lv 90–99) | 50 | **225,000** | ~a quarter-level near 99 |
 
-All three inputs (`1.5`, the duration, the reference taps/minute) are one-line `Balance.swift`
-edits, so re-tuning the 1.5× promise never touches gameplay or view code.
+All three inputs (`5.0`, the duration, the reference taps/minute) are one-line `Balance.swift`
+edits, so re-tuning the 5× promise never touches gameplay or view code.
 
 > **Calibration note:** `raidRapidTapsPerMinute` (default 300 ≈ 5 taps/s) anchors "clicking
-> rapidly." It's a deliberate reference rate, not a measurement of any given player. Early-game
-> lamps are intentionally punchy relative to the tiny early XP curve; late-game they're a steady
-> daily nudge. Tune per playtest.
+> rapidly." It's a deliberate reference rate, not a measurement of any given player. At the 5×
+> multiplier a cleared raid comfortably out-earns rapid tapping at every tier — including once a
+> group reaches the top (Rune) tier — while staying gated to one attempt per group per day. Tune
+> per playtest.
 
 ---
 
@@ -241,8 +240,8 @@ edits, so re-tuning the 1.5× promise never touches gameplay or view code.
 ```swift
 // MARK: Raids
 static let raidDurationSeconds: Double = 180          // ~3 min per raid (a few minutes)
-static let raidRapidTapsPerMinute: Double = 300       // reference "rapid tapping" rate for the 1.5× promise
-static let raidRewardMultiplier: Double = 1.5         // lamp ≈ 1.5× tapping-for-duration
+static let raidRapidTapsPerMinute: Double = 300       // reference "rapid tapping" rate for the 5× promise
+static let raidRewardMultiplier: Double = 5.0         // lamp ≈ 5× tapping-for-duration
 static let raidsPerGroupPerDay: Int = 1               // one shot per group per day
 
 /// Explicit, default-neutral per-tier reward lever (index = raidTier 0…5).
@@ -251,7 +250,7 @@ static let raidTierRewardBonus: [Double] = [1, 1, 1, 1, 1, 1]
 /// Per-tier difficulty knobs consumed by the four loops. Index = raidTier 0…5.
 struct RaidTierParams {
     let goal: Int              // successful actions to clear (boss damage / products / rooms / resources)
-    let allowedMistakes: Int   // failures tolerated before the raid is lost
+    let allowedMistakes: Int   // starting lives; the raid is lost the moment mistakes reach this (0 left)
     let targetLifetime: Double // seconds a target/prompt/safe-window stays actionable (tightens with tier)
     let spawnInterval: Double  // seconds between spawns / prompt cadence (shrinks with tier)
     let decoyCount: Int        // wrong targets / distinct resource types present (recognition pressure)
@@ -318,11 +317,13 @@ the existing `addXP`, so the 200M cap and level-up toast come for free.
 ## 9. Screens & UX
 
 ### 9.1 `RaidsView` (the Raids tab hub)
-An adaptive list/grid of **four raid cards** (width-capped & centered, like the rest of the app):
+A single **overview header** ("Difficulty & rewards scale with a group's level") sits above an
+adaptive list/grid of **four raid cards** (width-capped & centered, like the rest of the app):
 - Group name + raid name, category **SF Symbol** and **tint** (from `SkillCategory` / skills).
 - **Current tier** badge (Bronze…Rune) + combined level and a progress bar to the next tier.
 - **Status:** "Available today" (primary CTA) or "Come back tomorrow" (with a countdown to reset).
-- **Lamps owned** for this group, with an **Apply** affordance.
+- **Lamps owned** for this group, shown as **tier-color-coded** chips (one per tier held) with an
+  **Apply** affordance — so a mixed-tier inventory reads at a glance.
 
 ### 9.2 `RaidSessionView` (the minigame)
 Full-screen, per-group loop (§4): countdown, live score/progress, pause/quit (quitting still spends
@@ -331,9 +332,10 @@ lamp, try again tomorrow"). Responsive: single column on compact width, roomier 
 survives rotation and Split View / Slide Over.
 
 ### 9.3 Lamp application sheet
-From a raid card or the skill screen: pick **which group skill** to spend the lamp on. Show the
-**projected XP** and the **resulting level** (via `projectedLampXP`) before confirming, so the
-choice is informed. A gentle warning if the target is already at the 200M ceiling.
+From a raid card or the skill screen: pick **which group skill** to spend the lamp on. When the
+group holds lamps of more than one tier, a **color-coded tier selector** chooses which tier to spend
+first. Show the **projected XP** and the **resulting level** (via `projectedLampXP`) before
+confirming, so the choice is informed. A gentle warning if the target is already at the 200M ceiling.
 
 ### 9.4 Art
 All raid/loop art goes through **`Artwork.swift`** (`SkillArt` → SF Symbol or hand-authored
