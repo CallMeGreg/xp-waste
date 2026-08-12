@@ -58,12 +58,26 @@ private struct SaveData: Codable {
     // Added in v1.5 — Raids. Optional for backward-compatible decoding of older saves.
     var raidLamps: [RaidLampRecord]?
     var raidDayByGroup: [String: String]?
-    // Added in v1.5 — Adventurer's Log rewards (Feats & Reward Tokens). All optional so older
+    // Added in v1.5 — Diary rewards (Tasks & Reward Tokens). All optional so older
     // saves keep decoding and a fresh reward layer initializes empty.
     var tokens: Int?
-    var featCounters: [String: Int]?
-    var completedFeats: [String]?
+    var taskCounters: [String: Int]?
+    var completedTasks: [String]?
     var claimedDiaryTiers: [String]?
+
+    // The `task*` properties are persisted under their original v1.5 JSON keys ("featCounters",
+    // "completedFeats"), so saves written before the Feats→Tasks rename keep decoding. The on-disk
+    // schema is intentionally frozen even though the Swift names and product vocabulary changed.
+    private enum CodingKeys: String, CodingKey {
+        case xp, energy, slots, supercharge
+        case hasSeenOnboarding, soundEnabled, hapticsEnabled, lastActive
+        case doubleXPCoupons, doubleXPExpiry, lastFreeCouponDay, energyCells
+        case superchargeExpiry, superchargeMultiplier, raidLamps, raidDayByGroup
+        case tokens
+        case taskCounters = "featCounters"
+        case completedTasks = "completedFeats"
+        case claimedDiaryTiers
+    }
 }
 
 /// The single source of truth for all game state and rules.
@@ -103,20 +117,20 @@ final class GameState: ObservableObject {
     /// Calendar day (yyyy-MM-dd) each group last attempted a raid, enforcing one shot per day.
     @Published private(set) var raidDayByGroup: [String: String] = [:]
 
-    // MARK: Rewards (Adventurer's Log)
+    // MARK: Rewards (Diary)
 
-    /// Spendable Reward Tokens earned by completing Feats. (Spending arrives with the Vault in a
-    /// later phase; for now they accrue and are shown in the Adventurer's Log.) Mutated only through
+    /// Spendable Reward Tokens earned by completing Tasks. (Spending arrives with the Vault in a
+    /// later phase; for now they accrue and are shown in the Diary.) Mutated only through
     /// the reward engine in `GameState+Rewards.swift`.
     @Published var tokens: Int = 0
-    /// Lifetime tallies that back counter-style Feats (taps, caches, crits, …). Keyed by `FeatCounter`.
-    @Published var featCounters: [String: Int] = [:]
-    /// IDs of Feats the player has completed (one-shot and finished counters alike).
-    @Published var completedFeats: Set<String> = []
+    /// Lifetime tallies that back counter-style Tasks (taps, caches, crits, …). Keyed by `TaskCounter`.
+    @Published var taskCounters: [String: Int] = [:]
+    /// IDs of Tasks the player has completed (one-shot and finished counters alike).
+    @Published var completedTasks: Set<String> = []
     /// `"<diary>.<tier>"` keys whose diary-tier completion bonus has already been paid.
     @Published var claimedDiaryTiers: Set<String> = []
-    /// Most recent Feat/tier reward, surfaced by the UI as a celebratory toast.
-    @Published var featEvent: FeatEvent?
+    /// Most recent Task/tier reward, surfaced by the UI as a celebratory toast.
+    @Published var taskEvent: TaskEvent?
 
     /// Most recent level-up, consumed by the UI for a celebratory toast.
     @Published var levelUpEvent: LevelUpEvent?
@@ -575,18 +589,18 @@ final class GameState: ObservableObject {
         addXP(Double(result.xp), to: skill)
         registerComboTap()
 
-        // Adventurer's Log bookkeeping: tally what this tap produced, then re-check the handful of
-        // Feats those events could have advanced.
-        var triggers: Set<FeatTrigger> = [.tap]
-        bumpCounter(FeatCounter.taps)
-        if result.didCrit { bumpCounter(FeatCounter.crits); triggers.insert(.crit) }
-        if result.gotCache { bumpCounter(FeatCounter.caches); triggers.insert(.cache) }
-        if result.gotEnergy { bumpCounter(FeatCounter.energyProcs); triggers.insert(.energyProc) }
+        // Diary bookkeeping: tally what this tap produced, then re-check the handful of
+        // Tasks those events could have advanced.
+        var triggers: Set<TaskTrigger> = [.tap]
+        bumpCounter(TaskCounter.taps)
+        if result.didCrit { bumpCounter(TaskCounter.crits); triggers.insert(.crit) }
+        if result.gotCache { bumpCounter(TaskCounter.caches); triggers.insert(.cache) }
+        if result.gotEnergy { bumpCounter(TaskCounter.energyProcs); triggers.insert(.energyProc) }
         if isEnergyFull(skill) { triggers.insert(.energyFull) }
-        if isSupercharged(skill), isDoubleXPActive { bumpCounter(FeatCounter.stackedBursts) }
-        raiseCounter(FeatCounter.bestComboBips, to: Int((comboMultiplier * 100).rounded()))
+        if isSupercharged(skill), isDoubleXPActive { bumpCounter(TaskCounter.stackedBursts) }
+        raiseCounter(TaskCounter.bestComboBips, to: Int((comboMultiplier * 100).rounded()))
         if comboMultiplier > 1 { triggers.insert(.combo) }
-        evaluateFeats(triggers)
+        evaluateTasks(triggers)
 
         return result
     }
@@ -602,7 +616,7 @@ final class GameState: ObservableObject {
         guard isEligibleForSlot(skill), hasFreeSlot else { return false }
         slots.append(skill)
         save()
-        evaluateFeats(.slot)
+        evaluateTasks(.slot)
         return true
     }
 
@@ -615,7 +629,7 @@ final class GameState: ObservableObject {
               !slots.contains(add) else { return false }
         slots[index] = add
         save()
-        evaluateFeats(.slot)
+        evaluateTasks(.slot)
         return true
     }
 
@@ -627,18 +641,18 @@ final class GameState: ObservableObject {
         let duration = banked * superchargeDurationMultiplier                // Firemaking extends the burst
         superchargeExpiryBySkill[skill] = Date().addingTimeInterval(duration)
         superchargeMultiplierBySkill[skill] = effectiveSuperchargeMultiplier // lock the boost so mid-burst level-ups don't change it
-        var triggers: Set<FeatTrigger> = [.supercharge]
-        bumpCounter(FeatCounter.supercharges)
-        if skill.category == .combat { bumpCounter(FeatCounter.combatSupercharges) }
+        var triggers: Set<TaskTrigger> = [.supercharge]
+        bumpCounter(TaskCounter.supercharges)
+        if skill.category == .combat { bumpCounter(TaskCounter.combatSupercharges) }
         if refundChance > 0, Double.random(in: 0..<1) < refundChance {       // Thieving "Pickpocket": keep the banked Energy
             notice = "🥷 Pickpocket! Energy refunded."
-            bumpCounter(FeatCounter.refunds)
+            bumpCounter(TaskCounter.refunds)
             triggers.insert(.refund)
         } else {
             energyBySkill[skill] = 0
         }
         save()
-        evaluateFeats(triggers)
+        evaluateTasks(triggers)
         return true
     }
 
@@ -653,16 +667,16 @@ final class GameState: ObservableObject {
         let duration = Balance.doubleXPDurationSeconds + doubleXPBonusDuration
         doubleXPActiveDuration = duration
         doubleXPExpiry = Date().addingTimeInterval(duration)
-        var triggers: Set<FeatTrigger> = [.boost, .currency]
-        bumpCounter(FeatCounter.boosts)
+        var triggers: Set<TaskTrigger> = [.boost, .currency]
+        bumpCounter(TaskCounter.boosts)
         if refundChance > 0, Double.random(in: 0..<1) < refundChance {       // Thieving "Pickpocket": nick the coupon back
             doubleXPCoupons += 1
             notice = "🥷 Pickpocket! Coupon refunded."
-            bumpCounter(FeatCounter.refunds)
+            bumpCounter(TaskCounter.refunds)
             triggers.insert(.refund)
         }
         save()
-        evaluateFeats(triggers)
+        evaluateTasks(triggers)
         return true
     }
 
@@ -674,7 +688,7 @@ final class GameState: ObservableObject {
             notice = "🎟️ +\(count) Boost Coupon\(count == 1 ? "" : "s")"
         }
         save()
-        evaluateFeats(.currency)
+        evaluateTasks(.currency)
     }
 
     // MARK: - Shop (spend Tokens)
@@ -744,9 +758,9 @@ final class GameState: ObservableObject {
         energyCells -= 1
         energyBySkill[skill] = energyCapSeconds
         notice = "🔋 Energy Cell used — \(skill.displayName) charged to full."
-        bumpCounter(FeatCounter.energyCells)
+        bumpCounter(TaskCounter.energyCells)
         save()
-        evaluateFeats([.energyCell, .energyFull])
+        evaluateTasks([.energyCell, .energyFull])
         return true
     }
 
@@ -804,7 +818,7 @@ final class GameState: ObservableObject {
             notice = "🎁 Daily reward: +\(granted) Boost Coupon\(granted == 1 ? "" : "s")"
         }
         save()
-        evaluateFeats(.currency)
+        evaluateTasks(.currency)
         return true
     }
 
@@ -832,10 +846,10 @@ final class GameState: ObservableObject {
         raidLamps = []
         raidDayByGroup = [:]
         tokens = 0
-        featCounters = [:]
-        completedFeats = []
+        taskCounters = [:]
+        completedTasks = []
         claimedDiaryTiers = []
-        featEvent = nil
+        taskEvent = nil
         lastActive = Date()
         lastTick = Date()
         save()
@@ -917,7 +931,7 @@ final class GameState: ObservableObject {
             guard gained > 0 else { continue }
             let fromLevel = level(for: skill)
             let before = xpBySkill[skill] ?? 0
-            addXP(gained, to: skill, announceLevelUp: false, evaluateFeatsOnLevel: false)
+            addXP(gained, to: skill, announceLevelUp: false, evaluateTasksOnLevel: false)
             let earned = Int(((xpBySkill[skill] ?? 0) - before).rounded())
             guard earned > 0 else { continue }
             entries.append(.init(skill: skill, xpGained: earned,
@@ -926,10 +940,10 @@ final class GameState: ObservableObject {
 
         let total = entries.reduce(0) { $0 + $1.xpGained }
         if total > 0 {
-            bumpCounter(FeatCounter.offlineReturns)
-            raiseCounter(FeatCounter.bestOfflineXP, to: total)
-            // Evaluate offline-return and any level-up Feats once, after all slots are credited.
-            evaluateFeats([.offlineReturn, .levelUp])
+            bumpCounter(TaskCounter.offlineReturns)
+            raiseCounter(TaskCounter.bestOfflineXP, to: total)
+            // Evaluate offline-return and any level-up Tasks once, after all slots are credited.
+            evaluateTasks([.offlineReturn, .levelUp])
         }
         guard total > 0, timeAway >= Balance.minOfflineSecondsForSummary else { return }
         offlineProgress = OfflineProgress(
@@ -944,7 +958,7 @@ final class GameState: ObservableObject {
     // MARK: - Internal mutation
 
     private func addXP(_ amount: Double, to skill: SkillID,
-                       announceLevelUp: Bool = true, evaluateFeatsOnLevel: Bool = true) {
+                       announceLevelUp: Bool = true, evaluateTasksOnLevel: Bool = true) {
         guard amount > 0 else { return }
         let current = xpBySkill[skill] ?? 0
         let cap = Double(XPTable.xpCap)
@@ -957,9 +971,9 @@ final class GameState: ObservableObject {
         xpBySkill[skill] = updated
         let newLevel = XPTable.level(forXP: Int(updated.rounded(.down)))
         if newLevel > oldLevel {
-            bumpCounter(FeatCounter.levelUps, by: newLevel - oldLevel)
+            bumpCounter(TaskCounter.levelUps, by: newLevel - oldLevel)
             if announceLevelUp { levelUpEvent = LevelUpEvent(skill: skill, newLevel: newLevel) }
-            if evaluateFeatsOnLevel { evaluateFeats(.levelUp) }
+            if evaluateTasksOnLevel { evaluateTasks(.levelUp) }
         }
     }
 
@@ -1025,8 +1039,8 @@ final class GameState: ObservableObject {
         raidLamps = saved.raidLamps ?? []
         raidDayByGroup = saved.raidDayByGroup ?? [:]
         tokens = saved.tokens ?? 0
-        featCounters = saved.featCounters ?? [:]
-        completedFeats = Set(saved.completedFeats ?? [])
+        taskCounters = saved.taskCounters ?? [:]
+        completedTasks = Set(saved.completedTasks ?? [])
         claimedDiaryTiers = Set(saved.claimedDiaryTiers ?? [])
         if let expiry = doubleXPExpiry, expiry <= Date() { doubleXPExpiry = nil }
     }
@@ -1073,73 +1087,73 @@ final class GameState: ObservableObject {
             energyBySkill[.attack] = 0
             doubleXPExpiry = Date().addingTimeInterval(210) // 3:30 remaining
         }
-        // Populate the Adventurer's Log so the Token chip / Log sheet aren't empty in screenshots.
-        featCounters = [
-            FeatCounter.taps: 640, FeatCounter.crits: 6, FeatCounter.caches: 24,
-            FeatCounter.energyProcs: 40, FeatCounter.supercharges: 7,
-            FeatCounter.combatSupercharges: 4, FeatCounter.boosts: 6,
-            FeatCounter.energyCells: 3, FeatCounter.offlineReturns: 5,
-            FeatCounter.refunds: 1, FeatCounter.bestComboBips: 128,
-            FeatCounter.bestOfflineXP: 120_000, FeatCounter.stackedBursts: 1,
-            FeatCounter.levelUps: 140
+        // Populate the Diary so the Token chip / Diary tab aren't empty in screenshots.
+        taskCounters = [
+            TaskCounter.taps: 640, TaskCounter.crits: 6, TaskCounter.caches: 24,
+            TaskCounter.energyProcs: 40, TaskCounter.supercharges: 7,
+            TaskCounter.combatSupercharges: 4, TaskCounter.boosts: 6,
+            TaskCounter.energyCells: 3, TaskCounter.offlineReturns: 5,
+            TaskCounter.refunds: 1, TaskCounter.bestComboBips: 128,
+            TaskCounter.bestOfflineXP: 120_000, TaskCounter.stackedBursts: 1,
+            TaskCounter.levelUps: 140
         ]
-        seedCompleteSatisfiedFeats()
+        seedCompleteSatisfiedTasks()
         hasSeenOnboarding = true
         lastActive = Date()
         lastTick = Date()
         save()
     }
 
-    /// Seeds a rich Adventurer's Log (levels, counters, completed Feats, cleared tiers, Tokens) when
+    /// Seeds a rich Diary (levels, counters, completed Tasks, cleared tiers, Tokens) when
     /// launched with `SEED_REWARDS`, for deterministic reward-system screenshots. Never in release.
     private func applyRewardsSeedIfRequested() {
         guard ProcessInfo.processInfo.environment["SEED_REWARDS"] != nil else { return }
         hasSeenOnboarding = true
-        // Enough levels that many level-based Feats read complete and 5 AFK slots are unlocked
+        // Enough levels that many level-based Tasks read complete and 5 AFK slots are unlocked
         // (total ≥ 1000). Seeded uniformly unless SEED_DEMO already provided varied levels.
         if ProcessInfo.processInfo.environment["SEED_DEMO"] == nil {
             for skill in SkillID.allCases { xpBySkill[skill] = Double(XPTable.xp(toReach: 48)) }
         }
-        featCounters = [
-            FeatCounter.taps: 5_200, FeatCounter.crits: 40, FeatCounter.caches: 140,
-            FeatCounter.energyProcs: 260, FeatCounter.supercharges: 30,
-            FeatCounter.combatSupercharges: 14, FeatCounter.boosts: 26,
-            FeatCounter.energyCells: 12, FeatCounter.offlineReturns: 18,
-            FeatCounter.refunds: 4, FeatCounter.bestComboBips: 150,
-            FeatCounter.bestOfflineXP: 620_000, FeatCounter.stackedBursts: 3,
-            FeatCounter.levelUps: 700
+        taskCounters = [
+            TaskCounter.taps: 5_200, TaskCounter.crits: 40, TaskCounter.caches: 140,
+            TaskCounter.energyProcs: 260, TaskCounter.supercharges: 30,
+            TaskCounter.combatSupercharges: 14, TaskCounter.boosts: 26,
+            TaskCounter.energyCells: 12, TaskCounter.offlineReturns: 18,
+            TaskCounter.refunds: 4, TaskCounter.bestComboBips: 150,
+            TaskCounter.bestOfflineXP: 620_000, TaskCounter.stackedBursts: 3,
+            TaskCounter.levelUps: 700
         ]
         slots = Array([SkillID.attack, .strength, .woodcutting, .fishing, .cooking].prefix(maxSlots))
         doubleXPCoupons = 6
         energyCells = 5
-        seedCompleteSatisfiedFeats()
+        seedCompleteSatisfiedTasks()
         tokens = max(tokens, 300)
         // Optional: surface a sample completion toast for screenshots.
-        if ProcessInfo.processInfo.environment["FEAT_TOAST"] != nil {
-            featEvent = FeatEvent(title: "Combat Diary — Medium complete!",
+        if ProcessInfo.processInfo.environment["TASK_TOAST"] != nil {
+            taskEvent = TaskEvent(title: "Combat Diary — Medium complete!",
                                   subtitle: "Berserker", tokens: 62,
-                                  icon: "rosette", tint: FeatTier.medium.tint)
+                                  icon: "rosette", tint: TaskTier.medium.tint)
         }
         lastActive = Date()
         lastTick = Date()
         save()
     }
 
-    /// Marks every currently-satisfied Feat complete and pays its Tokens (plus any fully-cleared
+    /// Marks every currently-satisfied Task complete and pays its Tokens (plus any fully-cleared
     /// Diary-tier bonus) without surfacing a toast — used only by the demo/reward seeders.
-    private func seedCompleteSatisfiedFeats() {
-        for feat in FeatCatalog.all where !completedFeats.contains(feat.id) {
-            if feat.progress(self) >= feat.goal {
-                completedFeats.insert(feat.id)
-                tokens += feat.tokenReward
+    private func seedCompleteSatisfiedTasks() {
+        for task in TaskCatalog.all where !completedTasks.contains(task.id) {
+            if task.progress(self) >= task.goal {
+                completedTasks.insert(task.id)
+                tokens += task.tokenReward
             }
         }
-        for diary in FeatDiary.allCases {
-            for tier in FeatTier.allCases {
+        for diary in TaskDiary.allCases {
+            for tier in TaskTier.allCases {
                 let key = "\(diary.rawValue).\(tier.rawValue)"
-                let group = FeatCatalog.group(diary, tier)
+                let group = TaskCatalog.group(diary, tier)
                 if !group.isEmpty, !claimedDiaryTiers.contains(key),
-                   group.allSatisfy({ completedFeats.contains($0.id) }) {
+                   group.allSatisfy({ completedTasks.contains($0.id) }) {
                     claimedDiaryTiers.insert(key)
                     tokens += Balance.Rewards.diaryTierBonus
                 }
@@ -1195,7 +1209,7 @@ final class GameState: ObservableObject {
     #endif
 
     /// Serializes the full game state to `UserDefaults`. Internal (not private) so the reward engine
-    /// in `GameState+Rewards.swift` can persist after awarding Tokens/Feats.
+    /// in `GameState+Rewards.swift` can persist after awarding Tokens/Tasks.
     func save() {
         let now = Date()
         // Persist Supercharge as absolute expiry dates (the new source of truth) and also as
@@ -1225,8 +1239,8 @@ final class GameState: ObservableObject {
             raidLamps: raidLamps,
             raidDayByGroup: raidDayByGroup,
             tokens: tokens,
-            featCounters: featCounters,
-            completedFeats: Array(completedFeats),
+            taskCounters: taskCounters,
+            completedTasks: Array(completedTasks),
             claimedDiaryTiers: Array(claimedDiaryTiers)
         )
         if let data = try? JSONEncoder().encode(snapshot) {

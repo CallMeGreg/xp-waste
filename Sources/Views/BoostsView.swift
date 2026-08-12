@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The Shop, unified around a single currency — **Tokens**. You activate an XP **Boost**, see your
 /// Token balance, **spend Tokens** to stock up on Boost Coupons and Energy Cells, and **buy Tokens**
-/// with real money. Tokens are also earned by completing Feats in the Adventurer's Log, so the whole
+/// with real money. Tokens are also earned by completing Tasks in the Diary, so the whole
 /// economy is one pouch of coins. See `docs/ACHIEVEMENTS.md`.
 struct BoostsView: View {
     @EnvironmentObject private var game: GameState
@@ -65,7 +65,7 @@ struct BoostsView: View {
 
 // MARK: - Token wallet hero
 
-/// Your live Token balance, styled to match the Adventurer's Log's gold Token treatment.
+/// Your live Token balance, styled to match the Diary's gold Token treatment.
 private struct TokenWalletCard: View {
     @EnvironmentObject private var game: GameState
     var body: some View {
@@ -80,7 +80,7 @@ private struct TokenWalletCard: View {
                 Text("TOKENS").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
                 Text("\(game.tokens)")
                     .font(.system(size: 30, weight: .heavy, design: .rounded)).monospacedDigit()
-                Text("Earn from Feats · spend below").font(.caption2).foregroundStyle(.secondary)
+                Text("Earn from Tasks · spend below").font(.caption2).foregroundStyle(.secondary)
             }
             Spacer()
         }
@@ -208,7 +208,7 @@ private struct GetTokensCard: View {
                 Text("Token Packs").font(.headline)
                 Spacer()
             }
-            Text("Top up your pouch to spend on Boosts and Energy Cells. A big shortcut — one pack is worth many Feats' worth of Tokens.")
+            Text("Top up your pouch to spend on Boosts and Energy Cells. A big shortcut — one pack is worth many Tasks' worth of Tokens.")
                 .font(.footnote).foregroundStyle(.secondary)
 
             Divider().overlay(Color.white.opacity(0.08))
@@ -272,7 +272,7 @@ private struct TokenBuyButton: View {
 
     var body: some View {
         Button {
-            Task { await store.purchase(pack) }
+            _Concurrency.Task { await store.purchase(pack) }
         } label: {
             Group {
                 if store.purchasingID == pack.id {

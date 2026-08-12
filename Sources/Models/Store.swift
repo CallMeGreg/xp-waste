@@ -5,7 +5,7 @@ import StoreKit
 ///
 /// This is a lightweight view-model over a StoreKit `Product`, so the UI can render
 /// (and be previewed/tested) without depending on live App Store connectivity. Tokens are the
-/// single spendable currency: bought here, earned from Feats, and spent on Boost Coupons and
+/// single spendable currency: bought here, earned from Tasks, and spent on Boost Coupons and
 /// Energy Cells (see `docs/ACHIEVEMENTS.md`).
 struct TokenPack: Identifiable, Equatable {
     let id: String
@@ -50,14 +50,16 @@ final class Store: ObservableObject {
     var onGrant: ((Int) -> Void)?
 
     private var products: [String: Product] = [:]
-    private var updatesTask: Task<Void, Never>?
+    // Fully qualified because the app defines a domain type named `Task`; this is the Swift
+    // Concurrency `Task`, not the game's Task model.
+    private var updatesTask: _Concurrency.Task<Void, Never>?
 
     enum StoreError: Error { case failedVerification }
 
     /// Begin listening for transactions and load the product catalog. Safe to call once.
     func start() {
         if updatesTask == nil { updatesTask = listenForTransactions() }
-        Task { await loadProducts() }
+        _Concurrency.Task { await loadProducts() }
     }
 
     deinit { updatesTask?.cancel() }
@@ -132,8 +134,8 @@ final class Store: ObservableObject {
         }
     }
 
-    private func listenForTransactions() -> Task<Void, Never> {
-        Task.detached { [weak self] in
+    private func listenForTransactions() -> _Concurrency.Task<Void, Never> {
+        _Concurrency.Task.detached { [weak self] in
             for await result in Transaction.updates {
                 await self?.handle(result)
             }

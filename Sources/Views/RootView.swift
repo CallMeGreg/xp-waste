@@ -3,14 +3,14 @@ import SwiftUI
 /// The five top-level destinations, shown in a custom bottom tab bar (`AppTabBar`) with identical
 /// placement on iPhone and iPad.
 enum AppTab: String, CaseIterable, Identifiable {
-    case skills, raids, shop, log, settings
+    case skills, raids, shop, diary, settings
     var id: String { rawValue }
     var title: String {
         switch self {
         case .skills:   return "Skills"
         case .raids:    return "Raids"
         case .shop:     return "Shop"
-        case .log:      return "Log"
+        case .diary:    return "Diary"
         case .settings: return "Settings"
         }
     }
@@ -19,7 +19,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .skills:   return "square.grid.2x2.fill"
         case .raids:    return "shield.fill"
         case .shop:     return "cart.fill"
-        case .log:      return "book.closed.fill"
+        case .diary:    return "book.closed.fill"
         case .settings: return "gearshape.fill"
         }
     }
@@ -46,7 +46,7 @@ struct RootView: View {
                 SoundManager.shared.play(.levelUp, enabled: game.soundEnabled)
             }
         }
-        .onChange(of: game.featEvent) { _, event in
+        .onChange(of: game.taskEvent) { _, event in
             if event != nil {
                 SoundManager.shared.play(.purchase, enabled: game.soundEnabled)
             }
@@ -57,7 +57,7 @@ struct RootView: View {
                     .id(event.id)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .task(id: event.id) {
-                        try? await Task.sleep(nanoseconds: 2_200_000_000)
+                        try? await _Concurrency.Task.sleep(nanoseconds: 2_200_000_000)
                         if game.levelUpEvent?.id == event.id {
                             withAnimation { game.levelUpEvent = nil }
                         }
@@ -70,7 +70,7 @@ struct RootView: View {
                     .id(notice)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .task(id: notice) {
-                        try? await Task.sleep(nanoseconds: 2_400_000_000)
+                        try? await _Concurrency.Task.sleep(nanoseconds: 2_400_000_000)
                         if game.notice == notice {
                             withAnimation { game.notice = nil }
                         }
@@ -78,21 +78,21 @@ struct RootView: View {
             }
         }
         .overlay(alignment: .top) {
-            if let event = game.featEvent {
-                FeatToast(event: event)
+            if let event = game.taskEvent {
+                TaskToast(event: event)
                     .id(event.id)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .task(id: event.id) {
-                        try? await Task.sleep(nanoseconds: 2_600_000_000)
-                        if game.featEvent?.id == event.id {
-                            withAnimation { game.featEvent = nil }
+                        try? await _Concurrency.Task.sleep(nanoseconds: 2_600_000_000)
+                        if game.taskEvent?.id == event.id {
+                            withAnimation { game.taskEvent = nil }
                         }
                     }
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: game.levelUpEvent)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: game.notice)
-        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: game.featEvent)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: game.taskEvent)
         .sheet(item: $game.offlineProgress) { progress in
             WelcomeBackView(progress: progress)
         }
@@ -135,7 +135,7 @@ struct RootView: View {
         case .skills:   HomeView()
         case .raids:    RaidsView()
         case .shop:     BoostsView()
-        case .log:      AdventurersLogView()
+        case .diary:    DiaryView()
         case .settings: SettingsView()
         }
     }
@@ -150,10 +150,10 @@ struct RootView: View {
         if env["OPEN_RAID"] != nil || env["OPEN_APPLY"] != nil { return .raids }
         switch env["OPEN_SHEET"] {
         case "doublexp": return .shop
-        case "log":      return .log
+        case "diary":    return .diary
         default:         break
         }
-        if env["OPEN_DIARY"] != nil { return .log }
+        if env["OPEN_DIARY"] != nil { return .diary }
         if env["OPEN_SKILL"] != nil { return .skills }
         return nil
     }
@@ -251,10 +251,10 @@ struct NoticeToast: View {
     }
 }
 
-/// Celebratory banner shown when one or more Feats (or a whole Diary tier) complete, carrying the
+/// Celebratory banner shown when one or more Tasks (or a whole Diary tier) complete, carrying the
 /// Reward Tokens earned. Offset below the level-up/notice banners so they never overlap.
-struct FeatToast: View {
-    let event: FeatEvent
+struct TaskToast: View {
+    let event: TaskEvent
 
     var body: some View {
         HStack(spacing: 10) {

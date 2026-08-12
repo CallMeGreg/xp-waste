@@ -65,12 +65,13 @@ requirement, not an afterthought.**
   art here, not inline in views.
 - **`Store.swift`** wraps StoreKit 2 for consumable Double XP coupon packs.
 - **`RootView.swift`** hosts the top-level navigation: a **custom bottom tab bar** (`AppTabBar`)
-  with five tabs — **Skills · Raids · Shop · Log · Settings** — placed identically on iPhone and
+  with five tabs — **Skills · Raids · Shop · Diary · Settings** — placed identically on iPhone and
   iPad (iPadOS floats the *native* `TabView` bar at the top, so the app uses a hand-rolled bar via
   `.safeAreaInset(edge: .bottom)`). Each tab owns its own `NavigationStack`; global toasts and the
   offline-progress sheet stay at the root so they overlay every tab. There is **no separate Stats
   screen** — its former content is split across three tabs: overview stats live in **Settings**,
-  the Milestones/achievements checklist in **Log**, and per-skill buff descriptors in **Skills**.
+  the achievements checklist folded into **Tasks** in the **Diary** tab, and per-skill buff
+  descriptors in **Skills**.
 - **Skills tab** (`HomeView`) pins the **Total Level** header above the scroll view so it stays
   visible while scrolling, and shows the active **XP Boost** banner there whenever a boost is live.
 
@@ -122,12 +123,12 @@ Used for deterministic screenshots / UI checks — preserve them when refactorin
 
 - `SEED_DEMO=ready|super` — seeds representative levels, slots, energy, coupons (and, for
   `super`, an active Supercharge + Double XP boost).
-- `OPEN_TAB=<skills|raids|shop|log|settings>` — launches directly on that bottom tab.
+- `OPEN_TAB=<skills|raids|shop|diary|settings>` — launches directly on that bottom tab.
 - `OPEN_SKILL=<rawValue>` — selects the **Skills** tab and deep-links straight into a skill's
   training screen.
-- `OPEN_SHEET=doublexp` — selects the **Shop** tab; `OPEN_SHEET=log` selects the **Log** tab.
-- `LOG_SCROLL=milestones` — on the **Log** tab, auto-scrolls the Overview down to the migrated
-  Milestones (achievements) checklist so it can be screenshotted from the CLI.
+- `OPEN_SHEET=doublexp` — selects the **Shop** tab; `OPEN_SHEET=diary` selects the **Diary** tab.
+- `DIARY_TAB=tasks` — opens the **Diary** tab on its **All Tasks** sub-tab (the Diary list) instead
+  of Overview; `OPEN_DIARY=<rawValue>` deep-links straight into one themed Diary's detail.
 - `OFFLINE_DEMO=1` — seeds a representative "welcome back" offline-earnings summary sheet.
 
 Pass them to the simulator via the `SIMCTL_CHILD_` prefix, e.g.

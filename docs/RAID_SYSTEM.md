@@ -30,7 +30,7 @@ about **3× the XP you'd have earned tapping that skill for the raid's duration*
 | Deliverable | **This document only** (design). Implementation is a follow-up. |
 | Structure | **One raid per `SkillCategory`** (Combat, Production, Utility, Gathering). |
 | Difficulty & reward scaling | **Auto-scales with the group's combined level** (no manual tier picking). |
-| Placement | **"Raids" tab** in the app's bottom tab bar (Skills · Raids · Shop · Log · Settings). |
+| Placement | **"Raids" tab** in the app's bottom tab bar (Skills · Raids · Shop · Diary · Settings). |
 | XP during play | **None.** The raid is a minigame; the reward is the lamp. |
 | Frequency | **1 raid per group per day** (up to 4/day across the four groups). |
 | Reward variance | **Pass/fail.** Clear the success threshold → full lamp; fall short → nothing. |
@@ -54,7 +54,7 @@ one of its five tabs:
 | **Skills** | `HomeView` (the hub) | `square.grid.2x2.fill` |
 | **Raids** | `RaidsView` | `shield.fill` |
 | **Shop** | `BoostsView` | `cart.fill` |
-| **Log** | `AdventurersLogView` | `book.closed.fill` |
+| **Diary** | `DiaryView` | `book.closed.fill` |
 | **Settings** | `SettingsView` | `gearshape.fill` |
 
 The level-up toast, notice toast, and `offlineProgress` sheet stay at the **root ZStack** so they
