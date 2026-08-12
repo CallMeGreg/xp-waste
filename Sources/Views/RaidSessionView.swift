@@ -97,7 +97,8 @@ struct RaidSessionView: View {
         mistakes += 1
         if game.hapticsEnabled { missHaptic &+= 1 }
         SoundManager.shared.play(.ui, enabled: game.soundEnabled)
-        if mistakes > params.allowedMistakes { end(passed: false) }
+        // Lives shown to the player are `allowedMistakes - mistakes`; reaching 0 ends the raid.
+        if mistakes >= params.allowedMistakes { end(passed: false) }
     }
 
     private func end(passed: Bool) {
@@ -225,7 +226,7 @@ struct RaidSessionView: View {
 
                 Text(won
                      ? "You conquered \(group.raidName)."
-                     : "The \(group.raidName) bested you this time.")
+                     : "\(group.raidName) bested you this time.")
                     .font(.subheadline).foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
 
@@ -258,12 +259,13 @@ struct RaidSessionView: View {
     }
 
     private func lampReward(_ lamp: RaidLampRecord) -> some View {
-        VStack(spacing: 8) {
+        let c = SkillCategory.raidTierColor(lamp.tier)
+        return VStack(spacing: 8) {
             HStack(spacing: 10) {
-                ArtworkView(art: .vector(.genieLamp), size: 28, color: .yellow)
+                ArtworkView(art: .vector(.genieLamp), size: 28, color: c)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("\(SkillCategory.raidTierName(lamp.tier)) \(group.rawValue) Lamp")
-                        .font(.subheadline.weight(.bold))
+                        .font(.subheadline.weight(.bold)).foregroundStyle(c)
                     Text("Spend it on any \(group.rawValue.lowercased()) skill")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
@@ -273,8 +275,8 @@ struct RaidSessionView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity)
-        .background(Color.yellow.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.yellow.opacity(0.35)))
+        .background(c.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(c.opacity(0.35)))
     }
 }
 
@@ -494,8 +496,10 @@ private struct ForgeLoop: View {
 
 // MARK: - Utility: The Heist (stealth / restraint)
 
-/// A guard alternates between WATCHING and DISTRACTED. Loot only while distracted (safe). Tap while
-/// the guard watches and you trip the alarm (a mistake). Windows tighten with tier.
+/// A guard alternates between WATCHING and DISTRACTED. Loot freely while distracted — every tap
+/// before the guard turns back counts — but a tap while the guard WATCHES trips the alarm (a
+/// mistake). It's pure timing: mash for more loot and risk catching the window as it flips back.
+/// Windows tighten with tier.
 private struct HeistLoop: View {
     let params: Balance.RaidTierParams
     let tint: Color
@@ -560,10 +564,9 @@ private struct HeistLoop: View {
         if watching {
             onMistake()
         } else {
+            // Timing-based: as many loots as you can land before the guard turns back count.
+            // Spamming risks a tap landing the instant the window flips to WATCHING (a mistake).
             onSuccess()
-            // Re-arm: guard snaps back to watching so you can't mash multiple loots in one window.
-            watching = true
-            nextToggle = Date().addingTimeInterval(watchWindow * Double.random(in: 0.8...1.2))
         }
     }
 }
@@ -571,7 +574,8 @@ private struct HeistLoop: View {
 // MARK: - Gathering: The Expedition (recognition / speed)
 
 /// A grid of resource nodes with a called target ("Harvest: Ore"). Tap nodes matching the target to
-/// gather; tap a decoy and you waste effort (a mistake). Tapped nodes respawn; the target rotates.
+/// gather; tap a decoy and you waste effort (a mistake). Tapped nodes respawn, and the called
+/// resource rotates every 10 correct gathers. The grid keeps full rows on any width (iPhone/iPad).
 private struct ExpeditionLoop: View {
     let params: Balance.RaidTierParams
     let tint: Color
@@ -589,13 +593,15 @@ private struct ExpeditionLoop: View {
         }
     }
 
+    /// Rotate the called resource after this many correct gathers.
+    private static let gathersPerTargetSwitch = 10
+    private let rows = 3
+    private let itemMin: CGFloat = 76
+    private let spacing: CGFloat = 12
+
     @State private var nodes: [Resource] = []
     @State private var target: Resource = .log
-    @State private var sinceSwitch: Double = 0
-    @State private var lastTick = Date()
-
-    private let tick = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
-    private let columns = [GridItem(.adaptive(minimum: 76), spacing: 12)]
+    @State private var correctSinceSwitch = 0
 
     private var palette: [Resource] {
         // Number of distinct resource types on the board grows with tier (harder recognition).
@@ -617,62 +623,82 @@ private struct ExpeditionLoop: View {
                 Spacer()
             }
 
-            LazyVGrid(columns: columns, spacing: 12) {
-                ForEach(Array(nodes.enumerated()), id: \.offset) { index, res in
-                    Button { tap(index) } label: {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 14).fill(res.color.opacity(0.16))
-                            RoundedRectangle(cornerRadius: 14).strokeBorder(res.color.opacity(0.4))
-                            Image(systemName: res.symbol)
-                                .font(.system(size: 30, weight: .bold))
-                                .foregroundStyle(res.color)
+            GeometryReader { geo in
+                let cols = columnCount(forWidth: geo.size.width)
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: spacing), count: cols),
+                          spacing: spacing) {
+                    ForEach(Array(nodes.enumerated()), id: \.offset) { index, res in
+                        Button { tap(index) } label: {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 14).fill(res.color.opacity(0.16))
+                                RoundedRectangle(cornerRadius: 14).strokeBorder(res.color.opacity(0.4))
+                                Image(systemName: res.symbol)
+                                    .font(.system(size: 30, weight: .bold))
+                                    .foregroundStyle(res.color)
+                            }
+                            .frame(height: 76)
                         }
-                        .frame(height: 76)
+                        .buttonStyle(PressableStyle(scale: 0.92))
                     }
-                    .buttonStyle(PressableStyle(scale: 0.92))
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .onAppear { syncNodeCount(columns: cols) }
+                .onChange(of: cols) { _, newCols in syncNodeCount(columns: newCols) }
             }
-            Spacer(minLength: 0)
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.black.opacity(0.22)))
         .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(tint.opacity(0.25)))
-        .onReceive(tick) { _ in step() }
         .onAppear { setupBoard() }
     }
 
     private func setupBoard() {
-        let pool = palette
-        target = pool.randomElement() ?? .log
-        nodes = (0..<9).map { _ in pool.randomElement() ?? .log }
+        target = palette.randomElement() ?? .log
+        correctSinceSwitch = 0
         ensureSolvable()
-        lastTick = Date()
-        sinceSwitch = 0
     }
 
-    private func step() {
-        let now = Date()
-        let dt = min(0.3, now.timeIntervalSince(lastTick))
-        lastTick = now
-        guard running else { return }
-        sinceSwitch += dt
-        // Rotate the called resource to keep recognition fresh; faster at higher tiers.
-        if sinceSwitch >= params.spawnInterval * 3.5 {
-            sinceSwitch = 0
+    /// Columns that fit the measured width (clamped 3…6); node count is `columns × rows` so the grid
+    /// never renders a stray partial row on either iPhone or iPad.
+    private func columnCount(forWidth width: CGFloat) -> Int {
+        guard width > 0 else { return 3 }
+        let raw = Int((width + spacing) / (itemMin + spacing))
+        return min(6, max(3, raw))
+    }
+
+    private func syncNodeCount(columns: Int) {
+        let desired = max(columns, 1) * rows
+        guard nodes.count != desired else { return }
+        if nodes.count < desired {
             let pool = palette
-            var next = pool.randomElement() ?? target
-            if pool.count > 1 { while next == target { next = pool.randomElement() ?? target } }
-            target = next
-            ensureSolvable()
+            nodes.append(contentsOf: (0..<(desired - nodes.count)).map { _ in pool.randomElement() ?? .log })
+        } else {
+            nodes.removeLast(nodes.count - desired)
         }
+        ensureSolvable()
+    }
+
+    private func rotateTarget() {
+        correctSinceSwitch = 0
+        let pool = palette
+        var next = pool.randomElement() ?? target
+        if pool.count > 1 { while next == target { next = pool.randomElement() ?? target } }
+        target = next
+        ensureSolvable()
     }
 
     private func tap(_ index: Int) {
         guard running, nodes.indices.contains(index) else { return }
         let hit = nodes[index] == target
         nodes[index] = palette.randomElement() ?? .log
+        if hit {
+            onSuccess()
+            correctSinceSwitch += 1
+            if correctSinceSwitch >= Self.gathersPerTargetSwitch { rotateTarget() }
+        } else {
+            onMistake()
+        }
         ensureSolvable()
-        if hit { onSuccess() } else { onMistake() }
     }
 
     /// Guarantee at least one node matches the current target so the board is always solvable.

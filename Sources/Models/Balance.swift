@@ -192,8 +192,9 @@ enum Balance {
     static let raidRapidTapsPerMinute: Double = 300
 
     /// A raid lamp is worth ~this multiple of the XP you'd earn tapping the target skill for the
-    /// raid's duration. The headline "raids ≈ 1.5× tapping" lever.
-    static let raidRewardMultiplier: Double = 1.5
+    /// raid's duration. The headline "raids ≈ 7.5× tapping" lever — deliberately generous so a
+    /// cleared raid outweighs rapid tapping even once a group's skills reach the top (Rune) tier.
+    static let raidRewardMultiplier: Double = 7.5
 
     /// How many raids each skill group can be attempted per calendar day. One shot: a completed
     /// attempt (win *or* loss) spends the day for that group.

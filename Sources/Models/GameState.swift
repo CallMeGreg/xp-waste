@@ -551,8 +551,9 @@ final class GameState: ObservableObject {
         raidLamps.filter { $0.group == group }.sorted { $0.earned > $1.earned }
     }
 
-    /// The XP a lamp would grant if applied to `skill` right now — roughly 1.5× the XP you'd earn
-    /// tapping that skill for the raid's duration, at its current method tier, times the tier bonus.
+    /// The XP a lamp would grant if applied to `skill` right now — several times (see
+    /// `Balance.raidRewardMultiplier`) the XP you'd earn tapping that skill for the raid's duration,
+    /// at its current method tier, times the tier bonus.
     func projectedLampXP(_ lamp: RaidLampRecord, on skill: SkillID) -> Int {
         guard skill.category == lamp.group else { return 0 }
         let raidMinutes = Balance.raidDurationSeconds / 60
@@ -1058,11 +1059,13 @@ final class GameState: ObservableObject {
         superchargeMultiplierBySkill = [:]
         doubleXPCoupons = 3
         energyCells = 2
-        // A couple of banked lamps so the Raids inventory / apply flow is populated for screenshots.
+        // Banked lamps so the Raids inventory / apply flow is populated for screenshots — gathering
+        // holds two tiers (current + one lower) to show the color-coded, multi-tier lamp UI.
         raidLamps = [
             RaidLampRecord(group: .combat, tier: raidTier(.combat)),
             RaidLampRecord(group: .gathering, tier: raidTier(.gathering)),
-            RaidLampRecord(group: .gathering, tier: raidTier(.gathering))
+            RaidLampRecord(group: .gathering, tier: raidTier(.gathering)),
+            RaidLampRecord(group: .gathering, tier: max(0, raidTier(.gathering) - 1))
         ]
         if variant == "super" {
             superchargeExpiryBySkill = [.attack: Date().addingTimeInterval(26)]
