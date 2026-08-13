@@ -67,7 +67,7 @@ struct SettingsView: View {
             statRow("Total XP", Format.abbrev(game.totalXP))
             statRow("Skills maxed", "\(game.maxedSkillCount) / \(SkillID.allCases.count)")
             statRow("AFK slots", "\(game.slots.count) / \(game.maxSlots)")
-            statRow("Supercharge", "×\(game.effectiveSuperchargeMultiplier) tap XP")
+            statRow("Supercharge", "\(Format.mult(game.effectiveSuperchargeMultiplier)) tap XP")
             statRow("Boost Coupons", "\(game.doubleXPCoupons)")
             statRow("Energy Cells", "\(game.energyCells)")
         }

@@ -302,7 +302,7 @@ struct SkillTrainingView: View {
             // the player spams taps (the old per-second decrement froze under a busy main thread).
             TimelineView(.periodic(from: .now, by: 1)) { _ in
                 let remaining = game.superchargeSeconds(for: skill)
-                primaryLabel(title: "Supercharged (×\(game.activeSuperchargeMultiplier(for: skill)) XP)",
+                primaryLabel(title: "Supercharged (\(Format.mult(game.activeSuperchargeMultiplier(for: skill))) XP)",
                              subtitle: "\(Int(remaining.rounded()))s left · tap fast",
                              fg: .orange, bg: Color.orange.opacity(0.18),
                              stroke: Color.orange.opacity(0.5))
@@ -315,7 +315,7 @@ struct SkillTrainingView: View {
                 }
             } label: {
                 // Burst length lives in the charge pill above, so the CTA stays a single clean line.
-                primaryLabel(title: "Supercharge (×\(game.effectiveSuperchargeMultiplier) XP)",
+                primaryLabel(title: "Supercharge (\(Format.mult(game.effectiveSuperchargeMultiplier)) XP)",
                              subtitle: nil,
                              fg: .black, bg: Color.orange, stroke: .clear)
             }
@@ -323,7 +323,7 @@ struct SkillTrainingView: View {
         } else {
             // Disabled only when no Energy is banked — the charge pill above already shows the
             // "Tap to build Energy" nudge, so the CTA stays a single clean line (no duplicate copy).
-            primaryLabel(title: "Supercharge (×\(game.effectiveSuperchargeMultiplier) XP)",
+            primaryLabel(title: "Supercharge (\(Format.mult(game.effectiveSuperchargeMultiplier)) XP)",
                          subtitle: nil,
                          fg: .secondary, bg: Color.white.opacity(0.06),
                          stroke: Color.white.opacity(0.08))

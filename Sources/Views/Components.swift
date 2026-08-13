@@ -30,6 +30,13 @@ enum Format {
         return String(format: "%d:%02d", total / 60, total % 60)
     }
 
+    /// Formats a multiplier as `×N` when whole (`×2` · `×7`) and `×N.N` otherwise (`×4.5`), so
+    /// clean integer multipliers stay tidy while fractional ones (e.g. Prayer-scaled Supercharge)
+    /// still read precisely.
+    static func mult(_ v: Double) -> String {
+        v == v.rounded() ? String(format: "×%.0f", v) : String(format: "×%.1f", v)
+    }
+
     /// Formats a longer span in words (`2d 3h` · `8h 37m` · `45m` · `30s`) for the offline summary.
     static func duration(_ seconds: TimeInterval) -> String {
         let total = max(0, Int(seconds))
