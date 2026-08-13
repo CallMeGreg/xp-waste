@@ -17,9 +17,9 @@ struct BoostsView: View {
                         BoostStatusCard()
 
                         if Layout.isWide(hSize) {
+                            TokenWalletCard()
                             HStack(alignment: .top, spacing: 16) {
                                 VStack(spacing: 16) {
-                                    TokenWalletCard()
                                     sectionHeader("Spend Tokens")
                                     SpendFamilyCard(spendable: .coupon)
                                     SpendFamilyCard(spendable: .cell)
