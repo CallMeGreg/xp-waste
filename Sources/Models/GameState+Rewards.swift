@@ -62,7 +62,7 @@ extension GameState {
             awarded += task.tokenReward
         }
 
-        // Any (diary, tier) group that just became fully complete pays a landmark bonus once.
+        // Any (diary, tier) group that just became fully complete banks a tier-matched XP lamp once.
         var completedGroups: [(diary: TaskDiary, tier: TaskTier)] = []
         var checkedGroups = Set<String>()
         for task in newlyCompleted {
@@ -70,7 +70,7 @@ extension GameState {
             guard checkedGroups.insert(key).inserted, !claimedDiaryTiers.contains(key) else { continue }
             if TaskCatalog.group(task.diary, task.tier).allSatisfy({ completedTasks.contains($0.id) }) {
                 claimedDiaryTiers.insert(key)
-                awarded += Balance.Rewards.diaryTierBonus(for: task.tier)
+                bankDiaryLamp(forTier: task.tier)
                 completedGroups.append((task.diary, task.tier))
             }
         }
@@ -85,14 +85,15 @@ extension GameState {
     }
 
     /// Builds the toast for a batch of completions, leading with the biggest news (a Diary-tier
-    /// clear beats a single Task, which beats a generic multi-Task batch).
+    /// clear — which banks an XP lamp — beats a single Task, which beats a generic multi-Task batch).
     private func makeTaskEvent(tasks: [Task], groups: [(diary: TaskDiary, tier: TaskTier)],
                                tokens: Int) -> TaskEvent {
         if let group = groups.last {
             return TaskEvent(
                 title: "\(group.diary.title) — \(group.tier.displayName) complete!",
-                subtitle: tasks.count == 1 ? tasks[0].title : "\(tasks.count) Tasks cleared",
-                tokens: tokens, icon: "rosette", tint: group.tier.tint)
+                subtitle: "\(SkillCategory.raidTierName(group.tier.lampTier)) Lamp earned",
+                tokens: tokens, icon: "rosette", tint: group.tier.tint,
+                lampTier: group.tier.lampTier)
         }
         if tasks.count == 1 {
             let task = tasks[0]

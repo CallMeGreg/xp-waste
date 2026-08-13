@@ -240,28 +240,24 @@ enum Balance {
     /// **One currency.** Tokens are the single spendable currency. They are *earned* by completing
     /// Tasks and *bought* via IAP (`iapTokens*`), then *spent* in the Shop on Boost Coupons and
     /// Energy Cells (`*Cost`). The scale is deliberately tiered so that paying yields far more than
-    /// grinding achievements: the entire Task catalog pays out ≈ 4,200 Tokens, a single Task pays
-    /// 5–150, one shop item costs 100–250 (so it takes many Tasks to afford one), and even the
-    /// smallest IAP pack (500) dwarfs any single Task and buys several shop items outright.
+    /// grinding achievements: the entire Task catalog (80 Tasks) pays out ≈ 3,600 Tokens, a single
+    /// Task pays 3–180, one shop item costs 100–250 (so it takes many Tasks to afford one), and even
+    /// the smallest IAP pack (500) dwarfs any single Task and buys several shop items outright.
+    ///
+    /// **Tier clears grant lamps, not Tokens.** Completing *every* Task in one Diary tier awards a
+    /// tier-matched XP **lamp** (Easy→Bronze … Grandmaster→Rune, `TaskTier.lampTier`) into the
+    /// unified Diary-lamp inventory — a separate, level-scaling reward from the Token economy. Lamp
+    /// worth is `Balance.lampTierCoefficients`; the mapping lives on `TaskTier`, so no constant here.
     enum Rewards {
-        /// Tokens granted for completing a single Task, by difficulty tier.
-        static let tokensEasy = 5
-        static let tokensMedium = 12
-        static let tokensHard = 30
-        static let tokensElite = 70
-        static let tokensMaster = 150
-
-        /// Token bonus for completing *every* Task in one Diary tier (a landmark reward), scaled by
-        /// tier difficulty so clearing a harder tier is worth more.
-        static func diaryTierBonus(for tier: TaskTier) -> Int {
-            switch tier {
-            case .easy:   return 25
-            case .medium: return 50
-            case .hard:   return 100
-            case .elite:  return 200
-            case .master: return 400
-            }
-        }
+        /// Tokens granted for completing a single Task, by difficulty tier — higher tiers pay far
+        /// more, and `grandmaster` (the end-game capstone) pays the most. Tuned so the full catalog
+        /// totals ≈ 3,600 Tokens at 100% completion (see the note above).
+        static let tokensEasy = 3
+        static let tokensMedium = 8
+        static let tokensHard = 18
+        static let tokensElite = 42
+        static let tokensMaster = 90
+        static let tokensGrandmaster = 180
 
         // MARK: Shop prices — Tokens spent to acquire a consumable
 

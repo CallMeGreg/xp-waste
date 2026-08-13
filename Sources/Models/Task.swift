@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// A just-completed reward, surfaced by the UI as a celebratory toast. Either a single Task, a
-/// batch of Tasks completed together, or a Diary-tier completion — carrying the Tokens awarded.
+/// batch of Tasks completed together, or a Diary-tier completion — carrying the Tokens awarded and,
+/// for a tier clear, the XP **lamp** granted.
 struct TaskEvent: Identifiable, Equatable {
     let id = UUID()
     let title: String
@@ -10,48 +11,60 @@ struct TaskEvent: Identifiable, Equatable {
     /// SF Symbol for the toast glyph.
     let icon: String
     let tint: Color
+    /// When a Diary tier was just cleared, the lamp tier (0…5, Bronze→Rune) awarded — drives a lamp
+    /// badge on the toast. `nil` for plain Task completions (which pay only Tokens).
+    var lampTier: Int? = nil
 }
 
-/// Difficulty tier of a Task within its Diary. Higher tiers pay out more Reward Tokens.
-/// The Token values themselves are centralized in `Balance.Rewards` so re-balancing never
-/// touches this file.
+/// Difficulty tier of a Task within its Diary. Higher tiers pay out more Reward Tokens per Task, and
+/// completing an entire tier grants a matching XP **lamp** (see `lampTier`: Easy→Bronze … Grandmaster
+/// →Rune). The Token values are centralized in `Balance.Rewards` so re-balancing never touches this
+/// file. `grandmaster` is the end-game capstone tier — its Tasks demand 200M-XP-class feats.
 enum TaskTier: String, Codable, CaseIterable, Identifiable {
-    case easy, medium, hard, elite, master
+    case easy, medium, hard, elite, master, grandmaster
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
-        case .easy:   return "Easy"
-        case .medium: return "Medium"
-        case .hard:   return "Hard"
-        case .elite:  return "Elite"
-        case .master: return "Master"
+        case .easy:        return "Easy"
+        case .medium:      return "Medium"
+        case .hard:        return "Hard"
+        case .elite:       return "Elite"
+        case .master:      return "Master"
+        case .grandmaster: return "Grandmaster"
         }
     }
 
     /// Reward Tokens granted for completing a single Task of this tier.
     var tokenReward: Int {
         switch self {
-        case .easy:   return Balance.Rewards.tokensEasy
-        case .medium: return Balance.Rewards.tokensMedium
-        case .hard:   return Balance.Rewards.tokensHard
-        case .elite:  return Balance.Rewards.tokensElite
-        case .master: return Balance.Rewards.tokensMaster
+        case .easy:        return Balance.Rewards.tokensEasy
+        case .medium:      return Balance.Rewards.tokensMedium
+        case .hard:        return Balance.Rewards.tokensHard
+        case .elite:       return Balance.Rewards.tokensElite
+        case .master:      return Balance.Rewards.tokensMaster
+        case .grandmaster: return Balance.Rewards.tokensGrandmaster
         }
     }
 
     /// Sort order low → high difficulty.
     var order: Int { Self.allCases.firstIndex(of: self) ?? 0 }
 
+    /// The XP-lamp tier (0…5, Bronze→Rune) awarded for clearing every Task in this tier of a Diary.
+    /// Equals the tier's difficulty order, so an Easy clear grants a Bronze lamp and a Grandmaster
+    /// clear a Rune lamp — the top of the lamp ladder (`Balance.lampTierCoefficients`).
+    var lampTier: Int { order }
+
     /// Tier tint used for badges and progress accents.
     var tint: Color {
         switch self {
-        case .easy:   return Color(red: 0.45, green: 0.70, blue: 0.42) // green
-        case .medium: return Color(red: 0.36, green: 0.60, blue: 0.86) // blue
-        case .hard:   return Color(red: 0.78, green: 0.55, blue: 0.28) // bronze/orange
-        case .elite:  return Color(red: 0.62, green: 0.42, blue: 0.86) // violet
-        case .master: return Color(red: 0.85, green: 0.32, blue: 0.36) // red
+        case .easy:        return Color(red: 0.45, green: 0.70, blue: 0.42) // green
+        case .medium:      return Color(red: 0.36, green: 0.60, blue: 0.86) // blue
+        case .hard:        return Color(red: 0.78, green: 0.55, blue: 0.28) // bronze/orange
+        case .elite:       return Color(red: 0.62, green: 0.42, blue: 0.86) // violet
+        case .master:      return Color(red: 0.85, green: 0.32, blue: 0.36) // red
+        case .grandmaster: return Color(red: 0.95, green: 0.77, blue: 0.30) // gold (capstone)
         }
     }
 }
@@ -219,6 +232,24 @@ enum TaskCatalog {
         SkillID.skills(in: category).contains { game.level(for: $0) >= Balance.trainingTiers.last!.unlockLevel } ? 1 : 0
     }
 
+    /// How many skills in a category have reached at least `level` — for "all skills to N" sweeps.
+    @MainActor
+    private static func count(atLeast level: Int, in category: SkillCategory, _ game: GameState) -> Int {
+        SkillID.skills(in: category).filter { game.level(for: $0) >= level }.count
+    }
+
+    /// How many skills (across all 23) have reached at least `level`.
+    @MainActor
+    private static func count(atLeast level: Int, _ game: GameState) -> Int {
+        SkillID.allCases.filter { game.level(for: $0) >= level }.count
+    }
+
+    /// How many skills in a category have hit the 200M XP ceiling — for Grandmaster "Eternal" feats.
+    @MainActor
+    private static func maxXPCount(in category: SkillCategory, _ game: GameState) -> Int {
+        SkillID.skills(in: category).filter { game.isMaxXP($0) }.count
+    }
+
     // MARK: - Diaries
 
     static let combat: [Task] = [
@@ -237,12 +268,24 @@ enum TaskCatalog {
         Task(id: "combat.level60", diary: .combat, tier: .hard,
              title: "Battle-Hardened", detail: "Reach level 60 in any combat skill.",
              goal: 60, triggers: [.levelUp]) { maxLevel(in: .combat, $0) },
+        Task(id: "combat.level80", diary: .combat, tier: .hard,
+             title: "Warlord", detail: "Reach level 80 in any combat skill.",
+             goal: 80, triggers: [.levelUp]) { maxLevel(in: .combat, $0) },
         Task(id: "combat.tier6", diary: .combat, tier: .elite,
              title: "Weaponmaster", detail: "Unlock a tier-6 method on any combat skill.",
              goal: 1, triggers: [.levelUp]) { hasTier6(in: .combat, $0) },
+        Task(id: "combat.all70", diary: .combat, tier: .elite,
+             title: "Elite Battalion", detail: "Reach level 70 in all six combat skills.",
+             goal: 6, triggers: [.levelUp]) { count(atLeast: 70, in: .combat, $0) },
         Task(id: "combat.all99", diary: .combat, tier: .master,
              title: "Combat Legend", detail: "Reach level 99 in all six combat skills.",
-             goal: 6, triggers: [.levelUp]) { maxedCount(in: .combat, $0) }
+             goal: 6, triggers: [.levelUp]) { maxedCount(in: .combat, $0) },
+        Task(id: "combat.supercharge25", diary: .combat, tier: .master,
+             title: "Warmonger", detail: "Trigger 25 Supercharges on combat skills.",
+             goal: 25, triggers: [.supercharge]) { $0.taskCounter(TaskCounter.combatSupercharges) },
+        Task(id: "combat.eternal", diary: .combat, tier: .grandmaster,
+             title: "Combat Eternal", detail: "Reach 200M XP in all six combat skills.",
+             goal: 6, triggers: [.levelUp]) { maxXPCount(in: .combat, $0) }
     ]
 
     static let production: [Task] = [
@@ -255,21 +298,39 @@ enum TaskCatalog {
         Task(id: "prod.level40", diary: .production, tier: .medium,
              title: "Craftsman", detail: "Reach level 40 in any production skill.",
              goal: 40, triggers: [.levelUp]) { maxLevel(in: .production, $0) },
+        Task(id: "prod.tier3", diary: .production, tier: .medium,
+             title: "Second Upgrade", detail: "Unlock a tier-3 method on any production skill.",
+             goal: 30, triggers: [.levelUp]) { maxLevel(in: .production, $0) },
         Task(id: "prod.level70", diary: .production, tier: .hard,
              title: "Master Artisan", detail: "Reach level 70 in any production skill.",
              goal: 70, triggers: [.levelUp]) { maxLevel(in: .production, $0) },
+        Task(id: "prod.all50", diary: .production, tier: .hard,
+             title: "Assembly Line", detail: "Reach level 50 in all seven production skills.",
+             goal: 7, triggers: [.levelUp]) { count(atLeast: 50, in: .production, $0) },
         Task(id: "prod.tier6", diary: .production, tier: .elite,
              title: "Grandmaster Smith", detail: "Unlock a tier-6 method on any production skill.",
              goal: 1, triggers: [.levelUp]) { hasTier6(in: .production, $0) },
+        Task(id: "prod.all70", diary: .production, tier: .elite,
+             title: "Grand Workshop", detail: "Reach level 70 in all seven production skills.",
+             goal: 7, triggers: [.levelUp]) { count(atLeast: 70, in: .production, $0) },
+        Task(id: "prod.all90", diary: .production, tier: .master,
+             title: "Legendary Artisan", detail: "Reach level 90 in all seven production skills.",
+             goal: 7, triggers: [.levelUp]) { count(atLeast: 90, in: .production, $0) },
         Task(id: "prod.all99", diary: .production, tier: .master,
              title: "Production Legend", detail: "Reach level 99 in all seven production skills.",
-             goal: 7, triggers: [.levelUp]) { maxedCount(in: .production, $0) }
+             goal: 7, triggers: [.levelUp]) { maxedCount(in: .production, $0) },
+        Task(id: "prod.eternal", diary: .production, tier: .grandmaster,
+             title: "Production Eternal", detail: "Reach 200M XP in all seven production skills.",
+             goal: 7, triggers: [.levelUp]) { maxXPCount(in: .production, $0) }
     ]
 
     static let utility: [Task] = [
         Task(id: "util.combo120", diary: .utility, tier: .easy,
              title: "Nimble", detail: "Build a ×1.2 tap combo.",
              goal: 120, triggers: [.combo]) { $0.taskCounter(TaskCounter.bestComboBips) },
+        Task(id: "util.level20", diary: .utility, tier: .easy,
+             title: "Fleet Footed", detail: "Reach level 20 in any utility skill.",
+             goal: 20, triggers: [.levelUp]) { maxLevel(in: .utility, $0) },
         Task(id: "util.combo140", diary: .utility, tier: .medium,
              title: "In the Zone", detail: "Build a ×1.4 tap combo.",
              goal: 140, triggers: [.combo]) { $0.taskCounter(TaskCounter.bestComboBips) },
@@ -279,12 +340,24 @@ enum TaskCatalog {
         Task(id: "util.level60", diary: .utility, tier: .hard,
              title: "Untouchable", detail: "Reach level 60 in any utility skill.",
              goal: 60, triggers: [.levelUp]) { maxLevel(in: .utility, $0) },
+        Task(id: "util.combo150", diary: .utility, tier: .hard,
+             title: "Flow State", detail: "Build a ×1.5 tap combo.",
+             goal: 150, triggers: [.combo]) { $0.taskCounter(TaskCounter.bestComboBips) },
         Task(id: "util.tier6", diary: .utility, tier: .elite,
              title: "Shadow", detail: "Unlock a tier-6 method on any utility skill.",
              goal: 1, triggers: [.levelUp]) { hasTier6(in: .utility, $0) },
+        Task(id: "util.refund25", diary: .utility, tier: .elite,
+             title: "Master Thief", detail: "Pickpocket back 25 coupons or Supercharges.",
+             goal: 25, triggers: [.refund]) { $0.taskCounter(TaskCounter.refunds) },
+        Task(id: "util.all90", diary: .utility, tier: .master,
+             title: "Utility Grandmaster", detail: "Reach level 90 in all five utility skills.",
+             goal: 5, triggers: [.levelUp]) { count(atLeast: 90, in: .utility, $0) },
         Task(id: "util.all99", diary: .utility, tier: .master,
              title: "Utility Legend", detail: "Reach level 99 in all five utility skills.",
-             goal: 5, triggers: [.levelUp]) { maxedCount(in: .utility, $0) }
+             goal: 5, triggers: [.levelUp]) { maxedCount(in: .utility, $0) },
+        Task(id: "util.eternal", diary: .utility, tier: .grandmaster,
+             title: "Utility Eternal", detail: "Reach 200M XP in all five utility skills.",
+             goal: 5, triggers: [.levelUp]) { maxXPCount(in: .utility, $0) }
     ]
 
     static let gathering: [Task] = [
@@ -305,12 +378,24 @@ enum TaskCatalog {
         Task(id: "gather.level60", diary: .gathering, tier: .hard,
              title: "Naturalist", detail: "Reach level 60 in any gathering skill.",
              goal: 60, triggers: [.levelUp]) { maxLevel(in: .gathering, $0) },
+        Task(id: "gather.energyProcs50", diary: .gathering, tier: .hard,
+             title: "Live Wire", detail: "Bank Supercharge Energy 50 times.",
+             goal: 50, triggers: [.energyProc]) { $0.taskCounter(TaskCounter.energyProcs) },
         Task(id: "gather.caches100", diary: .gathering, tier: .elite,
              title: "Bounty Hunter", detail: "Collect 100 bonus caches.",
              goal: 100, triggers: [.cache]) { $0.taskCounter(TaskCounter.caches) },
+        Task(id: "gather.energyCap60", diary: .gathering, tier: .elite,
+             title: "Bottomless", detail: "Raise your Energy cap to 60 seconds.",
+             goal: 60, triggers: [.levelUp]) { Int($0.energyCapSeconds) },
+        Task(id: "gather.all90", diary: .gathering, tier: .master,
+             title: "Harvest Lord", detail: "Reach level 90 in all five gathering skills.",
+             goal: 5, triggers: [.levelUp]) { count(atLeast: 90, in: .gathering, $0) },
         Task(id: "gather.all99", diary: .gathering, tier: .master,
              title: "Gathering Legend", detail: "Reach level 99 in all five gathering skills.",
-             goal: 5, triggers: [.levelUp]) { maxedCount(in: .gathering, $0) }
+             goal: 5, triggers: [.levelUp]) { maxedCount(in: .gathering, $0) },
+        Task(id: "gather.eternal", diary: .gathering, tier: .grandmaster,
+             title: "Gathering Eternal", detail: "Reach 200M XP in all five gathering skills.",
+             goal: 5, triggers: [.levelUp]) { maxXPCount(in: .gathering, $0) }
     ]
 
     static let idler: [Task] = [
@@ -344,10 +429,19 @@ enum TaskCatalog {
         Task(id: "idle.offline500k", diary: .idler, tier: .elite,
              title: "Big Sleeper", detail: "Earn 500k XP in a single offline return.",
              goal: 500_000, triggers: [.offlineReturn]) { $0.taskCounter(TaskCounter.bestOfflineXP) },
+        Task(id: "idle.offline1m", diary: .idler, tier: .elite,
+             title: "Hibernation", detail: "Earn 1,000,000 XP in a single offline return.",
+             goal: 1_000_000, triggers: [.offlineReturn]) { $0.taskCounter(TaskCounter.bestOfflineXP) },
         Task(id: "idle.total1000", diary: .idler, tier: .master,
              title: "Idle Empire",
              detail: "Reach total level \(Balance.slotUnlockTotalLevels[3]) to unlock your 5th AFK slot.",
-             goal: Balance.slotUnlockTotalLevels[3], triggers: [.levelUp]) { $0.totalLevel }
+             goal: Balance.slotUnlockTotalLevels[3], triggers: [.levelUp]) { $0.totalLevel },
+        Task(id: "idle.returns50", diary: .idler, tier: .master,
+             title: "Creature of Habit", detail: "Return from 50 offline sessions.",
+             goal: 50, triggers: [.offlineReturn]) { $0.taskCounter(TaskCounter.offlineReturns) },
+        Task(id: "idle.offline5m", diary: .idler, tier: .grandmaster,
+             title: "Eternal Slumber", detail: "Earn 5,000,000 XP in a single offline return.",
+             goal: 5_000_000, triggers: [.offlineReturn]) { $0.taskCounter(TaskCounter.bestOfflineXP) }
     ]
 
     static let tycoon: [Task] = [
@@ -366,18 +460,36 @@ enum TaskCatalog {
         Task(id: "tycoon.boost10", diary: .tycoon, tier: .hard,
              title: "Power User", detail: "Activate 10 XP Boosts.",
              goal: 10, triggers: [.boost]) { $0.taskCounter(TaskCounter.boosts) },
+        Task(id: "tycoon.cells10", diary: .tycoon, tier: .hard,
+             title: "Cell Stockpile", detail: "Use 10 Energy Cells.",
+             goal: 10, triggers: [.energyCell]) { $0.taskCounter(TaskCounter.energyCells) },
         Task(id: "tycoon.cells25", diary: .tycoon, tier: .elite,
              title: "Energy Baron", detail: "Use 25 Energy Cells.",
              goal: 25, triggers: [.energyCell]) { $0.taskCounter(TaskCounter.energyCells) },
+        Task(id: "tycoon.stack25", diary: .tycoon, tier: .elite,
+             title: "Perfect Storm", detail: "Tap 25 times with a Boost and Supercharge both active.",
+             goal: 25, triggers: [.tap]) { $0.taskCounter(TaskCounter.stackedBursts) },
         Task(id: "tycoon.boost50", diary: .tycoon, tier: .master,
              title: "Tycoon", detail: "Activate 50 XP Boosts.",
-             goal: 50, triggers: [.boost]) { $0.taskCounter(TaskCounter.boosts) }
+             goal: 50, triggers: [.boost]) { $0.taskCounter(TaskCounter.boosts) },
+        Task(id: "tycoon.boost100", diary: .tycoon, tier: .master,
+             title: "Mogul", detail: "Activate 100 XP Boosts.",
+             goal: 100, triggers: [.boost]) { $0.taskCounter(TaskCounter.boosts) },
+        Task(id: "tycoon.boost250", diary: .tycoon, tier: .grandmaster,
+             title: "Empire", detail: "Activate 250 XP Boosts.",
+             goal: 250, triggers: [.boost]) { $0.taskCounter(TaskCounter.boosts) }
     ]
 
     static let completionist: [Task] = [
+        Task(id: "comp.breadth20", diary: .completionist, tier: .easy,
+             title: "Well Rounded", detail: "Train every skill to level 20.",
+             goal: SkillID.allCases.count, triggers: [.levelUp]) { count(atLeast: 20, $0) },
         Task(id: "comp.total250", diary: .completionist, tier: .medium,
              title: "Journeyman", detail: "Reach total level 250.",
              goal: 250, triggers: [.levelUp]) { $0.totalLevel },
+        Task(id: "comp.total500", diary: .completionist, tier: .medium,
+             title: "Wayfarer", detail: "Reach total level 500.",
+             goal: 500, triggers: [.levelUp]) { $0.totalLevel },
         Task(id: "comp.first99", diary: .completionist, tier: .hard,
              title: "First 99", detail: "Reach level 99 in any skill.",
              goal: 1, triggers: [.levelUp]) { $0.maxedSkillCount },
@@ -402,7 +514,7 @@ enum TaskCatalog {
         Task(id: "comp.eternal", diary: .completionist, tier: .master,
              title: "Eternal", detail: "Reach the 200M XP ceiling in any skill.",
              goal: 1, triggers: [.levelUp]) { $0.maxXPSkillCount },
-        Task(id: "comp.truecomp", diary: .completionist, tier: .master,
+        Task(id: "comp.truecomp", diary: .completionist, tier: .grandmaster,
              title: "True Completionist", detail: "Reach 200M XP in every skill.",
              goal: SkillID.allCases.count, triggers: [.levelUp]) { $0.maxXPSkillCount }
     ]

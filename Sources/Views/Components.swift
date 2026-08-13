@@ -73,6 +73,10 @@ extension Color {
 
     /// Gold accent for Reward Tokens and the Diary.
     static let rewardToken = Color(red: 0.95, green: 0.79, blue: 0.36)
+
+    /// High-contrast label color for content drawn on top of the solid `rewardToken` gold — a deep
+    /// espresso that stays legible where white would wash out on the light-gold fill.
+    static let rewardTokenText = Color(red: 0.16, green: 0.11, blue: 0.02)
 }
 
 /// App-wide dark background gradient.

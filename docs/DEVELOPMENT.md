@@ -80,8 +80,10 @@ docs/       GAME_DESIGN.md, DEVELOPMENT.md, SKILL_BUFFS.md, SOUND_DESIGN.md, ACH
 - **`Task.swift`** + **`GameState+Rewards.swift`** implement the **Diary** reward system: a catalog of
   Tasks grouped into themed Diaries and difficulty tiers, evaluated live from gameplay counters,
   paying out **Tokens**. Tokens are the game's single currency — earned from Tasks, bought via IAP,
-  and **spent in the Shop** (`BoostsView`) on Boost Coupons and Energy Cells. All economy numbers
-  (Task grants, Diary-tier bonus, Shop prices, IAP grants) live in `Balance.Rewards`; the earning UI
+  and **spent in the Shop** (`BoostsView`) on Boost Coupons and Energy Cells. Clearing a whole Diary
+  tier instead banks a tier-matched **any-skill XP Lamp** (Bronze→Rune) in `DiaryView`. All economy
+  numbers (Task grants, tier-clear lamp coefficients, Shop prices, IAP grants) live in `Balance.Rewards`
+  / `Balance.lampTierCoefficients`; the earning UI
   is `DiaryView` (see [ACHIEVEMENTS.md](ACHIEVEMENTS.md)).
 - **Navigation** — `RootView` shows `OnboardingView` until `hasSeenOnboarding`, then a **custom
   bottom tab bar** (`AppTabBar`) with five tabs: **Skills** (`HomeView`) · **Raids** (`RaidsView`)

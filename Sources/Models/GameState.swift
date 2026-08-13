@@ -71,6 +71,8 @@ private struct SaveData: Codable {
     var taskCounters: [String: Int]?
     var completedTasks: [String]?
     var claimedDiaryTiers: [String]?
+    // Added later — universal XP lamps earned from Diary-tier clears. Optional so older saves decode.
+    var diaryLamps: [RaidLampRecord]?
 
     // The `task*` properties are persisted under their original v1.5 JSON keys ("featCounters",
     // "completedFeats"), so saves written before the Feats→Tasks rename keep decoding. The on-disk
@@ -84,6 +86,7 @@ private struct SaveData: Codable {
         case taskCounters = "featCounters"
         case completedTasks = "completedFeats"
         case claimedDiaryTiers
+        case diaryLamps
     }
 }
 
@@ -121,6 +124,10 @@ final class GameState: ObservableObject {
     /// Unspent raid lamps the player owns. Each is bound to a skill group and spent on one of that
     /// group's skills (see `applyLamp`).
     @Published private(set) var raidLamps: [RaidLampRecord] = []
+    /// Unspent **universal** XP lamps earned by clearing Diary tiers — each spendable on *any* skill
+    /// (`group == nil`; see `applyDiaryLamp`). Kept separate from `raidLamps` so each reward source
+    /// has a clear home: raid lamps live on the Raids tab, Diary lamps in the Diary's unified inventory.
+    @Published private(set) var diaryLamps: [RaidLampRecord] = []
     /// Calendar day (yyyy-MM-dd) each group last attempted a raid, enforcing one shot per day.
     @Published private(set) var raidDayByGroup: [String: String] = [:]
 
@@ -578,12 +585,18 @@ final class GameState: ObservableObject {
         raidLamps.filter { $0.group == group }.sorted { $0.earned > $1.earned }
     }
 
+    /// Unspent universal Diary lamps (newest first) — the unified inventory shown in the Diary tab.
+    var diaryLampsSorted: [RaidLampRecord] {
+        diaryLamps.sorted { $0.earned > $1.earned }
+    }
+
     /// The XP a lamp would grant if applied to `skill` right now. A lamp is worth the skill's
-    /// *current level* × a per-raid-tier coefficient (`Balance.lampTierCoefficients`), so its value
+    /// *current level* × a per-tier coefficient (`Balance.lampTierCoefficients`), so its value
     /// scales smoothly with exact level — no two levels look identical — and climbs steeply with the
-    /// raid tier. Because `applyLamp` grants exactly this, the projection always matches the payout.
+    /// tier. A universal (Diary) lamp (`group == nil`) applies to any skill; a raid lamp only to its
+    /// group. Because `applyLamp`/`applyDiaryLamp` grant exactly this, the projection always matches.
     func projectedLampXP(_ lamp: RaidLampRecord, on skill: SkillID) -> Int {
-        guard skill.category == lamp.group else { return 0 }
+        guard lamp.group == nil || skill.category == lamp.group else { return 0 }
         let xp = level(for: skill) * Balance.lampCoefficient(forTier: lamp.tier)
         return max(1, xp)
     }
@@ -814,7 +827,26 @@ final class GameState: ObservableObject {
         return xp
     }
 
-    /// Grants the free daily coupon the first time the app is opened each calendar day.
+    /// Spends a universal Diary lamp on **any** skill, granting the projected XP through the normal
+    /// `addXP` pipeline (200M cap + level-up toast apply). Returns the XP granted, or nil if the lamp
+    /// isn't in the Diary inventory.
+    @discardableResult
+    func applyDiaryLamp(_ lamp: RaidLampRecord, to skill: SkillID) -> Int? {
+        guard let index = diaryLamps.firstIndex(where: { $0.id == lamp.id }) else { return nil }
+        let xp = projectedLampXP(lamp, on: skill)
+        diaryLamps.remove(at: index)
+        addXP(Double(xp), to: skill)
+        notice = Notice(icon: "lightbulb.fill", text: "\(skill.displayName) +\(Format.abbrev(xp)) XP from a \(SkillCategory.raidTierName(lamp.tier)) lamp")
+        save()
+        return xp
+    }
+
+    /// Banks a universal Diary lamp at a Task tier's lamp rank (Easy→Bronze … Grandmaster→Rune).
+    /// Called by the reward engine when an entire Diary tier is cleared. Encapsulates the append so
+    /// the reward extension (a separate file) can add lamps without exposing the `private(set)` array.
+    func bankDiaryLamp(forTier tier: TaskTier) {
+        diaryLamps.append(RaidLampRecord(group: nil, tier: tier.lampTier))
+    }
     @discardableResult
     func grantDailyCouponIfNeeded() -> Bool {
         let today = Self.dayKey()
@@ -852,6 +884,7 @@ final class GameState: ObservableObject {
         levelUpEvent = nil
         doubleXPExpiry = nil
         raidLamps = []
+        diaryLamps = []
         raidDayByGroup = [:]
         tokens = 0
         taskCounters = [:]
@@ -1045,6 +1078,7 @@ final class GameState: ObservableObject {
         lastFreeCouponDay = saved.lastFreeCouponDay
         energyCells = saved.energyCells ?? 0
         raidLamps = saved.raidLamps ?? []
+        diaryLamps = saved.diaryLamps ?? []
         raidDayByGroup = saved.raidDayByGroup ?? [:]
         tokens = saved.tokens ?? 0
         taskCounters = saved.taskCounters ?? [:]
@@ -1138,17 +1172,19 @@ final class GameState: ObservableObject {
         tokens = max(tokens, 300)
         // Optional: surface a sample completion toast for screenshots.
         if ProcessInfo.processInfo.environment["TASK_TOAST"] != nil {
-            taskEvent = TaskEvent(title: "Combat Diary — Medium complete!",
-                                  subtitle: "Berserker", tokens: 62,
-                                  icon: "rosette", tint: TaskTier.medium.tint)
+            taskEvent = TaskEvent(title: "Combat Diary — Medium cleared!",
+                                  subtitle: "Iron Lamp earned", tokens: 8,
+                                  icon: "rosette", tint: TaskTier.medium.tint,
+                                  lampTier: TaskTier.medium.lampTier)
         }
         lastActive = Date()
         lastTick = Date()
         save()
     }
 
-    /// Marks every currently-satisfied Task complete and pays its Tokens (plus any fully-cleared
-    /// Diary-tier bonus) without surfacing a toast — used only by the demo/reward seeders.
+    /// Marks every currently-satisfied Task complete and pays its Tokens (and banks a universal lamp
+    /// for each fully-cleared Diary tier) without surfacing a toast — used only by the demo/reward
+    /// seeders.
     private func seedCompleteSatisfiedTasks() {
         for task in TaskCatalog.all where !completedTasks.contains(task.id) {
             if task.progress(self) >= task.goal {
@@ -1163,7 +1199,7 @@ final class GameState: ObservableObject {
                 if !group.isEmpty, !claimedDiaryTiers.contains(key),
                    group.allSatisfy({ completedTasks.contains($0.id) }) {
                     claimedDiaryTiers.insert(key)
-                    tokens += Balance.Rewards.diaryTierBonus(for: tier)
+                    diaryLamps.append(RaidLampRecord(group: nil, tier: tier.lampTier))
                 }
             }
         }
@@ -1249,7 +1285,8 @@ final class GameState: ObservableObject {
             tokens: tokens,
             taskCounters: taskCounters,
             completedTasks: Array(completedTasks),
-            claimedDiaryTiers: Array(claimedDiaryTiers)
+            claimedDiaryTiers: Array(claimedDiaryTiers),
+            diaryLamps: diaryLamps
         )
         if let data = try? JSONEncoder().encode(snapshot) {
             UserDefaults.standard.set(data, forKey: Self.saveKey)

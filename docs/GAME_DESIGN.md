@@ -156,7 +156,7 @@ re-balancing a perk is a one-line change that never touches gameplay or view cod
    on large canvases.
 5. **Raids** — one raid per skill category, whose tier scales with the group's **average** level.
    Each raid is a short themed minigame (combat, production, utility, gathering) played once per
-   day; clearing it awards a tier-colored **Lamp** you apply to any skill in that group for a burst
+   day; clearing it awards a tier-colored **Lamp** you use on any skill in that group for a burst
    of XP (XP scales with the chosen skill's level).
 6. **Shop** — spend **Tokens** on Boost Coupons and Energy Cells, or buy Tokens with real money via
    StoreKit Token Packs.
