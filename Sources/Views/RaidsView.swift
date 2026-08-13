@@ -149,23 +149,27 @@ private struct RaidCard: View {
             .buttonStyle(PressableStyle(scale: 0.97))
             .disabled(!available)
 
-            // Lamp inventory — one chip per tier, color-coded so multiple tiers are distinguishable.
+            // Lamp inventory — one chip per tier, color-coded so multiple tiers are distinguishable —
+            // above a prominent "Use Lamps" button matching the Diary tab's affordance.
             if !lamps.isEmpty {
-                Button(action: onApply) {
+                VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
                         ForEach(lampsByTier, id: \.tier) { entry in
                             lampChip(tier: entry.tier, count: entry.count)
                         }
                         Spacer(minLength: 0)
-                        Text("Use").font(.caption.weight(.bold)).foregroundStyle(.secondary)
-                        Image(systemName: "chevron.right").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
                     }
-                    .padding(.horizontal, 12).padding(.vertical, 9)
-                    .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.white.opacity(0.12)))
+                    Button(action: onApply) {
+                        Text("Use Lamps")
+                            .font(.subheadline.weight(.bold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 11)
+                            .background(Color.rewardToken, in: RoundedRectangle(cornerRadius: 12))
+                            .foregroundStyle(Color.rewardTokenText)
+                    }
+                    .buttonStyle(PressableStyle(scale: 0.98))
+                    .accessibilityLabel("Use \(lamps.count) \(group.rawValue) lamps")
                 }
-                .buttonStyle(PressableStyle(scale: 0.98))
-                .accessibilityLabel("Use \(lamps.count) \(group.rawValue) lamps")
             }
 
             if !available {
