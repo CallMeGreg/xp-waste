@@ -7,6 +7,7 @@ import SwiftUI
 struct BoostsView: View {
     @EnvironmentObject private var game: GameState
     @EnvironmentObject private var store: Store
+    @Environment(\.horizontalSizeClass) private var hSize
 
     var body: some View {
         NavigationStack {
@@ -14,19 +15,33 @@ struct BoostsView: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         BoostStatusCard()
-                        TokenWalletCard()
 
-                        sectionHeader("Spend Tokens")
-                        SpendFamilyCard(spendable: .coupon)
-                        SpendFamilyCard(spendable: .cell)
-
-                        sectionHeader("Get more Tokens")
-                        GetTokensCard()
+                        if Layout.isWide(hSize) {
+                            TokenWalletCard()
+                            HStack(alignment: .top, spacing: 16) {
+                                VStack(spacing: 16) {
+                                    sectionHeader("Spend Tokens")
+                                    SpendFamilyCard(spendable: .coupon)
+                                    SpendFamilyCard(spendable: .cell)
+                                }
+                                VStack(spacing: 16) {
+                                    sectionHeader("Get more Tokens")
+                                    GetTokensCard()
+                                }
+                            }
+                        } else {
+                            TokenWalletCard()
+                            sectionHeader("Spend Tokens")
+                            SpendFamilyCard(spendable: .coupon)
+                            SpendFamilyCard(spendable: .cell)
+                            sectionHeader("Get more Tokens")
+                            GetTokensCard()
+                        }
 
                         legalFootnote.id("shopBottom")
                     }
                     .padding(16)
-                    .frame(maxWidth: 640)
+                    .frame(maxWidth: Layout.maxWidth(hSize, compact: 640, regular: 1040))
                     .frame(maxWidth: .infinity)
                 }
                 .background(GameBackground())
@@ -101,12 +116,12 @@ private enum Spendable {
     var icon: String { self == .coupon ? "ticket.fill" : "bolt.fill" }
     var tint: Color { self == .coupon ? .doubleXP : .orange }
     var unitCost: Int { self == .coupon ? Balance.Rewards.boostCouponCost : Balance.Rewards.energyCellCost }
-    /// Purchase quantities offered (buy one, or a discount-free convenience bundle).
-    var quantities: [Int] { [1, 5] }
+    /// Only single-unit Token purchases are offered (bundles were removed to keep the shop simple).
+    var quantities: [Int] { [1] }
 
     var blurb: String {
         switch self {
-        case .coupon: return "A timed XP boost for every skill — taps and AFK alike. You still get 1 free each day; stock up with Tokens."
+        case .coupon: return "You get one free coupon each day — stock up with Tokens for back-to-back boosts."
         case .cell:   return "Instantly fills the skill you're training to full Supercharge. Stock up with Tokens."
         }
     }
@@ -208,7 +223,7 @@ private struct GetTokensCard: View {
                 Text("Token Packs").font(.headline)
                 Spacer()
             }
-            Text("Top up your pouch to spend on Boosts and Energy Cells. A big shortcut — one pack is worth many Tasks' worth of Tokens.")
+            Text("Top up your pouch to spend on Boost Coupons and Energy Cells. A big shortcut — one pack is worth many Tasks' worth of Tokens.")
                 .font(.footnote).foregroundStyle(.secondary)
 
             Divider().overlay(Color.white.opacity(0.08))
@@ -320,7 +335,7 @@ private struct BoostStatusCard: View {
 
     private var activeCard: some View {
         VStack(spacing: 12) {
-            Label("Boost active", systemImage: "sparkles")
+            Label("XP Boost active", systemImage: "sparkles")
                 .font(.headline.weight(.heavy))
                 .foregroundStyle(Color.doubleXP)
             Text(Format.clock(game.doubleXPRemaining))

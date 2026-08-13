@@ -66,7 +66,7 @@ struct RootView: View {
         }
         .overlay(alignment: .top) {
             if let notice = game.notice {
-                NoticeToast(text: notice)
+                NoticeToast(notice: notice)
                     .id(notice)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .task(id: notice) {
@@ -234,20 +234,26 @@ struct LevelUpToast: View {
     }
 }
 
-/// Transient banner for general notices (daily rewards, purchases).
+/// Transient banner for general notices (daily rewards, purchases). Renders its SF Symbol beside
+/// the text — the app never embeds emoji in copy.
 struct NoticeToast: View {
-    let text: String
+    let notice: Notice
 
     var body: some View {
-        Text(text)
-            .font(.subheadline.weight(.semibold))
-            .multilineTextAlignment(.center)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(.ultraThinMaterial, in: Capsule())
-            .overlay(Capsule().strokeBorder(Color.doubleXP.opacity(0.7), lineWidth: 1.5))
-            .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
-            .padding(.top, 6)
+        HStack(spacing: 8) {
+            Image(systemName: notice.icon)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(Color.doubleXP)
+            Text(notice.text)
+                .font(.subheadline.weight(.semibold))
+                .multilineTextAlignment(.leading)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.doubleXP.opacity(0.7), lineWidth: 1.5))
+        .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
+        .padding(.top, 6)
     }
 }
 

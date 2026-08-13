@@ -1,28 +1,32 @@
 import SwiftUI
 
-/// The Raids tab: one raid per skill group, whose tier scales with the group's combined level.
+/// The Raids tab: one raid per skill group, whose tier scales with the group's average level.
 /// Clear a raid (once per group per day) to bank an XP **lamp** for that group, spendable on any one
 /// of its skills. Universal & responsive: width-capped and centered, adaptive to iPhone / iPad.
 struct RaidsView: View {
     @EnvironmentObject private var game: GameState
     @State private var raidingGroup: SkillCategory?
     @State private var applyGroup: SkillCategory?
+    @Environment(\.horizontalSizeClass) private var hSize
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 14) {
                     RaidsOverviewCard()
-                    ForEach(SkillCategory.allCases) { group in
-                        RaidCard(
-                            group: group,
-                            onRaid: { raidingGroup = group },
-                            onApply: { applyGroup = group }
-                        )
+                    LazyVGrid(columns: Layout.columns(hSize, count: 2, spacing: 14), spacing: 14) {
+                        ForEach(SkillCategory.allCases) { group in
+                            RaidCard(
+                                group: group,
+                                onRaid: { raidingGroup = group },
+                                onApply: { applyGroup = group },
+                                fillHeight: Layout.isWide(hSize)
+                            )
+                        }
                     }
                 }
                 .padding(14)
-                .frame(maxWidth: 760)
+                .frame(maxWidth: Layout.maxWidth(hSize, compact: 760, regular: 1180))
                 .frame(maxWidth: .infinity)
             }
             .background(GameBackground())
@@ -77,17 +81,17 @@ private struct RaidsOverviewCard: View {
     }
 }
 
-/// One raid's card: identity, tier + combined-level progress, availability CTA, and lamp inventory.
+/// One raid's card: identity, tier + average-level progress, availability CTA, and lamp inventory.
 private struct RaidCard: View {
     @EnvironmentObject private var game: GameState
     let group: SkillCategory
     var onRaid: () -> Void
     var onApply: () -> Void
+    var fillHeight: Bool = false
 
     var body: some View {
         let tier = game.raidTier(group)
-        let combined = game.raidCombinedLevel(group)
-        let maxCombined = game.raidMaxCombinedLevel(group)
+        let average = game.raidAverageLevel(group)
         let available = game.isRaidAvailableToday(group)
         let lamps = game.lamps(for: group)
         // Distinct tiers present, best first, so mixed-tier inventories read clearly.
@@ -116,10 +120,10 @@ private struct RaidCard: View {
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            // Combined-level → next tier progress
+            // Average-level → next tier progress
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text("Combined level \(combined)")
+                    Text("Average level \(average)")
                         .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
                     Spacer()
                     if let next = game.raidNextTierLevel(group) {
@@ -170,6 +174,7 @@ private struct RaidCard: View {
             }
         }
         .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: fillHeight ? .infinity : nil, alignment: .topLeading)
         .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(group.raidTint.opacity(0.25)))
     }
@@ -285,7 +290,7 @@ private struct LampApplySheet: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(remaining) lamp\(remaining == 1 ? "" : "s") to spend")
                     .font(.subheadline.weight(.bold))
-                Text("Spending \(article) \(tierName) lamp. Pick a \(group.rawValue.lowercased()) skill — XP scales with the skill's tier.")
+                Text("Spending \(article) \(tierName) lamp. Pick a \(group.rawValue.lowercased()) skill — XP scales with the skill's level.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
@@ -319,7 +324,7 @@ private struct LampApplySheet: View {
                         .foregroundStyle(newLevel > level ? skill.tint : .secondary)
                 }
                 Spacer()
-                Text("+\(Format.abbrev(gain)) XP")
+                Text("+\(Format.abbrevCompact(gain)) XP")
                     .font(.subheadline.weight(.bold)).monospacedDigit()
                     .foregroundStyle(tierColor)
             }

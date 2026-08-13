@@ -40,9 +40,11 @@ requirement, not an afterthought.**
 - Cap and center wide content so it doesn't stretch edge-to-edge on iPad
   (e.g. `.frame(maxWidth: 820).frame(maxWidth: .infinity)`). Existing screens follow this;
   keep new screens consistent.
-- Provide size-class-adaptive layouts where it helps: compact width = single vertical column;
-  regular width (iPad / landscape) = multi-pane. `SkillTrainingView` is the reference example
-  (two-pane on regular, stacked on compact).
+- Provide size-class-adaptive layouts where it helps: use `horizontalSizeClass` to scale or
+  reflow content (e.g. compact width = tighter single column; regular width = larger art and more
+  breathing room). `SkillTrainingView` is the reference example — a single centered column capped
+  at `maxWidth: 640, maxHeight: 820` that scales the training object by size class (240pt compact →
+  300pt regular) rather than splitting into panes.
 - When you add or change UI, **verify on both an iPhone simulator and an iPad simulator**
   before considering the work done.
 

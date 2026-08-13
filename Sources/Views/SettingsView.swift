@@ -24,11 +24,11 @@ struct SettingsView: View {
                 }
 
                 Section("How to play") {
-                    infoRow("👆", "Tap a skill's object to earn XP.")
-                    infoRow("⚡️", "Reach level 10 to put a skill in an AFK slot for passive XP.")
-                    infoRow("🔋", "Tapping a skill can spark Supercharge charge — Fishing raises the odds.")
-                    infoRow("🔥", "Supercharge to spend Energy for bonus XP per tap.")
-                    infoRow("🎟️", "Activate a Boost coupon for 5 min of 1.5× XP on every skill — one free daily.")
+                    infoRow("hand.tap.fill", "Tap a skill's object to earn XP.")
+                    infoRow("moon.zzz.fill", "Reach level 10 to put a skill in an AFK slot for passive XP.")
+                    infoRow("bolt.fill", "Tapping a skill can spark Supercharge Energy — Fishing raises the odds.")
+                    infoRow("flame.fill", "Supercharge to spend Energy for bonus XP per tap.")
+                    infoRow("ticket.fill", "Activate a Boost Coupon for a timed XP boost on every skill — one free daily. Grows stronger and longer as you level Magic & Herblore.")
                 }
 
                 statsSection
@@ -83,7 +83,10 @@ struct SettingsView: View {
 
     private func infoRow(_ icon: String, _ text: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Text(icon)
+            Image(systemName: icon)
+                .font(.subheadline)
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 22, alignment: .center)
             Text(text).font(.subheadline)
         }
     }

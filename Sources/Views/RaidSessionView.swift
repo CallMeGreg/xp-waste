@@ -26,6 +26,7 @@ struct RaidSessionView: View {
     @State private var missHaptic = 0
     @State private var endHaptic = 0
     @State private var debugVisualOnly = false
+    @Environment(\.horizontalSizeClass) private var hSize
 
     private let clock = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
 
@@ -41,7 +42,7 @@ struct RaidSessionView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
-            .frame(maxWidth: 720)
+            .frame(maxWidth: Layout.maxWidth(hSize, compact: 720, regular: 980))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             if phase != .playing { resultOverlay }
@@ -163,7 +164,7 @@ struct RaidSessionView: View {
         return VStack(alignment: .trailing, spacing: 3) {
             Text(mistakeLabel).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
             HStack(spacing: 3) {
-                Image(systemName: "heart.fill").font(.caption2).foregroundStyle(.red.opacity(0.9))
+                Image(systemName: mistakeIcon).font(.caption2).foregroundStyle(mistakeIconColor)
                 Text("\(remaining)").font(.caption.weight(.bold)).monospacedDigit()
                     .foregroundStyle(remaining <= 2 ? .red : .primary)
             }
@@ -187,6 +188,20 @@ struct RaidSessionView: View {
         case .utility:    return "Alarm"
         case .gathering:  return "Waste left"
         }
+    }
+
+    /// The mistake counter's icon mirrors its label so the resource reads at a glance per raid theme.
+    private var mistakeIcon: String {
+        switch group {
+        case .combat:     return "heart.fill"
+        case .production: return "shippingbox.fill"
+        case .utility:    return "bell.fill"
+        case .gathering:  return "leaf.fill"
+        }
+    }
+
+    private var mistakeIconColor: Color {
+        group == .combat ? .red.opacity(0.9) : group.raidTint
     }
 
     // MARK: Loop switch
@@ -266,12 +281,10 @@ struct RaidSessionView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("\(SkillCategory.raidTierName(lamp.tier)) \(group.rawValue) Lamp")
                         .font(.subheadline.weight(.bold)).foregroundStyle(c)
-                    Text("Spend it on any \(group.rawValue.lowercased()) skill")
+                    Text("Apply it to any \(group.rawValue.lowercased()) skill from the Raids tab.")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
             }
-            Text("Open Raids → Apply to choose a skill.")
-                .font(.caption2).foregroundStyle(.secondary)
         }
         .padding(12)
         .frame(maxWidth: .infinity)
@@ -310,9 +323,7 @@ private struct ColosseumLoop: View {
 
                 // Boss avatar (top), purely decorative anchor
                 VStack {
-                    Image(systemName: "flame.fill")
-                        .font(.system(size: 34, weight: .bold))
-                        .foregroundStyle(tint)
+                    ArtworkView(art: .vector(.skull), size: 40, color: tint)
                         .padding(.top, 14)
                     Spacer()
                 }

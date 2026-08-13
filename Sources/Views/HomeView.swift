@@ -7,20 +7,21 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject private var game: GameState
     @State private var path: [SkillID] = []
+    @Environment(\.horizontalSizeClass) private var hSize
 
     var body: some View {
         NavigationStack(path: $path) {
             VStack(spacing: 0) {
                 pinnedHeader
                 ScrollView {
-                    VStack(spacing: 14) {
+                    LazyVGrid(columns: Layout.columns(hSize, count: 2, spacing: 14), spacing: 14) {
                         ForEach(SkillCategory.allCases) { category in
                             SkillStatGroup(category: category)
                         }
                     }
                     .padding(.horizontal, 14)
                     .padding(.bottom, 14)
-                    .frame(maxWidth: 760)
+                    .frame(maxWidth: Layout.maxWidth(hSize, compact: 600, regular: 1180))
                     .frame(maxWidth: .infinity)
                 }
             }
@@ -43,18 +44,27 @@ struct HomeView: View {
     }
 
     /// Stays fixed above the scrolling skill list: total level always in view, plus the active
-    /// XP-Boost countdown whenever a Boost is running.
+    /// XP-Boost countdown whenever a Boost is running. On wide screens the two cards sit side by
+    /// side so the header uses the full width instead of stacking in a narrow column.
     private var pinnedHeader: some View {
-        VStack(spacing: 10) {
-            TotalLevelHeader()
-            if game.isDoubleXPActive {
-                BoostBanner()
+        Group {
+            if Layout.isWide(hSize) {
+                HStack(alignment: .top, spacing: 12) {
+                    TotalLevelHeader(fillHeight: game.isDoubleXPActive)
+                    if game.isDoubleXPActive { BoostBanner(fillHeight: true) }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+            } else {
+                VStack(spacing: 10) {
+                    TotalLevelHeader()
+                    if game.isDoubleXPActive { BoostBanner() }
+                }
             }
         }
         .padding(.horizontal, 14)
         .padding(.top, 12)
         .padding(.bottom, 10)
-        .frame(maxWidth: 760)
+        .frame(maxWidth: Layout.maxWidth(hSize, compact: 600, regular: 1180))
         .frame(maxWidth: .infinity)
     }
 }
@@ -62,6 +72,7 @@ struct HomeView: View {
 /// Compact hub header: total level, max-cape progress, and a one-line slots/supercharge summary.
 private struct TotalLevelHeader: View {
     @EnvironmentObject private var game: GameState
+    var fillHeight: Bool = false
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 1) {
@@ -76,6 +87,7 @@ private struct TotalLevelHeader: View {
             }
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
+        .frame(maxWidth: .infinity, maxHeight: fillHeight ? .infinity : nil, alignment: .leading)
         .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.white.opacity(0.08)))
     }
@@ -90,6 +102,7 @@ private struct TotalLevelHeader: View {
 /// skill is earning, a countdown, and a progress bar of the remaining time.
 private struct BoostBanner: View {
     @EnvironmentObject private var game: GameState
+    var fillHeight: Bool = false
 
     private func multText(_ v: Double) -> String {
         v == v.rounded() ? String(format: "×%.0f", v) : String(format: "×%.1f", v)
@@ -102,7 +115,7 @@ private struct BoostBanner: View {
                     Image(systemName: "sparkles")
                         .font(.subheadline.weight(.bold)).foregroundStyle(Color.doubleXP)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("XP BOOST ACTIVE")
+                        Text("XP Boost active")
                             .font(.caption2.weight(.bold)).foregroundStyle(.secondary)
                         Text("\(multText(game.xpMultiplier)) XP on every skill")
                             .font(.caption.weight(.semibold)).foregroundStyle(.primary)
@@ -116,6 +129,7 @@ private struct BoostBanner: View {
                 XPProgressBar(progress: game.doubleXPFraction, tint: .doubleXP, height: 5)
             }
             .padding(.horizontal, 14).padding(.vertical, 10)
+            .frame(maxWidth: .infinity, maxHeight: fillHeight ? .infinity : nil)
             .background(Color.doubleXP.opacity(0.14), in: RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.doubleXP.opacity(0.5)))
         }

@@ -56,8 +56,8 @@ object visibly upgrades as you climb tiers (a small, frequent reward).
 | 6 | 90 | **50** |
 
 Examples (basic → end-game): Woodcutting normal → oak → willow → maple → yew → magic tree;
-Fishing shrimp → sardines → trout → tuna → lobster → shark; Attack bronze → iron → steel →
-mithril → adamant → rune; Runecraft air → earth → fire → nature → law → blood; Slayer crawling
+Fishing shrimp → trout → lobster → swordfish → shark → anglerfish; Attack bronze → iron → steel →
+mithril → rune → dragon; Runecraft air → earth → fire → nature → law → blood; Slayer crawling
 hands → cave crawlers → bloodvelds → abyssal demons → gargoyles → hydra. Because higher tiers
 grant more XP per tap, they also **accelerate the brutal late-game curve** (a deliberate pacing
 lever). All tier flavor lives in `TrainingMethod.swift`; the ladder itself is in `Balance.swift`.
@@ -137,24 +137,39 @@ re-balancing a perk is a one-line change that never touches gameplay or view cod
 ## 6. Screens & UX
 
 1. **Splash** — brief branded loader.
-2. **Onboarding** (first launch, 4 short cards) — goal, tap-to-train, slots+Energy,
-   Supercharge. Energy/Supercharge detail is reinforced contextually on the first slot.
-3. **Home / Skills grid (hub)** — top bar with total level, max-cape progress, and slots
-   used; an **adaptive** grid of skill tiles (2 columns on iPhone, more on iPad), grouped into
-   the four category sections. Each tile shows the skill's *current method* icon, level, XP bar,
-   slot badge, Energy ring, and a "Supercharge ready" glow. Toolbar → Stats and Settings.
+2. **Onboarding** (first launch, 6 short cards, skippable) — (1) train all 23 skills to 99,
+   (2) tap to train, (3) AFK slots & Supercharge Energy, (4) Supercharge for big bursts,
+   (5) Boost Coupons, (6) every skill grants a perk. Energy/Supercharge detail is reinforced
+   contextually on the first slot.
+3. **Home / Skills grid (hub)** — a pinned **Total Level** header with max-cape progress and slots
+   used (and the active **XP Boost** banner when one is live); below it an **adaptive** single
+   column of skill rows, grouped into the four category sections. Each row shows the skill's
+   *current method* icon, level, XP bar, slot badge, Energy ring, a "Supercharge ready" glow, and
+   the skill's account-wide perk descriptor.
 4. **Skill Training (full screen, responsive)** — the big tappable object (which upgrades with
    your method tier); a header with level + XP-to-next bar; a **method banner** showing the
    current method, its +X/tap, and the next unlock; a **perk banner** showing this skill's
    account-wide buff, its current magnitude, and the next-level preview; a slot toggle (enabled at
    level 10); and an Energy meter + **Supercharge** button with live countdown and active
-   multiplier. Tap "+X" pops highlight **crits, extra hits, and cache windfalls**. On iPad /
-   regular width this becomes a **two-pane** layout (object left, method + controls right); on
-   iPhone it's a single vertical column.
-5. **Stats / Tasks** — total level, per-skill levels, unlock thresholds, the Diary's achievement-Task
-   checklist, and each skill's **current perk** (icon, name, and live magnitude) so you can see
-   exactly what every level is buying you.
-6. **Settings** — haptics/sound toggles, reset progress, about + OSRS-inspired disclaimer.
+   multiplier. Tap "+X" pops highlight **crits, extra hits, and cache windfalls**. It's a single
+   vertical column on both iPhone and iPad, height-capped and centered so the object doesn't float
+   on large canvases.
+5. **Raids** — one raid per skill category, whose tier scales with the group's **average** level.
+   Each raid is a short themed minigame (combat, production, utility, gathering) played once per
+   day; clearing it awards a tier-colored **Lamp** you apply to any skill in that group for a burst
+   of XP (XP scales with the chosen skill's level).
+6. **Shop** — spend **Tokens** on Boost Coupons and Energy Cells, or buy Tokens with real money via
+   StoreKit Token Packs.
+7. **Diary** — themed Task diaries (one per category plus Idler / Tycoon / Completionist) with an
+   Overview (Token balance, overall completion, closest Tasks) and an All-Tasks list. Completing
+   Tasks earns Tokens; clearing a whole tier grants an escalating landmark bonus.
+8. **Settings** — overview stats (total level, per-skill levels), haptics/sound toggles, reset
+   progress, about + OSRS-inspired disclaimer.
+
+Navigation is a **custom bottom tab bar** — **Skills · Raids · Shop · Diary · Settings** — placed
+identically on iPhone and iPad. (There is no separate Stats screen: overview stats live in
+Settings, the achievements checklist folds into the Diary's Tasks, and per-skill perk descriptors
+live on the Skills hub.)
 
 ## 7. Visual & audio direction
 
@@ -171,9 +186,8 @@ regenerate or re-pick the cues.
 ## 8. Technical architecture
 
 - **SwiftUI**, iOS 17+, **universal (iPhone + iPad)**, MVVM. Responsive layouts via adaptive
-  grids and `horizontalSizeClass` (two-pane training on regular width); content is width-capped
-  and centered so it reads well on large iPad canvases. iPhone is portrait; iPad supports all
-  orientations.
+  stacks and `horizontalSizeClass`; content is width-capped and centered so it reads well on large
+  iPad canvases. iPhone is portrait; iPad supports all orientations.
 - Single source of truth: `GameState` (`ObservableObject`) holds XP, slots, Energy, and
   Supercharge timers; exposes derived values (level, total level, max slots, current method/tier,
   supercharge multiplier).
@@ -198,8 +212,9 @@ regenerate or re-pick the cues.
 | Slot eligibility | skill level ≥ 10 |
 | Slot 2 / Slot 3 unlock | total level 100 / 300 |
 | Supercharge multiplier | flat **×2** tap multiplier (Prayer's *Blessing* perk adds up to +5) |
-| Daily Boost | 1.5× all XP for 5 min (base; Magic/Herblore perks scale ×/duration); 1 free coupon/day; IAP packs of 5 / 25 / 100 |
-| Energy Cells | Consumable that instantly refills every slotted skill to its Energy cap; IAP packs of 3 / 10 / 30 |
+| Daily Boost | 1.5× all XP for 5 min (base; Magic/Herblore perks scale ×/duration); 1 free coupon/day; extra Boost Coupons cost **250 Tokens** each in the Shop |
+| Energy Cells | Consumable that instantly fills the skill you're training to its Energy cap; **100 Tokens** each in the Shop |
+| Tokens | Single spendable currency — earned from Diary Tasks, or bought as Token Packs (500 / 3,000 / 7,500) via IAP; spent on Boost Coupons (250) and Energy Cells (100) |
 | Skill perks | 23 unique account-wide buffs, each neutral at level 1 and scaling to its level-99 value (`Balance.buffScaling`) — see [SKILL_BUFFS.md](SKILL_BUFFS.md) |
 
 ## 10. Professional critique (indie-dev self-review)
@@ -222,8 +237,9 @@ regenerate or re-pick the cues.
    Energy-banking. *Mitigation:* the reduced base rate and per-skill caps keep active tapping +
    Supercharge bursts primary; all are one-line tunables in `Balance.swift` if returns feel too
    strong or too weak.
-3. **Onboarding could overload** with four concepts. *Mitigation:* keep cards short and
-   reinforce Energy/Supercharge contextually the first time a skill is slotted.
+3. **Onboarding could overload** with too many concepts up front. *Mitigation:* keep the six
+   cards short and skippable, and reinforce Energy/Supercharge contextually the first time a skill
+   is slotted.
 4. **HP/Prayer abstraction** deviates from OSRS. *Mitigation:* accepted for a tapper; noted.
 
 **Verdict:** the loop is fun and shippable. Ship v1 faithful to the spec with fully tunable
@@ -246,8 +262,8 @@ for permanent power (permanent power comes from the skill perks in [§4](#4-skil
 - **Daily Boost coupons** — activate one to earn **1.5× XP on every skill for 5 minutes** (base
   values) — taps, Supercharge taps, and passive slot XP alike. The multiplier stacks
   *multiplicatively* with Supercharge (e.g. ×2 tap → ×3 while boosted).
-- **Energy Cells** — spend one to **instantly refill every slotted skill to its Energy cap**, so
-  you can Supercharge on demand instead of waiting out the real-time charge.
+- **Energy Cells** — spend one to **instantly fill the skill you're currently training to its
+  Energy cap**, so you can Supercharge on demand instead of waiting out the real-time build-up.
 
 Skill perks feed both economies rather than competing with them: **Magic** raises the Daily Boost
 multiplier above 1.5×, **Herblore** extends the duration past 5 minutes, **Thieving** grants more
@@ -264,23 +280,23 @@ synergize instead of one obsoleting the other.
   sessions.
 - **Energy Cells are inventory.** Each is a one-tap "skip the wait" — it never raises the cap or
   the multiplier, only fills the meter you already have, so it sells *convenience*, not power.
-- **In-app purchases (StoreKit 2, consumables):** two product families —
-  coupons as Pouch (5) / Sack (25) / Chest (100) and Energy Cells as Spark (3) / Charged (10) /
-  Power Core (30). Real purchase + transaction verification; a local `Config/Products.storekit`
-  file drives testing in the simulator, and a DEBUG mock catalog keeps the store UI renderable
-  offline. Both families remain purchasable at all times, so a player can always buy an XP
-  multiplier *or* Energy.
+- **Tokens & in-app purchases (StoreKit 2, consumables):** the game runs on a **single spendable
+  currency — Tokens**. You *earn* Tokens by completing Diary Tasks, or *buy* them outright as
+  **Token Packs** — Pouch (500) / Sack (3,000) / Chest (7,500) — with real money. Tokens are then
+  *spent* in the **Shop** tab on **Boost Coupons (250 each)** and **Energy Cells (100 each)**. Real
+  purchase + transaction verification; a local `Config/Products.storekit` file drives simulator
+  testing, and a DEBUG mock catalog keeps the store UI renderable offline. Paying is always
+  optional — Tokens are fully earnable in-game.
 
 **UX.**
-- A violet **Daily Boost & Energy card** on the Home hub shows either "Tap to activate" (+ coupon
-  count) or a live **×N XP ACTIVE · M:SS** countdown (the multiplier reflects the player's live
-  Magic-perk value, not a hard-coded 1.5×).
+- The **Skills** hub shows the live **XP Boost** banner (×N XP · M:SS countdown) whenever a boost
+  is running; the multiplier reflects the player's live Magic-perk value, not a hard-coded 1.5×.
 - The training screen shows a live **×N** Daily Boost badge next to the Supercharge badge (which
   itself shows the Prayer-inclusive effective multiplier) so the stacked multiplier is legible,
-  and tap "+X" pops reflect the true per-tap amount. When you hold Energy Cells, a **Use Cell**
-  quick action appears right in the Energy control to recharge on the spot.
-- A dedicated **Boosts sheet** handles Daily Boost activation, coupon balance, Energy Cell use, and
-  both storefronts.
+  and tap "+X" pops reflect the true per-tap amount. When you hold Energy Cells, a **Fill** quick
+  action appears right in the Energy control to recharge on the spot.
+- The **Shop** tab handles Boost activation, coupon/cell balances and use, and the Token
+  storefront (earned-and-bought Tokens spent on Boost Coupons and Energy Cells).
 - Daily rewards, purchases, and cell use surface a top toast.
 
 **Monetization critique (indie-dev self-review).**
