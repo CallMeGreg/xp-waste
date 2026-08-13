@@ -27,11 +27,6 @@ struct WelcomeBackView: View {
             .background(GameBackground())
             .navigationTitle("Welcome Back")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
-            }
         }
         .presentationDragIndicator(.visible)
     }

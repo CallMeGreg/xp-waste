@@ -150,7 +150,7 @@ enum Balance {
         .mining:       BuffScaling(at1: maxEnergySeconds, at99: 60.0), // deep reserves: Energy cap (seconds)
         .farming:      BuffScaling(at1: 1.0,   at99: 2.0),    // patient growth: offline XP efficiency ×
         .hunter:       BuffScaling(at1: 1.0,   at99: 5.0),    // trapper: OFFLINE passive XP rate × (app closed)
-        // Artisan — production & the boost economy
+        // Production — crafting output & the boost economy
         .cooking:      BuffScaling(at1: 0.0,   at99: 0.50),   // well fed: +fraction to all tap XP
         .firemaking:   BuffScaling(at1: 1.0,   at99: 2.0),    // slow burn: Supercharge duration ×
         .crafting:     BuffScaling(at1: 2.0,   at99: 4.0),    // masterwork: crit magnitude ×
@@ -159,7 +159,7 @@ enum Balance {
         .herblore:     BuffScaling(at1: 0.0,   at99: 300.0),  // alchemist: +seconds to Daily Boost duration
         .runecraft:    BuffScaling(at1: 0.0,   at99: 3.0),    // runic automaton: auto-taps per second
         .construction: BuffScaling(at1: maxOfflineHours, at99: 48.0), // workshop: OFFLINE accrual cap (hours), neutral at the base cap
-        // Support — tempo & meta
+        // Utility — tempo & meta
         .agility:      BuffScaling(at1: 1.0,   at99: 1.6),    // momentum: tap-streak combo ceiling ×
         .thieving:     BuffScaling(at1: 0.0,   at99: 0.5),    // pickpocket: chance to refund a spent coupon / Supercharge
         .slayer:       BuffScaling(at1: 0.0,   at99: 0.15)    // assassinate: crit chance
@@ -186,23 +186,15 @@ enum Balance {
     /// otherwise the clock is the fail deadline. Reward scales with this (see `raidRapidTapsPerMinute`).
     static let raidDurationSeconds: Double = 180
 
-    /// Reference "rapid tapping" rate used to price a lamp. A lamp is worth roughly this many taps
-    /// per minute × the target skill's XP-per-tap × the raid length × `raidRewardMultiplier`. It's a
-    /// deliberate anchor for the 5× promise, not a measurement of any given player.
-    static let raidRapidTapsPerMinute: Double = 300
-
-    /// A raid lamp is worth ~this multiple of the XP you'd earn tapping the target skill for the
-    /// raid's duration. The headline "raids ≈ 3× tapping" lever — deliberately generous so a
-    /// cleared raid outweighs rapid tapping even once a group's skills reach the top (Rune) tier.
-    static let raidRewardMultiplier: Double = 3.0
-
     /// How many raids each skill group can be attempted per calendar day. One shot: a completed
     /// attempt (win *or* loss) spends the day for that group.
     static let raidsPerGroupPerDay: Int = 1
 
-    /// Explicit per-tier reward multiplier (index = raid tier 0…5, i.e. Bronze → Rune). Lets a
-    /// designer make higher-tier raids extra-rewarding without touching gameplay or view code.
-    static let raidTierRewardBonus: [Double] = [1.0, 1.2, 1.5, 2.0, 3.0, 5.0]
+    /// Per-raid-tier lamp value coefficient (index = raid tier 0…5, Bronze → Rune). A lamp applied
+    /// to a skill grants `skillLevel × coefficient` XP, so a lamp's worth scales with the skill's
+    /// exact level and grows exponentially across tiers (Bronze→Iron is a small step; Adamant→Rune
+    /// a large one). Re-balancing lamps is a one-line change here — no gameplay or view code.
+    static let lampTierCoefficients: [Int] = [500, 900, 1650, 3000, 5500, 10000]
 
     /// Per-tier difficulty knobs the four raid loops read, selected by a group's raid tier (0…5).
     /// Ascending difficulty: the goal climbs while the windows tighten and decoys multiply.
@@ -234,9 +226,9 @@ enum Balance {
         raidTierParams[min(max(tier, 0), raidTierParams.count - 1)]
     }
 
-    /// Reward multiplier for a given raid tier (clamped; default 1.0).
-    static func raidTierBonus(forTier tier: Int) -> Double {
-        raidTierRewardBonus[min(max(tier, 0), raidTierRewardBonus.count - 1)]
+    /// Lamp value coefficient for a given raid tier (clamped to the table).
+    static func lampCoefficient(forTier tier: Int) -> Int {
+        lampTierCoefficients[min(max(tier, 0), lampTierCoefficients.count - 1)]
     }
 
     // MARK: Rewards (Diary — Tasks & universal Tokens)
@@ -259,8 +251,17 @@ enum Balance {
         static let tokensElite = 70
         static let tokensMaster = 150
 
-        /// Flat Token bonus for completing *every* Task in one Diary tier (a landmark reward).
-        static let diaryTierBonus = 50
+        /// Token bonus for completing *every* Task in one Diary tier (a landmark reward), scaled by
+        /// tier difficulty so clearing a harder tier is worth more.
+        static func diaryTierBonus(for tier: TaskTier) -> Int {
+            switch tier {
+            case .easy:   return 25
+            case .medium: return 50
+            case .hard:   return 100
+            case .elite:  return 200
+            case .master: return 400
+            }
+        }
 
         // MARK: Shop prices — Tokens spent to acquire a consumable
 

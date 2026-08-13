@@ -14,7 +14,6 @@
 		1B016D853D344ACEEF19BEAD /* GameState+Rewards.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC65032C570084FABF084B0A /* GameState+Rewards.swift */; };
 		328EA7B55C24ADE345DA0687 /* Raid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5520666392607253DEAFDB12 /* Raid.swift */; };
 		3EC3B8B37F118C12BFA96869 /* sfx_supercharge.wav in Resources */ = {isa = PBXBuildFile; fileRef = 68F7EDB17BC84F7AA4F6F609 /* sfx_supercharge.wav */; };
-		42E3FC858C8AAA216E97261C /* SkillTileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A73F31CA01FA254794325B62 /* SkillTileView.swift */; };
 		4CD930F2481D373399C70C87 /* SkillBuff.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA92635CDC1688C41F943B2E /* SkillBuff.swift */; };
 		55350A696836F8EFBC5340E6 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1C4A48A3AB2D27D55890FB /* RootView.swift */; };
 		5B1E2E8A0E04A2D6DBDA58C3 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2089696249D42DE662D0E79 /* SettingsView.swift */; };
@@ -64,7 +63,6 @@
 		852367EAB33B20BA0A578E99 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		9882C06F47069BFA64F36A2C /* sfx_ui.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_ui.wav; sourceTree = "<group>"; };
 		A234E12FEEC3048572025502 /* SkillID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillID.swift; sourceTree = "<group>"; };
-		A73F31CA01FA254794325B62 /* SkillTileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillTileView.swift; sourceTree = "<group>"; };
 		AD95D4A980FDA0DE23EEB24F /* RaidSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaidSessionView.swift; sourceTree = "<group>"; };
 		AF5A40F0D52C34D7005A153B /* sfx_doublexp.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_doublexp.wav; sourceTree = "<group>"; };
 		B3F92A66FDB037CF549DD065 /* XPWaste.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = XPWaste.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -101,7 +99,6 @@
 				7E4257F5FE849B93235C6A28 /* RaidsView.swift */,
 				5A1C4A48A3AB2D27D55890FB /* RootView.swift */,
 				C2089696249D42DE662D0E79 /* SettingsView.swift */,
-				A73F31CA01FA254794325B62 /* SkillTileView.swift */,
 				03B8C0EA791C2B43261579F9 /* SkillTrainingView.swift */,
 				59886A67FF636EED9ED92699 /* WelcomeBackView.swift */,
 			);
@@ -270,7 +267,6 @@
 				5B1E2E8A0E04A2D6DBDA58C3 /* SettingsView.swift in Sources */,
 				4CD930F2481D373399C70C87 /* SkillBuff.swift in Sources */,
 				CB95F8778113B507E3F72F71 /* SkillID.swift in Sources */,
-				42E3FC858C8AAA216E97261C /* SkillTileView.swift in Sources */,
 				B4CA291C706944B984EB3FC4 /* SkillTrainingView.swift in Sources */,
 				6DC984F16490608EBEA333A0 /* SoundManager.swift in Sources */,
 				8F6200F872C157763621F772 /* Store.swift in Sources */,

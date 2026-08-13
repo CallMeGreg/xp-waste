@@ -70,7 +70,7 @@ extension GameState {
             guard checkedGroups.insert(key).inserted, !claimedDiaryTiers.contains(key) else { continue }
             if TaskCatalog.group(task.diary, task.tier).allSatisfy({ completedTasks.contains($0.id) }) {
                 claimedDiaryTiers.insert(key)
-                awarded += Balance.Rewards.diaryTierBonus
+                awarded += Balance.Rewards.diaryTierBonus(for: task.tier)
                 completedGroups.append((task.diary, task.tier))
             }
         }

@@ -17,7 +17,7 @@ enum BuffKind {
     case energyCap           // Mining: raises the maximum bankable Energy
     case offline             // Farming: keeps more idle XP while the app is closed
     case offlineRate         // Hunter: multiplies OFFLINE passive XP (app closed)
-    // Artisan — production & the boost economy
+    // Production — crafting output & the boost economy
     case tapPercent          // Cooking: +% XP on every tap
     case superchargeDuration // Firemaking: Supercharge bursts last longer
     case critMagnitude       // Crafting: critical taps hit harder
@@ -26,7 +26,7 @@ enum BuffKind {
     case doubleXPDuration    // Herblore: Daily Boosts last longer
     case autoTap             // Runecraft: auto-taps the open skill
     case offlineCap          // Construction: raises the OFFLINE accrual cap (hours)
-    // Support — tempo & meta
+    // Utility — tempo & meta
     case combo               // Agility: tap-streak combo multiplier
     case refund              // Thieving: chance to refund a spent coupon or Supercharge
     case critChance          // Slayer: chance for a critical tap
@@ -48,7 +48,7 @@ extension SkillID {
         // MARK: Combat
         case .attack:
             return SkillBuffInfo(kind: .accuracy, name: "Accuracy", icon: "scope",
-                                 blurb: "Skews every tap toward its max hit — fewer low rolls.")
+                                 blurb: "Skews every tap toward its full value — fewer low rolls.")
         case .strength:
             return SkillBuffInfo(kind: .maxHit, name: "Power", icon: "bolt.fill",
                                  blurb: "Raises the ceiling of every tap — a chance for bigger clicks.")
@@ -57,16 +57,16 @@ extension SkillID {
                                  blurb: "Raises the guaranteed floor of every tap.")
         case .hitpoints:
             return SkillBuffInfo(kind: .energyRate, name: "Vitality", icon: "heart.fill",
-                                 blurb: "Banks more Supercharge Energy each time a tap sparks a charge.")
+                                 blurb: "Banks more Supercharge Energy each time a tap sparks it.")
         case .ranged:
             return SkillBuffInfo(kind: .extraHit, name: "Rapid Fire", icon: "arrow.up.forward.app.fill",
-                                 blurb: "Chance for a tap to land an extra hit.")
+                                 blurb: "Chance for a tap to land a bonus hit.")
         case .prayer:
             return SkillBuffInfo(kind: .superchargeBonus, name: "Blessing", icon: "sparkle",
                                  blurb: "Adds to your active Supercharge multiplier.")
         case .magic:
             return SkillBuffInfo(kind: .doubleXPPotency, name: "Enchantment", icon: "wand.and.stars",
-                                 blurb: "Empowers the XP Boost beyond 1.5×.")
+                                 blurb: "Empowers your XP Boost — a stronger multiplier the more you level Magic.")
 
         // MARK: Gathering
         case .woodcutting:
@@ -85,7 +85,7 @@ extension SkillID {
             return SkillBuffInfo(kind: .offlineRate, name: "Trapper", icon: "timer",
                                  blurb: "Traps keep working while you're away — faster offline XP.")
 
-        // MARK: Artisan
+        // MARK: Production
         case .cooking:
             return SkillBuffInfo(kind: .tapPercent, name: "Well Fed", icon: "fork.knife",
                                  blurb: "+% XP on every tap, on every skill.")
@@ -111,7 +111,7 @@ extension SkillID {
             return SkillBuffInfo(kind: .offlineCap, name: "Workshop", icon: "wrench.and.screwdriver.fill",
                                  blurb: "Your workshop banks more hours of offline progress.")
 
-        // MARK: Support
+        // MARK: Utility
         case .agility:
             return SkillBuffInfo(kind: .combo, name: "Momentum", icon: "figure.run",
                                  blurb: "Fast tapping builds a combo multiplier.")

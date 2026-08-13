@@ -2,16 +2,25 @@ import SwiftUI
 
 /// Compact number formatting helpers (1,154 · 12.3K · 6.52M).
 enum Format {
-    static func abbrev(_ value: Int) -> String {
-        switch abs(value) {
-        case 1_000_000...:
-            return String(format: "%.2fM", Double(value) / 1_000_000)
-        case 100_000...:
-            return String(format: "%.0fK", Double(value) / 1_000)
-        case 10_000...:
-            return String(format: "%.1fK", Double(value) / 1_000)
-        default:
-            return value.formatted()
+    static func abbrev(_ value: Int) -> String { formatAbbrev(value, compact: false) }
+
+    /// Always-abbreviated form for tight, uniform columns (e.g. the lamp Apply sheet): values in the
+    /// thousands render as K with extra precision (9,720 → "9.72K") so no row shows a bare 4–5 digit
+    /// number beside abbreviated ones.
+    static func abbrevCompact(_ value: Int) -> String { formatAbbrev(value, compact: true) }
+
+    private static func formatAbbrev(_ value: Int, compact: Bool) -> String {
+        let v = Double(value)
+        let a = abs(v)
+        // Round at the unit's display precision *first* so 999,950 rolls up to "1.00M", never "1000K".
+        if a >= 1_000_000 || (a >= 100_000 && (a / 1_000).rounded() >= 1_000) {
+            return String(format: "%.2fM", v / 1_000_000)
+        }
+        switch a {
+        case 100_000...: return String(format: "%.0fK", v / 1_000)
+        case 10_000...:  return String(format: "%.1fK", v / 1_000)
+        case 1_000...:   return compact ? String(format: "%.2fK", v / 1_000) : value.formatted()
+        default:         return value.formatted()
         }
     }
 

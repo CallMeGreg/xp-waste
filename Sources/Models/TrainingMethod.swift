@@ -105,7 +105,7 @@ extension SkillID {
                 TrainingMethod(name: "Cast Water Bolt", art: .symbol("wand.and.stars"), tint: Palette.rgb(0.36, 0.62, 0.92), shortName: "Water Bolt"),
                 TrainingMethod(name: "Cast Fire Blast", art: .symbol("wand.and.stars"), tint: Palette.rgb(0.94, 0.38, 0.22), shortName: "Fire Blast"),
                 TrainingMethod(name: "Cast Earth Wave", art: .symbol("wand.and.stars"), tint: Palette.rgb(0.55, 0.45, 0.30), shortName: "Earth Wave"),
-                TrainingMethod(name: "Cast Fire Surge", art: .symbol("wand.and.stars"), tint: Palette.rgb(0.74, 0.86, 1.00), shortName: "Fire Surge")
+                TrainingMethod(name: "Cast Fire Surge", art: .symbol("wand.and.stars"), tint: Palette.rgb(0.98, 0.44, 0.18), shortName: "Fire Surge")
             ])
 
         // MARK: Gathering
@@ -140,14 +140,15 @@ extension SkillID {
                 TrainingMethod(name: "Mine runite ore", art: .vector(.ore), tint: Palette.rgb(0.28, 0.74, 0.80), shortName: "Runite ore")
             ])
         case .farming:
-            // One leaf, humble crop → magic sapling.
+            // Produce progression: root crops → leafy crop → orchard trees (magic sapling capstone),
+            // so the object visibly changes as you level rather than staying one leaf throughout.
             return tiered([
-                TrainingMethod(name: "Plant potatoes", art: .symbol("leaf.fill"), tint: Palette.rgb(0.66, 0.56, 0.34), shortName: "Potatoes"),
-                TrainingMethod(name: "Grow onions", art: .symbol("leaf.fill"), tint: Palette.rgb(0.82, 0.74, 0.46), shortName: "Onions"),
+                TrainingMethod(name: "Plant potatoes", art: .symbol("carrot.fill"), tint: Palette.rgb(0.66, 0.56, 0.34), shortName: "Potatoes"),
+                TrainingMethod(name: "Grow onions", art: .symbol("carrot.fill"), tint: Palette.rgb(0.82, 0.74, 0.46), shortName: "Onions"),
                 TrainingMethod(name: "Tend tomatoes", art: .symbol("leaf.fill"), tint: Palette.rgb(0.86, 0.35, 0.30), shortName: "Tomatoes"),
-                TrainingMethod(name: "Raise apple trees", art: .symbol("leaf.fill"), tint: Palette.rgb(0.50, 0.66, 0.36), shortName: "Apple trees"),
-                TrainingMethod(name: "Plant papaya trees", art: .symbol("leaf.fill"), tint: Palette.rgb(0.38, 0.64, 0.34), shortName: "Papaya trees"),
-                TrainingMethod(name: "Grow magic saplings", art: .symbol("leaf.fill"), tint: Palette.rgb(0.52, 0.74, 0.95), shortName: "Magic saplings")
+                TrainingMethod(name: "Raise apple trees", art: .symbol("tree.fill"), tint: Palette.rgb(0.50, 0.66, 0.36), shortName: "Apple trees"),
+                TrainingMethod(name: "Plant papaya trees", art: .symbol("tree.fill"), tint: Palette.rgb(0.38, 0.64, 0.34), shortName: "Papaya trees"),
+                TrainingMethod(name: "Grow magic saplings", art: .symbol("tree.fill"), tint: Palette.rgb(0.52, 0.74, 0.95), shortName: "Magic saplings")
             ])
         case .hunter:
             // One track, common quarry → herbiboar.
@@ -160,7 +161,7 @@ extension SkillID {
                 TrainingMethod(name: "Track herbiboars", art: .symbol("pawprint.fill"), tint: Palette.rgb(0.58, 0.52, 0.42), shortName: "Herbiboars")
             ])
 
-        // MARK: Artisan
+        // MARK: Production
         case .cooking:
             // One meal, bread → summer pie.
             return tiered([
@@ -243,7 +244,7 @@ extension SkillID {
                 TrainingMethod(name: "Build ornate pools", art: .symbol("house.fill"), tint: Palette.rgb(0.40, 0.68, 0.90), shortName: "Ornate pools")
             ])
 
-        // MARK: Support
+        // MARK: Utility
         case .agility:
             // One runner, Gnome course → Ardougne rooftops.
             return tiered([

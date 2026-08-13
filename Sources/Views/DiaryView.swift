@@ -71,7 +71,7 @@ private struct TokenBalanceCard: View {
                     .foregroundStyle(Color.rewardToken)
             }
             VStack(alignment: .leading, spacing: 1) {
-                Text("REWARD TOKENS").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
+                Text("TOKENS").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
                 Text("\(game.tokens)")
                     .font(.system(size: 30, weight: .heavy, design: .rounded)).monospacedDigit()
                 Text("Earned by completing Tasks").font(.caption2).foregroundStyle(.secondary)
@@ -125,7 +125,7 @@ private struct DiaryOverview: View {
             XPProgressBar(progress: total > 0 ? Double(done) / Double(total) : 0,
                           tint: .rewardToken, height: 8)
             Text(done == total ? "Every Task complete — you legend."
-                               : "Complete Tasks to earn Reward Tokens.")
+                               : "Complete Tasks to earn Tokens.")
                 .font(.caption2).foregroundStyle(.secondary)
         }
         .padding(16)
@@ -248,7 +248,7 @@ struct TaskDiaryDetailView: View {
                 .background(tier.tint.opacity(0.22), in: Capsule())
                 .overlay(Capsule().strokeBorder(tier.tint.opacity(0.5)))
                 .foregroundStyle(tier.tint)
-            Text("+\(Balance.Rewards.diaryTierBonus) bonus")
+            Text("+\(Balance.Rewards.diaryTierBonus(for: tier)) bonus")
                 .font(.caption2).foregroundStyle(.secondary)
             Spacer()
             if complete {

@@ -8,6 +8,7 @@ struct TapPop: Identifiable {
     var crit: Bool = false
     var special: Bool = false
     var idle: Bool = false
+    var icon: String? = nil
 }
 
 /// Animates a `TapPop` upward and fades it out.
@@ -29,8 +30,15 @@ struct PopView: View {
         return pop.special ? .orange : tint
     }
 
+    private var label: Text {
+        if let icon = pop.icon {
+            return Text(Image(systemName: icon)) + Text(" \(pop.text)")
+        }
+        return Text(pop.text)
+    }
+
     var body: some View {
-        Text(pop.text)
+        label
             .font(.system(size: fontSize, weight: pop.idle ? .semibold : .heavy, design: .rounded))
             .foregroundStyle(color)
             .opacity(pop.idle ? 0.9 : 1)
@@ -86,7 +94,7 @@ struct SkillTrainingView: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 10)
             }
-            .frame(maxWidth: 640)
+            .frame(maxWidth: 640, maxHeight: 820)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .navigationTitle(skill.displayName)
@@ -168,10 +176,11 @@ struct SkillTrainingView: View {
 
     // MARK: Charge → burst pill (teaches the payoff, no prose)
 
-    /// A single capsule reading `⚡ charge → 🔥 burst`. It shows the banked amount and the burst it
-    /// would buy (with a READY / ACTIVE badge). Every skill can build charge by tapping, so the
+    /// A single capsule reading `⚡ Energy → 🔥 Supercharge`. It shows the banked Energy and the burst
+    /// it would buy (with a READY / ACTIVE badge). Every skill can build Energy by tapping, so the
     /// readout is always shown — when empty, the burst slot nudges the player to tap. The numeric
-    /// `banked/cap` doubles as the fill readout, so no separate progress bar is needed.
+    /// `banked/cap` doubles as the fill readout, so no separate progress bar is needed. While a burst
+    /// is live the readout reads "Supercharged" and the banked Energy keeps building toward the next.
     @ViewBuilder
     private func chargePill(supercharged: Bool, ready: Bool, banked: Double) -> some View {
         let cap = Int(game.energyCapSeconds)
@@ -183,8 +192,8 @@ struct SkillTrainingView: View {
                 .font(.caption.weight(.bold)).monospacedDigit().foregroundStyle(.primary)
             Text("→").font(.caption.weight(.bold)).foregroundStyle(.secondary)
             controlGlyph(.flame, .orange, size: 13)
-            Text(burst > 0 ? "\(burst)s XP boost" : "Tap to build charge")
-                .font(.caption.weight(.bold)).foregroundStyle(burst > 0 ? .orange : .secondary)
+            Text(supercharged ? "Supercharged" : (burst > 0 ? "\(burst)s Supercharge" : "Tap to build Energy"))
+                .font(.caption.weight(.bold)).foregroundStyle(supercharged || burst > 0 ? .orange : .secondary)
                 .lineLimit(1).minimumScaleFactor(0.8)
             Spacer(minLength: 4)
             if supercharged { pillBadge("ACTIVE") }
@@ -274,16 +283,14 @@ struct SkillTrainingView: View {
             }
             .buttonStyle(PressableStyle())
         } else {
+            // Disabled only when no Energy is banked — the charge pill above already shows the
+            // "Tap to build Energy" nudge, so the CTA stays a single clean line (no duplicate copy).
             primaryLabel(title: "Supercharge (×\(game.effectiveSuperchargeMultiplier) XP)",
-                         subtitle: superchargeDisabledReason,
+                         subtitle: nil,
                          fg: .secondary, bg: Color.white.opacity(0.06),
                          stroke: Color.white.opacity(0.08))
         }
     }
-
-    /// Why the Supercharge button is currently unavailable, phrased as the next step to take.
-    /// Charge now comes from tapping at any level, so the nudge is always the same.
-    private var superchargeDisabledReason: String { "Tap to build charge" }
 
     /// Explicit Energy Cell action: a labelled battery button with the owned count that opens a
     /// confirmation before spending a cell to instantly fill *this* skill's Supercharge charge.
@@ -571,9 +578,13 @@ struct SkillTrainingView: View {
             .shadow(color: supercharged ? .orange.opacity(0.6) : .black.opacity(0.35),
                     radius: supercharged ? 22 : 12)
 
-            ForEach(pops) { pop in
-                PopView(pop: pop, tint: supercharged ? .orange : (game.isDoubleXPActive ? .doubleXP : skill.tint))
+            ZStack {
+                ForEach(pops) { pop in
+                    PopView(pop: pop, tint: supercharged ? .orange : (game.isDoubleXPActive ? .doubleXP : skill.tint))
+                }
             }
+            .offset(y: -diameter * 0.34)
+            .allowsHitTesting(false)
         }
         .frame(height: diameter * 1.15)
         .overlay(alignment: .bottom) {
@@ -625,14 +636,14 @@ struct SkillTrainingView: View {
         let text = result.didCrit ? "✦ +\(result.xp)!" : "+\(result.xp)"
         addPop(TapPop(text: text, x: .random(in: -34...34), crit: result.didCrit))
         if result.extraHits > 0 {
-            addPop(TapPop(text: "＋\(result.extraHits) hit\(result.extraHits == 1 ? "" : "s")",
-                          x: .random(in: -48...48), special: true))
+            addPop(TapPop(text: "+\(result.extraHits) hit\(result.extraHits == 1 ? "" : "s")",
+                          x: .random(in: -48...48), special: true, icon: "plus.circle.fill"))
         }
         if result.gotCache {
-            addPop(TapPop(text: "🪹 cache!", x: .random(in: -48...48), special: true))
+            addPop(TapPop(text: "cache!", x: .random(in: -48...48), special: true, icon: "gift.fill"))
         }
         if result.gotEnergy {
-            addPop(TapPop(text: "⚡︎ energy", x: .random(in: -48...48), special: true))
+            addPop(TapPop(text: "Energy", x: .random(in: -48...48), special: true, icon: "bolt.fill"))
         }
     }
 

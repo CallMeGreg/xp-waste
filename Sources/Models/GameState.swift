@@ -7,6 +7,13 @@ struct LevelUpEvent: Identifiable, Equatable {
     let newLevel: Int
 }
 
+/// A transient, user-facing toast message (daily reward, purchase, raid result, …). Carries an SF
+/// Symbol rendered beside the text so the app never embeds emoji in copy.
+struct Notice: Equatable, Hashable {
+    var icon: String
+    var text: String
+}
+
 /// Summary of the XP each *slotted* skill earned while the app was closed, surfaced as a
 /// "welcome back" sheet on return. Transient UI state — never persisted.
 struct OfflineProgress: Identifiable, Equatable {
@@ -139,7 +146,7 @@ final class GameState: ObservableObject {
     @Published var offlineProgress: OfflineProgress?
 
     /// Transient, user-facing message surfaced as a toast (daily reward, purchase, etc.).
-    @Published var notice: String?
+    @Published var notice: Notice?
 
     // MARK: Runtime-only state
     private var isForeground: Bool = true
@@ -313,7 +320,7 @@ final class GameState: ObservableObject {
     /// Hunter "Trapper": multiplies OFFLINE passive XP (app closed). Neutral ×1 at level 1.
     var offlineRateMultiplier: Double { buffRaw(.hunter) }
 
-    // Artisan — production & boosts
+    // Production — crafting output & boosts
     var tapXPMultiplier: Double { 1 + buffRaw(.cooking) }
     var superchargeDurationMultiplier: Double { buffRaw(.firemaking) }
     var critMagnitude: Double { buffRaw(.crafting) }
@@ -325,7 +332,7 @@ final class GameState: ObservableObject {
     /// Construction "Workshop": raises the OFFLINE accrual cap (hours). Neutral at `Balance.maxOfflineHours` (level 1).
     var offlineCapHours: Double { max(Balance.maxOfflineHours, buffRaw(.construction)) }
 
-    // Support — tempo & meta
+    // Utility — tempo & meta
     var comboCeiling: Double { buffRaw(.agility) }
     /// Thieving "Pickpocket": chance (0…1) to refund a spent coupon or Supercharge.
     var refundChance: Double { buffRaw(.thieving) }
@@ -459,30 +466,36 @@ final class GameState: ObservableObject {
     private func formattedBuff(_ skill: SkillID, atLevel lvl: Int) -> String {
         guard let scaling = Balance.buffScaling[skill] else { return "—" }
         let v = Balance.buffValue(level: lvl, scaling: scaling)
+        // When a perk's magnitude still rounds to zero at its display precision, hide the bare "+0"
+        // and tell the player it will grow — perks are strictly additive as you level.
+        func z(_ magnitude: Double, places: Int, _ body: () -> String) -> String {
+            let f = pow(10.0, Double(places))
+            return (magnitude * f).rounded() == 0 ? "Grows as you level" : body()
+        }
         switch skill.buff.kind {
-        case .accuracy:            return String(format: "avg roll %.0f%% of max hit", (1 + v) / (2 + v) * 100)
-        case .maxHit:              return String(format: "+%.0f%% max hit", (v - 1) * 100)
-        case .minHit:              return String(format: "+%.0f%% min hit", (v - 1) * 100)
-        case .energyRate:          return String(format: "×%.2f Energy per proc", v)
-        case .extraHit:            return String(format: "%.0f%% extra hit", v * 100)
-        case .superchargeBonus:    return String(format: "+%.0f Supercharge multiplier", v)
-        case .doubleXPPotency:     return String(format: "%.2f× XP Boost", v)
-        case .cache:               return String(format: "%.0f%% bonus cache", v * 100)
-        case .energyProc:          return String(format: "%.2f%% charge chance per tap", Balance.baseEnergyTapChance * v * 100)
+        case .accuracy:            return String(format: "~%.0f%% of full tap XP on average", (1 + v) / (2 + v) * 100)
+        case .maxHit:              return z((v - 1) * 100, places: 0) { String(format: "+%.0f%% max tap XP", (v - 1) * 100) }
+        case .minHit:              return z((v - 1) * 100, places: 0) { String(format: "+%.0f%% min tap XP", (v - 1) * 100) }
+        case .energyRate:          return z(v - 1, places: 2) { String(format: "×%.2f Energy per trigger", v) }
+        case .extraHit:            return z(v * 100, places: 0) { String(format: "+%.0f%% bonus-tap chance", v * 100) }
+        case .superchargeBonus:    return z(v, places: 0) { String(format: "+%.0f Supercharge multiplier", v) }
+        case .doubleXPPotency:     return String(format: "×%.2f Boost potency", v)
+        case .cache:               return z(v * 100, places: 0) { String(format: "+%.0f%% bonus-XP chance", v * 100) }
+        case .energyProc:          return z(Balance.baseEnergyTapChance * v * 100, places: 2) { String(format: "+%.2f%% Energy chance per tap", Balance.baseEnergyTapChance * v * 100) }
         case .energyCap:           return String(format: "%.0fs Energy cap", max(Balance.maxEnergySeconds, v))
-        case .offline:             return String(format: "×%.2f offline XP kept", v)
-        case .offlineRate:         return String(format: "×%.2f offline XP rate", v)
-        case .tapPercent:          return String(format: "+%.0f%% tap XP", v * 100)
-        case .superchargeDuration: return String(format: "×%.2f Supercharge time", v)
-        case .critMagnitude:       return String(format: "×%.1f crit damage", v)
-        case .foregroundRate:      return String(format: "×%.2f idle XP", v)
-        case .flatTap:             return String(format: "+%.1f XP per tap", v)
-        case .doubleXPDuration:    return String(format: "+%.0fs XP Boost", v)
-        case .autoTap:             return String(format: "%.1f idle taps/sec", v)
+        case .offline:             return z(v - 1, places: 2) { String(format: "×%.2f offline XP kept", v) }
+        case .offlineRate:         return z(v - 1, places: 2) { String(format: "×%.2f offline XP rate", v) }
+        case .tapPercent:          return z(v * 100, places: 0) { String(format: "+%.0f%% tap XP", v * 100) }
+        case .superchargeDuration: return z(v - 1, places: 2) { String(format: "×%.2f Supercharge time", v) }
+        case .critMagnitude:       return String(format: "×%.1f crit tap XP", v)
+        case .foregroundRate:      return z(v - 1, places: 2) { String(format: "×%.2f idle XP", v) }
+        case .flatTap:             return z(v, places: 1) { String(format: "+%.1f XP/tap", v) }
+        case .doubleXPDuration:    return z(v, places: 0) { String(format: "+%.0fs Boost time", v) }
+        case .autoTap:             return z(v, places: 1) { String(format: "%.1f auto-taps/sec", v) }
         case .offlineCap:          return String(format: "%.0fh offline cap", max(Balance.maxOfflineHours, v))
-        case .combo:               return String(format: "up to ×%.2f combo", v)
-        case .refund:              return String(format: "%.1f%% refund chance", v * 100)
-        case .critChance:          return String(format: "%.0f%% crit chance", v * 100)
+        case .combo:               return z(v - 1, places: 2) { String(format: "up to ×%.2f combo", v) }
+        case .refund:              return z(v * 100, places: 1) { String(format: "+%.1f%% refund chance", v * 100) }
+        case .critChance:          return z(v * 100, places: 0) { String(format: "+%.0f%% crit chance", v * 100) }
         }
     }
 
@@ -565,19 +578,14 @@ final class GameState: ObservableObject {
         raidLamps.filter { $0.group == group }.sorted { $0.earned > $1.earned }
     }
 
-    /// The XP a lamp would grant if applied to `skill` right now — several times (see
-    /// `Balance.raidRewardMultiplier`) the XP you'd earn tapping that skill for the raid's duration,
-    /// at its current method tier, times the tier bonus.
+    /// The XP a lamp would grant if applied to `skill` right now. A lamp is worth the skill's
+    /// *current level* × a per-raid-tier coefficient (`Balance.lampTierCoefficients`), so its value
+    /// scales smoothly with exact level — no two levels look identical — and climbs steeply with the
+    /// raid tier. Because `applyLamp` grants exactly this, the projection always matches the payout.
     func projectedLampXP(_ lamp: RaidLampRecord, on skill: SkillID) -> Int {
         guard skill.category == lamp.group else { return 0 }
-        let raidMinutes = Balance.raidDurationSeconds / 60
-        let perTap = Double(baseXPPerAction(for: skill))
-        let xp = Balance.raidRewardMultiplier
-            * raidMinutes
-            * Balance.raidRapidTapsPerMinute
-            * perTap
-            * Balance.raidTierBonus(forTier: lamp.tier)
-        return max(1, Int(xp.rounded()))
+        let xp = level(for: skill) * Balance.lampCoefficient(forTier: lamp.tier)
+        return max(1, xp)
     }
 
     // MARK: - Player actions
@@ -645,7 +653,7 @@ final class GameState: ObservableObject {
         bumpCounter(TaskCounter.supercharges)
         if skill.category == .combat { bumpCounter(TaskCounter.combatSupercharges) }
         if refundChance > 0, Double.random(in: 0..<1) < refundChance {       // Thieving "Pickpocket": keep the banked Energy
-            notice = "🥷 Pickpocket! Energy refunded."
+            notice = Notice(icon: "arrow.uturn.backward", text: "Pickpocket! Energy refunded.")
             bumpCounter(TaskCounter.refunds)
             triggers.insert(.refund)
         } else {
@@ -671,7 +679,7 @@ final class GameState: ObservableObject {
         bumpCounter(TaskCounter.boosts)
         if refundChance > 0, Double.random(in: 0..<1) < refundChance {       // Thieving "Pickpocket": nick the coupon back
             doubleXPCoupons += 1
-            notice = "🥷 Pickpocket! Coupon refunded."
+            notice = Notice(icon: "arrow.uturn.backward", text: "Pickpocket! Coupon refunded.")
             bumpCounter(TaskCounter.refunds)
             triggers.insert(.refund)
         }
@@ -685,7 +693,7 @@ final class GameState: ObservableObject {
         guard count > 0 else { return }
         doubleXPCoupons += count
         if announce {
-            notice = "🎟️ +\(count) Boost Coupon\(count == 1 ? "" : "s")"
+            notice = Notice(icon: "ticket.fill", text: "+\(count) Boost Coupon\(count == 1 ? "" : "s")")
         }
         save()
         evaluateTasks(.currency)
@@ -697,7 +705,7 @@ final class GameState: ObservableObject {
     func creditPurchasedTokens(_ count: Int) {
         guard count > 0 else { return }
         tokens += count
-        notice = "🪙 +\(count) Tokens"
+        notice = Notice(icon: "star.circle.fill", text: "+\(count) Tokens")
         save()
     }
 
@@ -719,7 +727,7 @@ final class GameState: ObservableObject {
         guard tokens >= price else { return false }
         tokens -= price
         doubleXPCoupons += qty
-        notice = "🎟️ +\(qty) Boost Coupon\(qty == 1 ? "" : "s") — \(price) Tokens"
+        notice = Notice(icon: "ticket.fill", text: "+\(qty) Boost Coupon\(qty == 1 ? "" : "s") — \(price) Tokens")
         save()
         return true
     }
@@ -732,7 +740,7 @@ final class GameState: ObservableObject {
         guard tokens >= price else { return false }
         tokens -= price
         energyCells += qty
-        notice = "🔋 +\(qty) Energy Cell\(qty == 1 ? "" : "s") — \(price) Tokens"
+        notice = Notice(icon: "bolt.fill", text: "+\(qty) Energy Cell\(qty == 1 ? "" : "s") — \(price) Tokens")
         save()
         return true
     }
@@ -744,7 +752,7 @@ final class GameState: ObservableObject {
         guard count > 0 else { return }
         energyCells += count
         if announce {
-            notice = "🔋 +\(count) Energy Cell\(count == 1 ? "" : "s")"
+            notice = Notice(icon: "bolt.fill", text: "+\(count) Energy Cell\(count == 1 ? "" : "s")")
         }
         save()
     }
@@ -757,7 +765,7 @@ final class GameState: ObservableObject {
         guard canUseEnergyCell(on: skill) else { return false }
         energyCells -= 1
         energyBySkill[skill] = energyCapSeconds
-        notice = "🔋 Energy Cell used — \(skill.displayName) charged to full."
+        notice = Notice(icon: "bolt.fill", text: "Energy Cell used — \(skill.displayName) charged to full.")
         bumpCounter(TaskCounter.energyCells)
         save()
         evaluateTasks([.energyCell, .energyFull])
@@ -781,13 +789,13 @@ final class GameState: ObservableObject {
     @discardableResult
     func finishRaid(_ group: SkillCategory, passed: Bool) -> RaidLampRecord? {
         guard passed else {
-            notice = "☠️ \(group.raidName) failed — come back tomorrow."
+            notice = Notice(icon: "xmark.octagon.fill", text: "\(group.raidName) failed — come back tomorrow.")
             save()
             return nil
         }
         let lamp = RaidLampRecord(group: group, tier: raidTier(group))
         raidLamps.append(lamp)
-        notice = "🏆 \(group.raidName) cleared — \(group.rawValue) lamp earned!"
+        notice = Notice(icon: "trophy.fill", text: "\(group.raidName) cleared — \(group.rawValue) lamp earned!")
         save()
         return lamp
     }
@@ -801,7 +809,7 @@ final class GameState: ObservableObject {
         let xp = projectedLampXP(lamp, on: skill)
         raidLamps.remove(at: index)
         addXP(Double(xp), to: skill)
-        notice = "💡 \(skill.displayName) +\(Format.abbrev(xp)) XP from a \(SkillCategory.raidTierName(lamp.tier)) lamp"
+        notice = Notice(icon: "lightbulb.fill", text: "\(skill.displayName) +\(Format.abbrev(xp)) XP from a \(SkillCategory.raidTierName(lamp.tier)) lamp")
         save()
         return xp
     }
@@ -815,7 +823,7 @@ final class GameState: ObservableObject {
         let granted = Balance.dailyFreeCoupons
         doubleXPCoupons += granted
         if hasSeenOnboarding {
-            notice = "🎁 Daily reward: +\(granted) Boost Coupon\(granted == 1 ? "" : "s")"
+            notice = Notice(icon: "gift.fill", text: "Daily reward: +\(granted) Boost Coupon\(granted == 1 ? "" : "s")")
         }
         save()
         evaluateTasks(.currency)
@@ -1056,10 +1064,10 @@ final class GameState: ObservableObject {
             .prayer: 11, .magic: 32,
             // Gathering
             .woodcutting: 55, .fishing: 35, .mining: 30, .farming: 12, .hunter: 16,
-            // Artisan
+            // Production
             .cooking: 20, .firemaking: 18, .crafting: 15, .smithing: 24, .fletching: 13,
             .herblore: 9, .runecraft: 10, .construction: 8,
-            // Support
+            // Utility
             .agility: 16, .thieving: 14, .slayer: 11
         ]
         for (skill, lvl) in levels {
@@ -1155,7 +1163,7 @@ final class GameState: ObservableObject {
                 if !group.isEmpty, !claimedDiaryTiers.contains(key),
                    group.allSatisfy({ completedTasks.contains($0.id) }) {
                     claimedDiaryTiers.insert(key)
-                    tokens += Balance.Rewards.diaryTierBonus
+                    tokens += Balance.Rewards.diaryTierBonus(for: tier)
                 }
             }
         }

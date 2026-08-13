@@ -266,10 +266,9 @@ iPad** (a hard project requirement):
 - **Diary layout** — a segmented control: **Overview · All Tasks** (with *Collection* reserved for a future
   phase).
   - *Overview*: the Total-Level meter, Token balance, and progress summary.
-  - *All Tasks*: a Diary list → tier → tasks. On **regular width (iPad/landscape)** this is a **two-pane**
-    layout (Diaries left, tasks right) exactly like `SkillTrainingView`; on **compact** it's a
-    stacked drill-down. Content is width-capped and centred (`.frame(maxWidth:…)`) like every other
-    screen.
+  - *All Tasks*: a navigation drill-down — a list of Diaries; tap one to push its detail
+    (tier → tasks). It's the same stacked push on every device; content is width-capped and centred
+    (`.frame(maxWidth:…)`) like every other screen.
 - **Shop layout** — the existing `BoostsView`, rebuilt around Tokens (§6): Boost status hero → **Token
   wallet** card → **Spend Tokens** family cards (Boost Coupons, Energy Cells, priced in Tokens) → **Get
   more Tokens** (IAP Token packs). Family cards and the width-cap/centre treatment are reused verbatim.

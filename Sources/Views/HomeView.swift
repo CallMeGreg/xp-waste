@@ -20,7 +20,7 @@ struct HomeView: View {
                     }
                     .padding(.horizontal, 14)
                     .padding(.bottom, 14)
-                    .frame(maxWidth: 760)
+                    .frame(maxWidth: 600)
                     .frame(maxWidth: .infinity)
                 }
             }
@@ -54,7 +54,7 @@ struct HomeView: View {
         .padding(.horizontal, 14)
         .padding(.top, 12)
         .padding(.bottom, 10)
-        .frame(maxWidth: 760)
+        .frame(maxWidth: 600)
         .frame(maxWidth: .infinity)
     }
 }
@@ -102,7 +102,7 @@ private struct BoostBanner: View {
                     Image(systemName: "sparkles")
                         .font(.subheadline.weight(.bold)).foregroundStyle(Color.doubleXP)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("XP BOOST ACTIVE")
+                        Text("XP Boost active")
                             .font(.caption2.weight(.bold)).foregroundStyle(.secondary)
                         Text("\(multText(game.xpMultiplier)) XP on every skill")
                             .font(.caption.weight(.semibold)).foregroundStyle(.primary)

@@ -10,7 +10,7 @@ realized at level 99 — so training is always paying into a permanent buff on t
 - **All tunable numbers:** `Sources/Models/Balance.swift` (`buffScaling` + secondary constants).
 - **Application:** `Sources/Models/GameState.swift` (aggregate getters + the tap pipeline).
 - **Surfacing:** the training screen's **perk banner**, tap-outcome pops (crit / extra hit /
-  cache), and the Stats screen's per-skill perk rows.
+  cache), and the Skills hub's per-skill perk descriptors.
 
 ## Non-regression guarantee
 
