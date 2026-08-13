@@ -69,7 +69,7 @@ Values below are **level 1 → level 99** (the full envelope). "Kind" is the `Bu
 | Hunter 🪤 | Trapper | `offlineRate` | `×1.0 → ×5.0` | Multiplies **offline** passive XP (app *closed*) — traps keep working while you're away. |
 | Slayer 💀 | Assassinate | `critChance` | `0 → 15%` | Chance for a **critical tap** (magnitude comes from Crafting). |
 | Thieving 🥷 | Pickpocket | `refund` | `0% → 50%` | Chance to **refund a spent coupon or Supercharge** ("nick it back"). |
-| Prayer 🙏 | Blessing | `superchargeBonus` | `+0 → +5` | **Adds flat** to the active Supercharge multiplier. |
+| Prayer 🙏 | Blessing | `superchargePotency` | `×1.00 → ×3.50` | **Multiplies** the active Supercharge multiplier (base `×2` → up to `×7`). |
 
 ### Gathering — feed the idle engine
 
@@ -113,7 +113,7 @@ Resolved in `GameState.rollTap(for:)`. Each tap:
    5. If **Slayer** crit chance procs, `× Crafting` crit magnitude.
 3. Sum the hits.
 4. On a **Woodcutting** cache proc, add a `15×` base windfall.
-5. If supercharged, `× (Supercharge multiplier + Prayer bonus)`.
+5. If supercharged, `× (Supercharge multiplier × Prayer multiplier)`.
 6. If Daily Boost is active, `× Magic` Daily Boost potency.
 7. Side-effect: each tap has a **base chance** (`baseEnergyTapChance`, *multiplied* by **Fishing**) to
    bank Supercharge Energy to the tapped skill, in an amount scaled by **Hitpoints**.

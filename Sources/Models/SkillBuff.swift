@@ -9,7 +9,7 @@ enum BuffKind {
     case minHit              // Defence: raises the guaranteed floor of the tap XP range
     case energyRate          // Hitpoints: banks more Supercharge Energy per tap-proc
     case extraHit            // Ranged: chance for a tap to land an extra hit
-    case superchargeBonus    // Prayer: +flat to the active Supercharge multiplier
+    case superchargePotency  // Prayer: ×multiplier on the active Supercharge multiplier
     case doubleXPPotency     // Magic: raises the Daily Boost multiplier above 1.5×
     // Gathering — feeds the idle engine
     case cache               // Woodcutting: chance per tap for a bonus-XP windfall
@@ -62,8 +62,8 @@ extension SkillID {
             return SkillBuffInfo(kind: .extraHit, name: "Rapid Fire", icon: "arrow.up.forward.app.fill",
                                  blurb: "Chance for a tap to land a bonus hit.")
         case .prayer:
-            return SkillBuffInfo(kind: .superchargeBonus, name: "Blessing", icon: "sparkle",
-                                 blurb: "Adds to your active Supercharge multiplier.")
+            return SkillBuffInfo(kind: .superchargePotency, name: "Blessing", icon: "sparkle",
+                                 blurb: "Multiplies your active Supercharge multiplier.")
         case .magic:
             return SkillBuffInfo(kind: .doubleXPPotency, name: "Enchantment", icon: "wand.and.stars",
                                  blurb: "Empowers your XP Boost — a stronger multiplier the more you level Magic.")
