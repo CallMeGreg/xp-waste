@@ -10,6 +10,7 @@ struct DiaryView: View {
     @EnvironmentObject private var game: GameState
     @State private var tab: Tab = .overview
     @State private var path: [TaskDiary] = []
+    @Environment(\.horizontalSizeClass) private var hSize
 
     enum Tab: String, CaseIterable, Identifiable {
         case overview = "Overview"
@@ -23,11 +24,15 @@ struct DiaryView: View {
                 GameBackground()
                 ScrollView {
                     VStack(spacing: 16) {
-                        TokenBalanceCard()
-                        Picker("View", selection: $tab) {
-                            ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }
+                        if Layout.isWide(hSize) {
+                            HStack(alignment: .center, spacing: 14) {
+                                TokenBalanceCard()
+                                viewPicker.frame(width: 340)
+                            }
+                        } else {
+                            TokenBalanceCard()
+                            viewPicker
                         }
-                        .pickerStyle(.segmented)
 
                         switch tab {
                         case .overview: DiaryOverview()
@@ -35,7 +40,7 @@ struct DiaryView: View {
                         }
                     }
                     .padding(16)
-                    .frame(maxWidth: 720)
+                    .frame(maxWidth: Layout.maxWidth(hSize, compact: 720, regular: 1180))
                     .frame(maxWidth: .infinity)
                 }
             }
@@ -55,6 +60,13 @@ struct DiaryView: View {
                 #endif
             }
         }
+    }
+
+    private var viewPicker: some View {
+        Picker("View", selection: $tab) {
+            ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }
+        }
+        .pickerStyle(.segmented)
     }
 }
 
@@ -87,13 +99,15 @@ private struct TokenBalanceCard: View {
 
 private struct DiaryOverview: View {
     @EnvironmentObject private var game: GameState
+    @Environment(\.horizontalSizeClass) private var hSize
 
-    /// Incomplete Tasks you're closest to finishing — targets to chase.
+    /// Incomplete Tasks you're closest to finishing — targets to chase. More are shown on wide
+    /// screens where a two-column grid has room for them.
     private var closest: [Task] {
         TaskCatalog.all
             .filter { !game.isTaskComplete($0) }
             .sorted { game.taskFraction($0) > game.taskFraction($1) }
-            .prefix(4)
+            .prefix(Layout.isWide(hSize) ? 6 : 4)
             .map { $0 }
     }
 
@@ -103,7 +117,7 @@ private struct DiaryOverview: View {
             if !closest.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
                     sectionHeader("CLOSEST TASKS", systemImage: "target")
-                    VStack(spacing: 10) {
+                    LazyVGrid(columns: Layout.columns(hSize, count: 2, spacing: 10), spacing: 10) {
                         ForEach(closest) { TaskRow(task: $0) }
                     }
                 }
@@ -137,8 +151,9 @@ private struct DiaryOverview: View {
 
 private struct DiaryTaskList: View {
     @EnvironmentObject private var game: GameState
+    @Environment(\.horizontalSizeClass) private var hSize
     var body: some View {
-        VStack(spacing: 12) {
+        LazyVGrid(columns: Layout.columns(hSize, count: 2, spacing: 12), spacing: 12) {
             ForEach(TaskDiary.allCases) { diary in
                 NavigationLink(value: diary) {
                     DiaryCard(diary: diary)
@@ -187,6 +202,7 @@ private struct DiaryCard: View {
 
 struct TaskDiaryDetailView: View {
     @EnvironmentObject private var game: GameState
+    @Environment(\.horizontalSizeClass) private var hSize
     let diary: TaskDiary
 
     private let tiers = TaskTier.allCases.sorted { $0.order < $1.order }
@@ -202,7 +218,7 @@ struct TaskDiaryDetailView: View {
                         if !tasks.isEmpty {
                             VStack(alignment: .leading, spacing: 10) {
                                 tierHeader(tier, tasks: tasks)
-                                VStack(spacing: 10) {
+                                LazyVGrid(columns: Layout.columns(hSize, count: 2, spacing: 10), spacing: 10) {
                                     ForEach(tasks) { TaskRow(task: $0) }
                                 }
                             }
@@ -210,7 +226,7 @@ struct TaskDiaryDetailView: View {
                     }
                 }
                 .padding(16)
-                .frame(maxWidth: 720)
+                .frame(maxWidth: Layout.maxWidth(hSize, compact: 720, regular: 1180))
                 .frame(maxWidth: .infinity)
             }
         }

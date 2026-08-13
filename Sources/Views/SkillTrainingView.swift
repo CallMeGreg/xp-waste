@@ -84,18 +84,11 @@ struct SkillTrainingView: View {
 
         return ZStack {
             GameBackground()
-            VStack(spacing: 16) {
-                slimHeader(level: level, xp: xp, supercharged: supercharged)
-                methodPerkChip
-                Spacer(minLength: 0)
-                objectArea(supercharged: supercharged, diameter: hSize == .regular ? 300 : 240)
-                Spacer(minLength: 0)
-                focusControlBar(supercharged: supercharged)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 10)
+            if hSize == .regular {
+                regularLayout(level: level, xp: xp, supercharged: supercharged)
+            } else {
+                compactLayout(level: level, xp: xp, supercharged: supercharged)
             }
-            .frame(maxWidth: 640, maxHeight: 820)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .navigationTitle(skill.displayName)
         .navigationBarTitleDisplayMode(.inline)
@@ -106,6 +99,49 @@ struct SkillTrainingView: View {
         .onReceive(idleTimer) { _ in stepIdlePop() }
         .sheet(isPresented: $showSlotManager) { slotManagerSheet }
         .sheet(isPresented: $showDetails) { detailsSheet }
+    }
+
+    /// iPhone / compact-width training: a single vertical column with the tap object centered
+    /// between the header and the control bar.
+    private func compactLayout(level: Int, xp: Int, supercharged: Bool) -> some View {
+        VStack(spacing: 16) {
+            slimHeader(level: level, xp: xp, supercharged: supercharged)
+            methodPerkChip
+            Spacer(minLength: 0)
+            objectArea(supercharged: supercharged, diameter: 240)
+            Spacer(minLength: 0)
+            focusControlBar(supercharged: supercharged)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 10)
+        }
+        .frame(maxWidth: 640, maxHeight: 820)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// iPad / regular-width training: a two-pane split — a compact control column (stats, method,
+    /// and the Supercharge controls) grouped and vertically centered beside a large tap object that
+    /// scales to fill the rest of the screen, so nothing floats in dead space.
+    private func regularLayout(level: Int, xp: Int, supercharged: Bool) -> some View {
+        HStack(spacing: 32) {
+            VStack(spacing: 18) {
+                slimHeader(level: level, xp: xp, supercharged: supercharged)
+                methodPerkChip
+                focusControlBar(supercharged: supercharged)
+                    .padding(.horizontal, 4)
+            }
+            .frame(width: 380)
+            .frame(maxHeight: .infinity)
+
+            GeometryReader { geo in
+                let d = max(240, min(geo.size.width * 0.82, geo.size.height * 0.58))
+                objectArea(supercharged: supercharged, diameter: d)
+                    .frame(width: geo.size.width, height: geo.size.height)
+            }
+        }
+        .frame(maxWidth: 1180)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 28)
+        .padding(.vertical, 16)
     }
 
     // MARK: Header + method/perk chip

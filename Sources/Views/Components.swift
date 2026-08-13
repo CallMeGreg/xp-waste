@@ -44,6 +44,28 @@ enum Format {
     }
 }
 
+/// Responsive layout helpers so wide screens (iPad, landscape) use their full width while
+/// iPhone (compact width) keeps its single-column look unchanged.
+enum Layout {
+    /// Content width cap for a scrolling column: narrow & centered on compact width, much wider on
+    /// regular width so multi-column grids can fill an iPad screen without stretching edge-to-edge.
+    static func maxWidth(_ hSize: UserInterfaceSizeClass?, compact: CGFloat, regular: CGFloat) -> CGFloat {
+        hSize == .regular ? regular : compact
+    }
+
+    /// Grid columns that collapse to a single column on compact width (matching the iPhone list) and
+    /// fan out to `count` flexible columns on regular width. Cells align to the top of their row so
+    /// uneven-height cards (e.g. skill groups with different row counts) line up cleanly.
+    static func columns(_ hSize: UserInterfaceSizeClass?, count: Int = 2, spacing: CGFloat = 14) -> [GridItem] {
+        hSize == .regular
+            ? Array(repeating: GridItem(.flexible(), spacing: spacing, alignment: .top), count: count)
+            : [GridItem(.flexible(), alignment: .top)]
+    }
+
+    /// True on regular width (iPad / landscape) — a small readability shorthand at call sites.
+    static func isWide(_ hSize: UserInterfaceSizeClass?) -> Bool { hSize == .regular }
+}
+
 extension Color {
     /// Accent used across the Daily Boost UI (a vivid violet, distinct from the
     /// yellow slot / orange Supercharge colors).

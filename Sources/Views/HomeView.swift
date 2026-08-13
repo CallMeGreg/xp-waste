@@ -7,20 +7,21 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject private var game: GameState
     @State private var path: [SkillID] = []
+    @Environment(\.horizontalSizeClass) private var hSize
 
     var body: some View {
         NavigationStack(path: $path) {
             VStack(spacing: 0) {
                 pinnedHeader
                 ScrollView {
-                    VStack(spacing: 14) {
+                    LazyVGrid(columns: Layout.columns(hSize, count: 2, spacing: 14), spacing: 14) {
                         ForEach(SkillCategory.allCases) { category in
                             SkillStatGroup(category: category)
                         }
                     }
                     .padding(.horizontal, 14)
                     .padding(.bottom, 14)
-                    .frame(maxWidth: 600)
+                    .frame(maxWidth: Layout.maxWidth(hSize, compact: 600, regular: 1180))
                     .frame(maxWidth: .infinity)
                 }
             }
@@ -43,18 +44,26 @@ struct HomeView: View {
     }
 
     /// Stays fixed above the scrolling skill list: total level always in view, plus the active
-    /// XP-Boost countdown whenever a Boost is running.
+    /// XP-Boost countdown whenever a Boost is running. On wide screens the two cards sit side by
+    /// side so the header uses the full width instead of stacking in a narrow column.
     private var pinnedHeader: some View {
-        VStack(spacing: 10) {
-            TotalLevelHeader()
-            if game.isDoubleXPActive {
-                BoostBanner()
+        Group {
+            if Layout.isWide(hSize) {
+                HStack(alignment: .top, spacing: 12) {
+                    TotalLevelHeader()
+                    if game.isDoubleXPActive { BoostBanner() }
+                }
+            } else {
+                VStack(spacing: 10) {
+                    TotalLevelHeader()
+                    if game.isDoubleXPActive { BoostBanner() }
+                }
             }
         }
         .padding(.horizontal, 14)
         .padding(.top, 12)
         .padding(.bottom, 10)
-        .frame(maxWidth: 600)
+        .frame(maxWidth: Layout.maxWidth(hSize, compact: 600, regular: 1180))
         .frame(maxWidth: .infinity)
     }
 }

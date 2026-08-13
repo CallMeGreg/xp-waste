@@ -7,6 +7,7 @@ import SwiftUI
 struct BoostsView: View {
     @EnvironmentObject private var game: GameState
     @EnvironmentObject private var store: Store
+    @Environment(\.horizontalSizeClass) private var hSize
 
     var body: some View {
         NavigationStack {
@@ -14,19 +15,33 @@ struct BoostsView: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         BoostStatusCard()
-                        TokenWalletCard()
 
-                        sectionHeader("Spend Tokens")
-                        SpendFamilyCard(spendable: .coupon)
-                        SpendFamilyCard(spendable: .cell)
-
-                        sectionHeader("Get more Tokens")
-                        GetTokensCard()
+                        if Layout.isWide(hSize) {
+                            HStack(alignment: .top, spacing: 16) {
+                                VStack(spacing: 16) {
+                                    TokenWalletCard()
+                                    sectionHeader("Spend Tokens")
+                                    SpendFamilyCard(spendable: .coupon)
+                                    SpendFamilyCard(spendable: .cell)
+                                }
+                                VStack(spacing: 16) {
+                                    sectionHeader("Get more Tokens")
+                                    GetTokensCard()
+                                }
+                            }
+                        } else {
+                            TokenWalletCard()
+                            sectionHeader("Spend Tokens")
+                            SpendFamilyCard(spendable: .coupon)
+                            SpendFamilyCard(spendable: .cell)
+                            sectionHeader("Get more Tokens")
+                            GetTokensCard()
+                        }
 
                         legalFootnote.id("shopBottom")
                     }
                     .padding(16)
-                    .frame(maxWidth: 640)
+                    .frame(maxWidth: Layout.maxWidth(hSize, compact: 640, regular: 1040))
                     .frame(maxWidth: .infinity)
                 }
                 .background(GameBackground())

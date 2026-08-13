@@ -7,22 +7,25 @@ struct RaidsView: View {
     @EnvironmentObject private var game: GameState
     @State private var raidingGroup: SkillCategory?
     @State private var applyGroup: SkillCategory?
+    @Environment(\.horizontalSizeClass) private var hSize
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 14) {
                     RaidsOverviewCard()
-                    ForEach(SkillCategory.allCases) { group in
-                        RaidCard(
-                            group: group,
-                            onRaid: { raidingGroup = group },
-                            onApply: { applyGroup = group }
-                        )
+                    LazyVGrid(columns: Layout.columns(hSize, count: 2, spacing: 14), spacing: 14) {
+                        ForEach(SkillCategory.allCases) { group in
+                            RaidCard(
+                                group: group,
+                                onRaid: { raidingGroup = group },
+                                onApply: { applyGroup = group }
+                            )
+                        }
                     }
                 }
                 .padding(14)
-                .frame(maxWidth: 760)
+                .frame(maxWidth: Layout.maxWidth(hSize, compact: 760, regular: 1180))
                 .frame(maxWidth: .infinity)
             }
             .background(GameBackground())

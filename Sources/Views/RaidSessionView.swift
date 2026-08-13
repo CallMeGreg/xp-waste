@@ -26,6 +26,7 @@ struct RaidSessionView: View {
     @State private var missHaptic = 0
     @State private var endHaptic = 0
     @State private var debugVisualOnly = false
+    @Environment(\.horizontalSizeClass) private var hSize
 
     private let clock = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
 
@@ -41,7 +42,7 @@ struct RaidSessionView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
-            .frame(maxWidth: 720)
+            .frame(maxWidth: Layout.maxWidth(hSize, compact: 720, regular: 980))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             if phase != .playing { resultOverlay }

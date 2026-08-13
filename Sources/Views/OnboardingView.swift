@@ -4,6 +4,7 @@ import SwiftUI
 struct OnboardingView: View {
     @EnvironmentObject private var game: GameState
     @State private var page = 0
+    @Environment(\.horizontalSizeClass) private var hSize
 
     private struct Card: Identifiable {
         let id = UUID()
@@ -65,6 +66,17 @@ struct OnboardingView: View {
     }
 
     private func cardView(_ card: Card) -> some View {
+        Group {
+            if hSize == .regular {
+                wideCard(card)
+            } else {
+                compactCard(card)
+            }
+        }
+    }
+
+    /// iPhone / compact-width card: icon, title and body centered in the page.
+    private func compactCard(_ card: Card) -> some View {
         VStack(spacing: 18) {
             Spacer()
             Image(systemName: card.icon)
@@ -83,6 +95,39 @@ struct OnboardingView: View {
             Spacer()
         }
         .frame(maxWidth: 600)
+        .frame(maxWidth: .infinity)
+    }
+
+    /// iPad / regular-width card: the same content presented as a centered hero card with an icon
+    /// medallion and larger type, so it reads as an intentional layout instead of a small graphic
+    /// floating in a wide, empty page.
+    private func wideCard(_ card: Card) -> some View {
+        VStack {
+            Spacer(minLength: 0)
+            VStack(spacing: 22) {
+                ZStack {
+                    Circle().fill(Color.accentColor.opacity(0.12))
+                        .frame(width: 140, height: 140)
+                    Image(systemName: card.icon)
+                        .font(.system(size: 64))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(Color.accentColor)
+                }
+                Text(card.title)
+                    .font(.largeTitle.bold())
+                    .multilineTextAlignment(.center)
+                Text(card.body)
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 44)
+            .padding(.vertical, 48)
+            .frame(maxWidth: 560)
+            .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 30))
+            .overlay(RoundedRectangle(cornerRadius: 30).strokeBorder(Color.white.opacity(0.08)))
+            Spacer(minLength: 0)
+        }
         .frame(maxWidth: .infinity)
     }
 
