@@ -132,7 +132,7 @@ private struct DiaryLampInventoryCard: View {
                 .padding(.vertical, 1)
             }
             Button { showApply = true } label: {
-                Label("Use Lamps", systemImage: "wand.and.stars")
+                Text("Use Lamps")
                     .font(.subheadline.weight(.bold))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 11)
