@@ -106,7 +106,9 @@ struct SkillTrainingView: View {
     private func compactLayout(level: Int, xp: Int, supercharged: Bool) -> some View {
         VStack(spacing: 16) {
             slimHeader(level: level, xp: xp, supercharged: supercharged)
+                .padding(.horizontal, 20)
             methodPerkChip
+                .padding(.horizontal, 16)
             Spacer(minLength: 0)
             objectArea(supercharged: supercharged, diameter: 240)
             Spacer(minLength: 0)
@@ -125,9 +127,11 @@ struct SkillTrainingView: View {
         HStack(spacing: 32) {
             VStack(spacing: 18) {
                 slimHeader(level: level, xp: xp, supercharged: supercharged)
+                    .padding(.horizontal, 16)
                 methodPerkChip
+                    .padding(.horizontal, 16)
                 focusControlBar(supercharged: supercharged)
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, 16)
             }
             .frame(width: 380)
             .frame(maxHeight: .infinity)
@@ -164,7 +168,6 @@ struct SkillTrainingView: View {
             }
             XPProgressBar(progress: XPTable.progressToNextLevel(forXP: xp), tint: skill.tint, height: 8)
         }
-        .padding(.horizontal, 20)
         .padding(.top, 8)
     }
 
@@ -192,7 +195,6 @@ struct SkillTrainingView: View {
             .overlay(Capsule().strokeBorder(Color.white.opacity(0.08)))
         }
         .buttonStyle(PressableStyle(scale: 0.98))
-        .padding(.horizontal, 16)
     }
 
     // MARK: Control area (AFK · charge · Supercharge)

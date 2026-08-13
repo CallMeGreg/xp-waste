@@ -50,9 +50,10 @@ struct HomeView: View {
         Group {
             if Layout.isWide(hSize) {
                 HStack(alignment: .top, spacing: 12) {
-                    TotalLevelHeader()
-                    if game.isDoubleXPActive { BoostBanner() }
+                    TotalLevelHeader(fillHeight: game.isDoubleXPActive)
+                    if game.isDoubleXPActive { BoostBanner(fillHeight: true) }
                 }
+                .fixedSize(horizontal: false, vertical: true)
             } else {
                 VStack(spacing: 10) {
                     TotalLevelHeader()
@@ -71,6 +72,7 @@ struct HomeView: View {
 /// Compact hub header: total level, max-cape progress, and a one-line slots/supercharge summary.
 private struct TotalLevelHeader: View {
     @EnvironmentObject private var game: GameState
+    var fillHeight: Bool = false
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 1) {
@@ -85,6 +87,7 @@ private struct TotalLevelHeader: View {
             }
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
+        .frame(maxWidth: .infinity, maxHeight: fillHeight ? .infinity : nil, alignment: .leading)
         .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.white.opacity(0.08)))
     }
@@ -99,6 +102,7 @@ private struct TotalLevelHeader: View {
 /// skill is earning, a countdown, and a progress bar of the remaining time.
 private struct BoostBanner: View {
     @EnvironmentObject private var game: GameState
+    var fillHeight: Bool = false
 
     private func multText(_ v: Double) -> String {
         v == v.rounded() ? String(format: "×%.0f", v) : String(format: "×%.1f", v)
@@ -125,6 +129,7 @@ private struct BoostBanner: View {
                 XPProgressBar(progress: game.doubleXPFraction, tint: .doubleXP, height: 5)
             }
             .padding(.horizontal, 14).padding(.vertical, 10)
+            .frame(maxWidth: .infinity, maxHeight: fillHeight ? .infinity : nil)
             .background(Color.doubleXP.opacity(0.14), in: RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.doubleXP.opacity(0.5)))
         }

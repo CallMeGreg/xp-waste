@@ -25,10 +25,8 @@ struct DiaryView: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         if Layout.isWide(hSize) {
-                            HStack(alignment: .center, spacing: 14) {
-                                TokenBalanceCard()
-                                viewPicker.frame(width: 340)
-                            }
+                            viewPicker.frame(maxWidth: 420)
+                            TokenBalanceCard()
                         } else {
                             TokenBalanceCard()
                             viewPicker
@@ -166,6 +164,7 @@ private struct DiaryTaskList: View {
 
 private struct DiaryCard: View {
     @EnvironmentObject private var game: GameState
+    @Environment(\.horizontalSizeClass) private var hSize
     let diary: TaskDiary
 
     var body: some View {
@@ -194,7 +193,7 @@ private struct DiaryCard: View {
         }
         .padding(14)
         .contentShape(Rectangle())
-        .diaryCard(cornerRadius: 14)
+        .diaryCard(cornerRadius: 14, fillHeight: Layout.isWide(hSize))
     }
 }
 
@@ -279,6 +278,7 @@ struct TaskDiaryDetailView: View {
 
 private struct TaskRow: View {
     @EnvironmentObject private var game: GameState
+    @Environment(\.horizontalSizeClass) private var hSize
     let task: Task
 
     var body: some View {
@@ -309,7 +309,7 @@ private struct TaskRow: View {
             }
         }
         .padding(12)
-        .diaryCard(cornerRadius: 12)
+        .diaryCard(cornerRadius: 12, fillHeight: Layout.isWide(hSize))
     }
 }
 
@@ -336,9 +336,14 @@ private func sectionHeader(_ title: String, systemImage: String) -> some View {
 }
 
 private extension View {
-    /// The app's translucent card treatment used throughout the Diary.
-    func diaryCard(cornerRadius: CGFloat = 16) -> some View {
-        background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: cornerRadius))
+    /// The app's translucent card treatment used throughout the Diary. When `fillHeight` is true the
+    /// card stretches to fill its row's height (content stays top-aligned) so side-by-side cards in a
+    /// two-column grid match heights on wide screens.
+    func diaryCard(cornerRadius: CGFloat = 16, fillHeight: Bool = false) -> some View {
+        frame(maxWidth: fillHeight ? .infinity : nil,
+              maxHeight: fillHeight ? .infinity : nil,
+              alignment: .topLeading)
+        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: cornerRadius))
             .overlay(RoundedRectangle(cornerRadius: cornerRadius).strokeBorder(Color.white.opacity(0.08)))
     }
 }

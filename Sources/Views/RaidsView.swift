@@ -19,7 +19,8 @@ struct RaidsView: View {
                             RaidCard(
                                 group: group,
                                 onRaid: { raidingGroup = group },
-                                onApply: { applyGroup = group }
+                                onApply: { applyGroup = group },
+                                fillHeight: Layout.isWide(hSize)
                             )
                         }
                     }
@@ -86,6 +87,7 @@ private struct RaidCard: View {
     let group: SkillCategory
     var onRaid: () -> Void
     var onApply: () -> Void
+    var fillHeight: Bool = false
 
     var body: some View {
         let tier = game.raidTier(group)
@@ -172,6 +174,7 @@ private struct RaidCard: View {
             }
         }
         .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: fillHeight ? .infinity : nil, alignment: .topLeading)
         .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(group.raidTint.opacity(0.25)))
     }
