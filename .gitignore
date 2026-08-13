@@ -3,8 +3,8 @@
 
 # Xcode / build artifacts
 DerivedData/
-build/
-build-ipad/
+/build/
+/build-ipad/
 *.xcuserstate
 xcuserdata/
 *.xcworkspace/xcuserdata/
