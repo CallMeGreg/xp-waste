@@ -281,7 +281,7 @@ struct RaidSessionView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("\(SkillCategory.raidTierName(lamp.tier)) \(group.rawValue) Lamp")
                         .font(.subheadline.weight(.bold)).foregroundStyle(c)
-                    Text("Apply it to any \(group.rawValue.lowercased()) skill from the Raids tab.")
+                    Text("Use it on any \(group.rawValue.lowercased()) skill from the Raids tab.")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
             }

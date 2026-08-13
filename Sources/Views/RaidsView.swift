@@ -157,7 +157,7 @@ private struct RaidCard: View {
                             lampChip(tier: entry.tier, count: entry.count)
                         }
                         Spacer(minLength: 0)
-                        Text("Apply").font(.caption.weight(.bold)).foregroundStyle(.secondary)
+                        Text("Use").font(.caption.weight(.bold)).foregroundStyle(.secondary)
                         Image(systemName: "chevron.right").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
                     }
                     .padding(.horizontal, 12).padding(.vertical, 9)
@@ -165,7 +165,7 @@ private struct RaidCard: View {
                     .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.white.opacity(0.12)))
                 }
                 .buttonStyle(PressableStyle(scale: 0.98))
-                .accessibilityLabel("Apply \(lamps.count) \(group.rawValue) lamps")
+                .accessibilityLabel("Use \(lamps.count) \(group.rawValue) lamps")
             }
 
             if !available {
@@ -237,7 +237,7 @@ private struct LampApplySheet: View {
                 .frame(maxWidth: .infinity)
             }
             .background(GameBackground())
-            .navigationTitle("Apply \(group.rawValue) Lamp")
+            .navigationTitle("Use \(group.rawValue) Lamp")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

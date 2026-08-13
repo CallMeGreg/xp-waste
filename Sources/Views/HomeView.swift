@@ -69,7 +69,7 @@ struct HomeView: View {
     }
 }
 
-/// Compact hub header: total level, max-cape progress, and a one-line slots/supercharge summary.
+/// Compact hub header: total level, max-cape progress, and a one-line AFK slots summary.
 private struct TotalLevelHeader: View {
     @EnvironmentObject private var game: GameState
     var fillHeight: Bool = false
@@ -94,7 +94,7 @@ private struct TotalLevelHeader: View {
 
     private var subtitle: String {
         if game.isFullyMaxed { return "Maxed — level 99 in every skill" }
-        return "\(game.slots.count)/\(game.maxSlots) AFK slots · ×\(game.effectiveSuperchargeMultiplier) supercharge"
+        return "\(game.slots.count)/\(game.maxSlots) AFK slots"
     }
 }
 

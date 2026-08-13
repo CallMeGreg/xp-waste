@@ -68,23 +68,28 @@ extension SkillCategory {
     }
 }
 
-/// A banked, unspent XP lamp bound to one skill group. Earned by clearing that group's raid; spent
-/// on a single skill within the group. The final XP is computed *at application time* from the
-/// target skill's current method tier (see `GameState.projectedLampXP`), so a lamp banked early and
-/// spent on a high-level skill is worth more — OSRS-faithful.
+/// A banked, unspent XP lamp. Earned either by clearing a raid (bound to that skill `group`, spent
+/// on one of its skills) or by clearing a Diary tier (`group == nil` — a *universal* lamp spendable
+/// on **any** skill). The final XP is computed *at application time* from the target skill's current
+/// method tier (see `GameState.projectedLampXP`), so a lamp banked early and spent on a high-level
+/// skill is worth more — OSRS-faithful.
 struct RaidLampRecord: Codable, Identifiable, Equatable {
     let id: UUID
-    /// The skill group this lamp can be spent within.
-    let group: SkillCategory
-    /// The raid tier it was earned at (drives `Balance.raidTierRewardBonus`).
+    /// The skill group this lamp is bound to, or `nil` for a universal (Diary-tier) lamp usable on
+    /// any skill.
+    let group: SkillCategory?
+    /// The reward tier it was earned at (0…5, Bronze→Rune; drives `Balance.lampTierCoefficients`).
     let tier: Int
     /// When it was earned (newest-first ordering in the inventory).
     let earned: Date
 
-    init(id: UUID = UUID(), group: SkillCategory, tier: Int, earned: Date = Date()) {
+    init(id: UUID = UUID(), group: SkillCategory?, tier: Int, earned: Date = Date()) {
         self.id = id
         self.group = group
         self.tier = tier
         self.earned = earned
     }
+
+    /// True for a Diary-tier lamp that can be poured into any skill (no group binding).
+    var isUniversal: Bool { group == nil }
 }

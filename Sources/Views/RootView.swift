@@ -171,15 +171,19 @@ struct AppTabBar: View {
         HStack(spacing: 0) {
             ForEach(AppTab.allCases) { item in
                 let isSelected = selection == item
+                let badge = badgeCount(for: item)
                 Button {
                     if selection != item {
                         withAnimation(.easeInOut(duration: 0.15)) { selection = item }
                     }
                 } label: {
                     VStack(spacing: 3) {
-                        Image(systemName: item.symbol)
-                            .font(.system(size: 20, weight: .semibold))
-                            .frame(height: 24)
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: item.symbol)
+                                .font(.system(size: 20, weight: .semibold))
+                                .frame(height: 24)
+                            if badge > 0 { lampBadge(badge) }
+                        }
                         Text(item.title)
                             .font(.system(size: 11, weight: .medium))
                     }
@@ -187,9 +191,11 @@ struct AppTabBar: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 2)
                     .contentShape(Rectangle())
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: badge)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(item.title)
+                .accessibilityValue(badge > 0 ? "\(badge) unused lamps" : "")
                 .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             }
         }
@@ -208,6 +214,28 @@ struct AppTabBar: View {
         .sensoryFeedback(trigger: selection) { _, _ in
             game.hapticsEnabled ? .selection : nil
         }
+    }
+
+    /// Count of unspent XP lamps surfaced as a tab badge: raid lamps on Raids, Diary lamps on Diary.
+    private func badgeCount(for item: AppTab) -> Int {
+        switch item {
+        case .raids: return game.raidLamps.count
+        case .diary: return game.diaryLamps.count
+        default:     return 0
+        }
+    }
+
+    /// Small count badge pinned to the top-trailing of a tab icon, ringed to read against the icon.
+    private func lampBadge(_ count: Int) -> some View {
+        Text(count > 99 ? "99+" : "\(count)")
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 4)
+            .frame(minWidth: 16, minHeight: 16)
+            .background(Color.red, in: Capsule())
+            .overlay(Capsule().strokeBorder(.bar, lineWidth: 1.5))
+            .offset(x: 11, y: -7)
+            .accessibilityHidden(true)
     }
 }
 
@@ -280,6 +308,16 @@ struct TaskToast: View {
                 .foregroundStyle(Color.rewardToken)
                 .padding(.horizontal, 8).padding(.vertical, 4)
                 .background(Color.rewardToken.opacity(0.18), in: Capsule())
+            }
+            if let tier = event.lampTier {
+                let c = SkillCategory.raidTierColor(tier)
+                HStack(spacing: 3) {
+                    ArtworkView(art: .vector(.genieLamp), size: 13, color: c)
+                    Text(SkillCategory.raidTierName(tier)).font(.caption.weight(.bold))
+                }
+                .foregroundStyle(c)
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(c.opacity(0.18), in: Capsule())
             }
         }
         .padding(.horizontal, 14)

@@ -13,8 +13,9 @@ layer of goals and a single spendable currency **around** it.
 >
 > **Resolved design decisions** (see [§14](#14-resolved-decisions)): a **single spendable currency —
 > Tokens — is the whole economy.** Tokens are *earned* by completing Tasks and *bought* via IAP, then
-> *spent* in the Shop on the game's two consumables (**Boost Coupons** and **Energy Cells**). There
-> are no XP Lamps and no direct coupon/cell IAP: money buys Tokens, Tokens buy consumables. **Total
+> *spent* in the Shop on the game's two consumables (**Boost Coupons** and **Energy Cells**). XP Lamps
+> exist only as a **Diary-tier clear reward** (earned, never bought), and there's no direct coupon/cell
+> IAP: money buys Tokens, Tokens buy consumables. **Total
 > Level** remains the prestige meter. The scale is tuned so paying yields far more Tokens than
 > grinding Tasks, and one shop item costs many Tasks' worth of Tokens.
 
@@ -127,9 +128,12 @@ account's actual activities.
 
 ### 4.2 Difficulty tiers (within each Diary)
 
-`Easy → Medium → Hard → Elite → Master`. Higher tiers award more Tokens. Completing **every Task in a
-tier** grants a **Diary-tier bonus** — a chunky flat Token reward on top of the individual Tasks. (In
-OSRS, completing a diary tier is a landmark — we keep that weight, paid in Tokens.)
+`Easy → Medium → Hard → Elite → Master → Grandmaster`. Higher tiers award more Tokens, and
+**Grandmaster** collects VERY hard, end-game feats (200M-XP sweeps, 250 Boosts, the true-completion
+cape). Completing **every Task in a tier** grants a **tier-matched XP Lamp** — an any-skill lamp
+banked into the Diary lamp inventory (Easy→Bronze, Medium→Iron, Hard→Steel, Elite→Mithril,
+Master→Adamant, Grandmaster→Rune). (In OSRS, clearing a diary tier is a landmark — we keep that
+weight, now paid as a lamp instead of a Token lump.)
 
 ### 4.3 Example Tasks (concrete, hooked to existing mechanics)
 
@@ -150,6 +154,8 @@ These map directly onto hooks that already exist in `GameState`, so evaluation i
 | Idler's · Elite | Earn **500k** XP in a single offline return | `OfflineProgress.totalXP` |
 | Tycoon's · Easy | Stack a **Boost with a Supercharge** | both active in `rollTap` |
 | Tycoon's · Hard | Hold **5 Boost Coupons** at once | `doubleXPCoupons` |
+| Combat · Grandmaster | Reach **200M XP** in **all six** combat skills | `isMaxXP` sweep |
+| Completionist · Grandmaster | **True completion** — 200M XP in **every** skill | `isMaxXP` all 23 |
 | Completionist · — | **First 99**, all-combat-99, max cape, 200M… | today's Milestones, verbatim |
 
 Tasks come in two shapes: **one-shot** (a condition that either has or hasn't happened) and
@@ -158,9 +164,13 @@ progress is visible and motivating.
 
 ### 4.4 Task rewards
 
-Each Task awards **Tokens** scaled by its tier: **Easy 5 · Medium 12 · Hard 30 · Elite 70 · Master
-150**. Completing an entire tier of a Diary adds a flat **Diary-tier bonus** (50 Tokens). All values
-live in `Balance.Rewards` — re-tuning the economy never touches gameplay or view code.
+Each Task awards **Tokens** scaled by its tier: **Easy 3 · Medium 8 · Hard 18 · Elite 42 · Master
+90 · Grandmaster 180**. Completing an entire tier of a Diary instead grants a **tier-matched XP Lamp**
+(Bronze→Rune) — a spend-anywhere lamp whose XP scales with the chosen skill's level, banked into the
+Diary lamp inventory and used from the Diary Overview. Token values live in `Balance.Rewards` and
+lamp values reuse `Balance.lampTierCoefficients`, so re-tuning the economy never touches gameplay or
+view code. (The catalog — now **80 Tasks** across **6 tiers** — totals **≈ 3,606 Tokens** plus **42 XP
+Lamps** (7 each of Bronze→Rune, one per Diary-tier clear) at 100%.)
 
 ---
 
@@ -214,18 +224,19 @@ costs many Tasks' worth of Tokens.** Concrete anchors (all in `Balance.Rewards`)
 
 | Source | Tokens |
 |--------|--------|
-| One Easy Task | 5 |
-| One Master Task | 150 |
-| **Every Task + every Diary-tier bonus (100% completion)** | **≈ 4,189** |
+| One Easy Task | 3 |
+| One Master Task | 90 |
+| One Grandmaster Task | 180 |
+| **Every Task (100% completion)** | **≈ 3,606** (+ 42 XP Lamps) |
 | Smallest IAP (Pouch of Tokens, $0.99) | 500 |
 | Middle IAP (Sack, $4.99) | 3,000 |
 | Largest IAP (Chest, $9.99) | 7,500 |
 
 What this produces:
 
-- **A Boost Coupon (250) costs ~2 Master Tasks or ~50 Easy Tasks.** An Energy Cell (100) is about one
+- **A Boost Coupon (250) costs ~3 Master Tasks or ~80 Easy Tasks.** An Energy Cell (100) is about one
   Master Task. So achievement Tokens *do* buy real play — but deliberately slowly.
-- **The entire free game (~4,189 Tokens) sits between the Sack (3,000) and Chest (7,500).** The $9.99
+- **The entire free game (~3,606 Tokens) sits between the Sack (3,000) and Chest (7,500).** The $9.99
   Chest alone therefore exceeds *everything* you could ever earn from achievements, and even the $0.99
   Pouch (500) buys more than three of the biggest single Tasks → "paying gives a lot more" ✓.
 - Because Tokens only ever buy **time** (Boosts) and **Supercharge convenience** (Cells) — never a
@@ -235,9 +246,10 @@ What this produces:
 Every number here is one edit away in `Balance.Rewards`; nothing about the scale is baked into
 gameplay or view code.
 
-> **Out of scope (future):** XP Lamps, cosmetic capes/trims/home themes, and quality-of-life unlocks
-> were explored in earlier drafts as additional Token sinks. They are **not** part of this revision —
-> the Shop sells only Boost Coupons and Energy Cells today. If added later they must obey the same
+> **Out of scope (future):** *purchasable* XP Lamps, cosmetic capes/trims/home themes, and
+> quality-of-life unlocks were explored in earlier drafts as additional Token sinks. They are **not**
+> part of this revision — the Shop sells only Boost Coupons and Energy Cells today, and XP Lamps are
+> earned solely from Diary-tier clears (never bought). If added later they must obey the same
 > hard rule: **Tokens buy time, cosmetics, or convenience — never permanent power.**
 
 ---
@@ -295,7 +307,8 @@ pattern (new fields are optional so older saves keep decoding — see `GameState
 tokens: Int?                        // single spendable balance (earned + purchased)
 completedTasks: [String]?           // one-shot + finished cumulative task IDs
 taskProgress: [String: Int]?        // partial counters for cumulative tasks
-claimedDiaryTiers: [String]?        // Diary-tier bonuses already granted
+claimedDiaryTiers: [String]?        // Diary tiers already cleared (lamp granted)
+diaryLamps: [RaidLampRecord]?       // unspent any-skill XP lamps from tier clears
 ```
 
 *(Existing `doubleXPCoupons` / `energyCells` inventory is reused as-is — the Shop just tops it up.)*
@@ -308,8 +321,9 @@ claimedDiaryTiers: [String]?        // Diary-tier bonuses already granted
 
 - `Task.swift` — `Task`, `TaskDiary`, `TaskTier`, and the **static catalog** of all tasks (pure
   data, like `TrainingMethod.swift`). *(Implemented.)*
-- `GameState+Rewards.swift` — the engine: `addTokens`, `evaluateTasks(trigger:)`, Diary-tier bonus
-  handling. *(Implemented.)* Shop spending (`creditPurchasedTokens`, `buyBoostCoupon`,
+- `GameState+Rewards.swift` — the engine: `addTokens`, `evaluateTasks(trigger:)`, and banking a
+  tier-matched XP Lamp (`bankDiaryLamp`) into the unified inventory on each Diary-tier clear.
+  *(Implemented.)* Shop spending (`creditPurchasedTokens`, `buyBoostCoupon`,
   `buyEnergyCell`, affordability helpers) lives on `GameState`.
 
 **Evaluation strategy.** Tasks index by **trigger type** (`.tap`, `.levelUp`, `.supercharge`,
@@ -338,11 +352,11 @@ credits Tokens.
 | Pack | Price | Grants | Role |
 |------|-------|--------|------|
 | **Pouch of Tokens** | $0.99 | **500** Tokens | Entry top-up — 2 Boost Coupons or 5 Energy Cells. |
-| **Sack of Tokens** | $4.99 | **3,000** Tokens | Mid tier — covers most of a full achievement clear. |
+| **Sack of Tokens** | $4.99 | **3,000** Tokens | Mid tier — nearly a full achievement clear in one go. |
 | **Chest of Tokens** | $9.99 | **7,500** Tokens | *Best value* — more than 100% Task completion yields. |
 
-- **Paying gives far more than grinding.** 100% Task completion ≈ **4,189 Tokens**; the $4.99 Sack
-  (3,000) covers most of it and the $9.99 Chest (7,500) exceeds it outright (~1.8×). Achievements make
+- **Paying gives far more than grinding.** 100% Task completion ≈ **3,606 Tokens**; the $4.99 Sack
+  (3,000) covers most of it and the $9.99 Chest (7,500) exceeds it outright (~2.1×). Achievements make
   the currency *meaningful*; IAP makes it *fast*.
 - **Non-pay-to-win by construction.** Tokens only buy time (Boosts) and convenience (Cells) — mirroring
   how coupons/Energy Cells already "sell time and multipliers, never permanent power"
@@ -375,10 +389,11 @@ Each phase is centralized-constants-first, so balancing every one is a `Balance.
 ## 12. Balance constants (all tunable in `Balance.Rewards`)
 
 `Balance.Rewards` centralizes the entire economy: **per-Task Token grants** by tier
-(5/12/30/70/150), the **Diary-tier bonus** (50), **Shop prices** (`boostCouponCost` 250,
+(3/8/18/42/90/180), **Shop prices** (`boostCouponCost` 250,
 `energyCellCost` 100), and **IAP grants** (`iapTokensSmall` 500, `iapTokensMedium` 3,000,
-`iapTokensLarge` 7,500). Per house rule, **re-balancing this system never touches gameplay or view
-code** — every number above is one edit here.
+`iapTokensLarge` 7,500). Diary-tier clears grant an XP Lamp whose value reuses
+`Balance.lampTierCoefficients` (Bronze→Rune). Per house rule, **re-balancing this system never touches
+gameplay or view code** — every number above is one edit here.
 
 ---
 
@@ -403,15 +418,15 @@ Settled during design review:
    prestige meter. Tokens are earned from Tasks *and* bought via IAP, and spent in the Shop.
 2. **Spending — the existing consumables.** Tokens buy **Boost Coupons** and **Energy Cells** (a
    two-step model: Tokens → inventory → use), preserving every existing use-flow and the free daily
-   coupon. No XP Lamps.
+   coupon. XP Lamps aren't bought — they're earned only by clearing a Diary tier, then spent on any skill.
 3. **IAP — Token packs only.** Money buys the currency, not consumables directly; no XP-power or
    one-time-unlock products in this revision.
-4. **Scale — paying ≫ grinding.** Per-Task 5–150; 100% completion ≈ 4,189 Tokens; Shop 250 (Boost) /
+4. **Scale — paying ≫ grinding.** Per-Task 3–180; 100% completion ≈ 3,606 Tokens; Shop 250 (Boost) /
    100 (Cell); IAP 500 / 3,000 / 7,500. The $9.99 pack exceeds the entire achievement haul, yet one
    Shop item still costs many Tasks — so both paths feel worthwhile.
 
 ### Still to tune (needs play-session data, not a design blocker)
 
-- Token payouts per Task tier and the Diary-tier bonus.
+- Token payouts per Task tier and the tier-clear XP Lamp values.
 - Shop prices (Boost Coupon / Energy Cell) and IAP grant amounts.
 - Whether to add bulk-buy discounts or additional Shop items later.
