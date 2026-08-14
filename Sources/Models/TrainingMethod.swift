@@ -140,15 +140,17 @@ extension SkillID {
                 TrainingMethod(name: "Mine runite ore", art: .vector(.ore), tint: Palette.rgb(0.28, 0.74, 0.80), shortName: "Runite ore")
             ])
         case .farming:
-            // Produce progression: root crops → leafy crop → orchard trees (magic sapling capstone),
-            // so the object visibly changes as you level rather than staying one leaf throughout.
+            // One cohesive farming-tool motif (a rake) across all six tiers — like Attack's sword or
+            // Prayer's bone — so Farming never renders a tree and collides with Woodcutting. The crop
+            // *names* still carry the OSRS produce progression (roots → leafy → orchard trees), while
+            // the per-tier tint + size ramp show the upgrade.
             return tiered([
-                TrainingMethod(name: "Plant potatoes", art: .symbol("carrot.fill"), tint: Palette.rgb(0.66, 0.56, 0.34), shortName: "Potatoes"),
-                TrainingMethod(name: "Grow onions", art: .symbol("carrot.fill"), tint: Palette.rgb(0.82, 0.74, 0.46), shortName: "Onions"),
-                TrainingMethod(name: "Tend tomatoes", art: .symbol("leaf.fill"), tint: Palette.rgb(0.86, 0.35, 0.30), shortName: "Tomatoes"),
-                TrainingMethod(name: "Raise apple trees", art: .symbol("tree.fill"), tint: Palette.rgb(0.50, 0.66, 0.36), shortName: "Apple trees"),
-                TrainingMethod(name: "Plant papaya trees", art: .symbol("tree.fill"), tint: Palette.rgb(0.38, 0.64, 0.34), shortName: "Papaya trees"),
-                TrainingMethod(name: "Grow magic saplings", art: .symbol("tree.fill"), tint: Palette.rgb(0.52, 0.74, 0.95), shortName: "Magic saplings")
+                TrainingMethod(name: "Plant potatoes", art: .vector(.rake), tint: Palette.rgb(0.66, 0.56, 0.34), shortName: "Potatoes"),
+                TrainingMethod(name: "Grow onions", art: .vector(.rake), tint: Palette.rgb(0.82, 0.74, 0.46), shortName: "Onions"),
+                TrainingMethod(name: "Tend tomatoes", art: .vector(.rake), tint: Palette.rgb(0.86, 0.35, 0.30), shortName: "Tomatoes"),
+                TrainingMethod(name: "Raise apple trees", art: .vector(.rake), tint: Palette.rgb(0.50, 0.66, 0.36), shortName: "Apple trees"),
+                TrainingMethod(name: "Plant papaya trees", art: .vector(.rake), tint: Palette.rgb(0.38, 0.64, 0.34), shortName: "Papaya trees"),
+                TrainingMethod(name: "Grow magic saplings", art: .vector(.rake), tint: Palette.rgb(0.52, 0.74, 0.95), shortName: "Magic saplings")
             ])
         case .hunter:
             // One track, common quarry → herbiboar.

@@ -241,7 +241,7 @@ enum Balance {
     /// **One currency.** Tokens are the single spendable currency. They are *earned* by completing
     /// Tasks and *bought* via IAP (`iapTokens*`), then *spent* in the Shop on Boost Coupons and
     /// Energy Cells (`*Cost`). The scale is deliberately tiered so that paying yields far more than
-    /// grinding achievements: the entire Task catalog (80 Tasks) pays out ≈ 3,600 Tokens, a single
+    /// grinding achievements: the entire Task catalog (79 Tasks) pays out ≈ 3,560 Tokens, a single
     /// Task pays 3–180, one shop item costs 100–250 (so it takes many Tasks to afford one), and even
     /// the smallest IAP pack (500) dwarfs any single Task and buys several shop items outright.
     ///

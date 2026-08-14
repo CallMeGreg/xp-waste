@@ -156,7 +156,7 @@ These map directly onto hooks that already exist in `GameState`, so evaluation i
 | Tycoon's · Hard | Hold **5 Boost Coupons** at once | `doubleXPCoupons` |
 | Combat · Grandmaster | Reach **200M XP** in **all six** combat skills | `isMaxXP` sweep |
 | Completionist · Grandmaster | **True completion** — 200M XP in **every** skill | `isMaxXP` all 23 |
-| Completionist · — | **First 99**, all-combat-99, max cape, 200M… | today's Milestones, verbatim |
+| Completionist · — | **First 99**, train-every-skill-to-70, max cape, 200M… | today's Milestones + breadth sweeps |
 
 Tasks come in two shapes: **one-shot** (a condition that either has or hasn't happened) and
 **cumulative** (a counter, e.g. "collect 10 caches"), the latter shown with a progress bar so partial
@@ -169,7 +169,7 @@ Each Task awards **Tokens** scaled by its tier: **Easy 3 · Medium 8 · Hard 18 
 (Bronze→Rune) — a spend-anywhere lamp whose XP scales with the chosen skill's level, banked into the
 Diary lamp inventory and used from the Diary Overview. Token values live in `Balance.Rewards` and
 lamp values reuse `Balance.lampTierCoefficients`, so re-tuning the economy never touches gameplay or
-view code. (The catalog — now **80 Tasks** across **6 tiers** — totals **≈ 3,606 Tokens** plus **42 XP
+view code. (The catalog — now **79 Tasks** across **6 tiers** — totals **≈ 3,564 Tokens** plus **42 XP
 Lamps** (7 each of Bronze→Rune, one per Diary-tier clear) at 100%.)
 
 ---
@@ -227,7 +227,7 @@ costs many Tasks' worth of Tokens.** Concrete anchors (all in `Balance.Rewards`)
 | One Easy Task | 3 |
 | One Master Task | 90 |
 | One Grandmaster Task | 180 |
-| **Every Task (100% completion)** | **≈ 3,606** (+ 42 XP Lamps) |
+| **Every Task (100% completion)** | **≈ 3,564** (+ 42 XP Lamps) |
 | Smallest IAP (Pouch of Tokens, $0.99) | 500 |
 | Middle IAP (Sack, $4.99) | 3,000 |
 | Largest IAP (Chest, $9.99) | 7,500 |
@@ -236,7 +236,7 @@ What this produces:
 
 - **A Boost Coupon (250) costs ~3 Master Tasks or ~80 Easy Tasks.** An Energy Cell (100) is about one
   Master Task. So achievement Tokens *do* buy real play — but deliberately slowly.
-- **The entire free game (~3,606 Tokens) sits between the Sack (3,000) and Chest (7,500).** The $9.99
+- **The entire free game (~3,564 Tokens) sits between the Sack (3,000) and Chest (7,500).** The $9.99
   Chest alone therefore exceeds *everything* you could ever earn from achievements, and even the $0.99
   Pouch (500) buys more than three of the biggest single Tasks → "paying gives a lot more" ✓.
 - Because Tokens only ever buy **time** (Boosts) and **Supercharge convenience** (Cells) — never a

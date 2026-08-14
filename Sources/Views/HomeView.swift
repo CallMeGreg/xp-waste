@@ -43,21 +43,30 @@ struct HomeView: View {
         }
     }
 
-    /// Stays fixed above the scrolling skill list: total level always in view, plus the active
-    /// XP-Boost countdown whenever a Boost is running. On wide screens the two cards sit side by
-    /// side so the header uses the full width instead of stacking in a narrow column.
+    /// Stays fixed above the scrolling skill list: total level always in view, plus the XP-Boost
+    /// control — a live countdown while a Boost is running, otherwise an always-available "Activate"
+    /// card showing the player's Coupon count. On wide screens the two cards sit side by side so the
+    /// header uses the full width instead of stacking in a narrow column.
     private var pinnedHeader: some View {
         Group {
             if Layout.isWide(hSize) {
                 HStack(alignment: .top, spacing: 12) {
-                    TotalLevelHeader(fillHeight: game.isDoubleXPActive)
-                    if game.isDoubleXPActive { BoostBanner(fillHeight: true) }
+                    TotalLevelHeader(fillHeight: true)
+                    if game.isDoubleXPActive {
+                        BoostBanner(fillHeight: true)
+                    } else {
+                        IdleBoostBanner(fillHeight: true)
+                    }
                 }
                 .fixedSize(horizontal: false, vertical: true)
             } else {
                 VStack(spacing: 10) {
                     TotalLevelHeader()
-                    if game.isDoubleXPActive { BoostBanner() }
+                    if game.isDoubleXPActive {
+                        BoostBanner()
+                    } else {
+                        IdleBoostBanner()
+                    }
                 }
             }
         }
@@ -135,6 +144,59 @@ private struct BoostBanner: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("XP Boost active, \(Format.clock(game.doubleXPRemaining)) remaining")
+    }
+}
+
+/// Always-available XP-Boost control pinned in the header when no Boost is running: the player's
+/// Boost-Coupon count and a one-tap **Activate** button (spending a Coupon), so a Boost is reachable
+/// straight from the Skills tab without a trip to the Shop. Mirrors `BoostBanner`'s styling.
+private struct IdleBoostBanner: View {
+    @EnvironmentObject private var game: GameState
+    var fillHeight: Bool = false
+    @State private var activateHaptic = 0
+
+    private var coupons: Int { game.doubleXPCoupons }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "sparkles")
+                .font(.subheadline.weight(.bold)).foregroundStyle(Color.doubleXP)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("XP BOOST")
+                    .font(.caption2.weight(.bold)).foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Image(systemName: "ticket.fill").font(.caption2).foregroundStyle(Color.doubleXP)
+                    Text("\(coupons) coupon\(coupons == 1 ? "" : "s")")
+                        .font(.caption.weight(.semibold)).foregroundStyle(.primary).monospacedDigit()
+                }
+            }
+            Spacer(minLength: 8)
+            Button(action: activate) {
+                Text("Activate")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(game.canActivateDoubleXP ? .black : Color.secondary)
+                    .padding(.horizontal, 14).padding(.vertical, 8)
+                    .background(game.canActivateDoubleXP ? Color.doubleXP : Color.white.opacity(0.10),
+                                in: Capsule())
+            }
+            .buttonStyle(PressableStyle())
+            .disabled(!game.canActivateDoubleXP)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .frame(maxWidth: .infinity, maxHeight: fillHeight ? .infinity : nil)
+        .background(Color.doubleXP.opacity(0.14), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.doubleXP.opacity(0.5)))
+        .sensoryFeedback(.success, trigger: activateHaptic)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("XP Boost, \(coupons) coupon\(coupons == 1 ? "" : "s")")
+        .accessibilityHint(game.canActivateDoubleXP ? "Activate an XP Boost" : "No coupons — earn one free each day or buy more in the Shop")
+    }
+
+    private func activate() {
+        if game.activateDoubleXP() {
+            if game.hapticsEnabled { activateHaptic += 1 }
+            SoundManager.shared.play(.doubleXP, enabled: game.soundEnabled)
+        }
     }
 }
 
