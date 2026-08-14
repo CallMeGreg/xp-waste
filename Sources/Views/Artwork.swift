@@ -21,7 +21,7 @@ enum SkillArt {
 /// near the navigation bar. Drawn vector paths don't trigger that bug, so the control-bar
 /// glyphs use these instead.
 enum VectorIcon {
-    case sword, axe, pickaxe, bow, arrow, quiver, ore, ingot, bone, skull, warhammer, bolt, flame, lock, battery, genieLamp
+    case sword, axe, pickaxe, bow, arrow, quiver, ore, ingot, bone, skull, warhammer, bolt, flame, lock, battery, genieLamp, rake
 }
 
 // MARK: - Rendering
@@ -82,6 +82,8 @@ extension VectorIcon {
             BatteryIcon(color: color)
         case .genieLamp:
             GenieLampIcon(color: color)
+        case .rake:
+            RakeIcon(color: color)
         }
     }
 }
@@ -493,6 +495,44 @@ private struct GenieLampIcon: View {
                     .fill(color)
                     .frame(width: 0.13 * w, height: 0.13 * h)
                     .position(x: 0.52 * w, y: 0.19 * h)
+            }
+        }
+    }
+}
+
+// MARK: - Farming rake
+
+/// A garden rake: a long central handle capped by a broad toothed head — the Farming skill's tool
+/// motif. Deliberately distinct from the Mining pickaxe (spikes at the top) and the Woodcutting
+/// tree, so Farming never reads like another gathering skill. Single-tint so any colour works, and
+/// built from bold rounded bars so it stays crisp from a 16pt row glyph up to the big training object.
+private struct RakeIcon: View {
+    let color: Color
+
+    /// Normalized x-centres of the five tines hanging from the head bar.
+    private let tineX: [CGFloat] = [0.24, 0.37, 0.50, 0.63, 0.76]
+
+    var body: some View {
+        GeometryReader { geo in
+            let s = min(geo.size.width, geo.size.height)
+            ZStack {
+                // Handle
+                RoundedRectangle(cornerRadius: 0.045 * s)
+                    .fill(color)
+                    .frame(width: 0.10 * s, height: 0.58 * s)
+                    .position(x: 0.50 * s, y: 0.35 * s)
+                // Head bar
+                RoundedRectangle(cornerRadius: 0.035 * s)
+                    .fill(color)
+                    .frame(width: 0.66 * s, height: 0.10 * s)
+                    .position(x: 0.50 * s, y: 0.65 * s)
+                // Tines
+                ForEach(0..<tineX.count, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 0.02 * s)
+                        .fill(color)
+                        .frame(width: 0.055 * s, height: 0.17 * s)
+                        .position(x: tineX[i] * s, y: 0.785 * s)
+                }
             }
         }
     }

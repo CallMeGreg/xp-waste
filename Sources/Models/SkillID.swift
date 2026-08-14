@@ -90,7 +90,7 @@ enum SkillID: String, Codable, CaseIterable, Identifiable {
         case .woodcutting: return .vector(.axe)
         case .fishing: return .symbol("fish.fill")
         case .mining: return .vector(.pickaxe)
-        case .farming: return .symbol("carrot.fill")
+        case .farming: return .vector(.rake)
         case .hunter: return .symbol("pawprint.fill")
         case .cooking: return .symbol("fork.knife")
         case .firemaking: return .symbol("flame.fill")
