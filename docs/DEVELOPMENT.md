@@ -54,7 +54,7 @@ Sources/
             SoundManager.swift          # SFX engine: pooled AVAudioPlayers, one cue per game moment
   Views/    RootView / Onboarding / Home / SkillTile
             SkillTrainingView / SettingsView / Components
-            BoostsView                  # the Shop tab: activate Boost, spend Tokens on Coupons/Cells, buy Token packs
+            BoostsView                  # the Shop tab: spend Tokens on Coupons/Cells, buy Token packs
             DiaryView                   # the Diary tab: Overview + All Tasks (themed Diaries, tiers, Reward Tokens)
   Resources/Sounds/                     # bundled OSRS-inspired SFX (sfx_*.wav) — see SOUND_DESIGN.md
   Assets.xcassets                       # app icon + accent color
@@ -128,13 +128,15 @@ Used for deterministic screenshots / UI checks:
 - `SEED_DEMO=ready|super` — seeds representative levels, slots, energy, coupons, and Energy Cells
   (and, for `super`, an active Supercharge + Daily Boost). Also seeds a modest Diary
   (counters + Reward Tokens) so the Diary isn't empty in demo screenshots.
+- `SEED_CELLS=<n>` — overrides the owned Energy-Cell count of the `SEED_DEMO` seed (e.g. `SEED_CELLS=0`
+  surfaces the training screen's out-of-cells **Buy** action, which routes to the Shop).
 - `SEED_REWARDS=1` — seeds a **rich Diary**: enough levels to unlock all 5 AFK slots,
   representative lifetime counters, every currently-satisfied Task marked complete, cleared
   Diary tiers, and a healthy Reward Token balance. Ideal for reward-system screenshots.
 - `OPEN_TAB=<skills|raids|shop|diary|settings>` — launches directly on that bottom tab.
 - `OPEN_SKILL=<rawValue>` — selects the **Skills** tab and deep-links straight into a skill's
   training screen.
-- `OPEN_SHEET=doublexp` — selects the **Shop** tab (Boost status, Spend Tokens, Token packs).
+- `OPEN_SHEET=doublexp` — selects the **Shop** tab (Spend Tokens on Coupons/Cells, Token packs).
 - `SHOP_SCROLL=tokens` — after landing on the Shop, auto-scrolls to the bottom (Energy Cells + IAP
   **Token Packs**) so the below-the-fold section can be screenshotted from the CLI (which can't
   inject scroll gestures). Pairs with `OPEN_SHEET=doublexp`.

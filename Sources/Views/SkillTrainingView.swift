@@ -71,6 +71,7 @@ struct SkillTrainingView: View {
     @State private var autoTapAccumulator: Double = 0
     @State private var idleAccumulator: Double = 0
     @Environment(\.horizontalSizeClass) private var hSize
+    @Environment(\.selectTab) private var selectTab
 
     /// Drives Runecraft's auto-tap perk while this screen is open.
     private let autoTapTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
@@ -256,7 +257,7 @@ struct SkillTrainingView: View {
         HStack(spacing: 10) {
             slotControlButton(slotted: game.isSlotted(skill))
             superchargeControlButton(supercharged: supercharged, ready: ready)
-            if game.canUseEnergyCell(on: skill) { energyCellButton }
+            energyCellButton
         }
     }
 
@@ -330,29 +331,50 @@ struct SkillTrainingView: View {
         }
     }
 
-    /// Explicit Energy Cell action: a labelled battery button with the owned count that opens a
-    /// confirmation before spending a cell to instantly fill *this* skill's Supercharge charge.
+    /// Explicit Energy Cell action, **always visible** in the action row. When the player owns cells
+    /// and this skill can accept an instant fill, it opens a confirmation before spending one to fill
+    /// *this* skill's Supercharge charge. When they're **out of cells** it routes to the Shop to buy
+    /// more; otherwise (already full or mid-burst) it's shown disabled.
     private var energyCellButton: some View {
-        Button { showEnergyCellConfirm = true } label: {
+        let owned = game.energyCells
+        let canFill = game.canUseEnergyCell(on: skill)
+        let outOfCells = owned == 0
+        // Actionable when we can fill now, or when we're out and can send the player to the Shop.
+        let enabled = canFill || outOfCells
+        let tint: Color = enabled ? .orange : .secondary
+        return Button {
+            if outOfCells {
+                selectTab(.shop)
+            } else if canFill {
+                showEnergyCellConfirm = true
+            }
+        } label: {
             VStack(spacing: 3) {
-                controlGlyph(.battery, .orange, size: 18)
-                Text("Fill").font(.caption2.weight(.bold)).foregroundStyle(.orange)
+                controlGlyph(.battery, tint, size: 18)
+                Text(outOfCells ? "Buy" : "Fill").font(.caption2.weight(.bold)).foregroundStyle(tint)
             }
             .frame(minWidth: 52)
             .padding(.vertical, 8).padding(.horizontal, 8)
-            .background(Color.orange.opacity(0.15), in: RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.orange.opacity(0.5)))
+            .background(enabled ? Color.orange.opacity(0.15) : Color.white.opacity(0.05),
+                        in: RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(enabled ? Color.orange.opacity(0.5) : Color.white.opacity(0.08)))
             .overlay(alignment: .topTrailing) {
-                Text("\(game.energyCells)")
+                Text("\(owned)")
                     .font(.system(size: 11, weight: .heavy, design: .rounded)).monospacedDigit()
                     .foregroundStyle(.black)
                     .frame(minWidth: 18, minHeight: 18)
-                    .background(Color.orange, in: Circle())
+                    .background(enabled ? Color.orange : Color.secondary, in: Circle())
                     .overlay(Circle().strokeBorder(Color.black.opacity(0.25)))
                     .offset(x: 7, y: -7)
             }
         }
         .buttonStyle(PressableStyle())
+        .disabled(!enabled)
+        .accessibilityLabel("Energy Cells")
+        .accessibilityValue("\(owned) owned")
+        .accessibilityHint(outOfCells ? "Out of Energy Cells. Opens the Shop to buy more."
+                                       : "Fills \(skill.displayName)'s Supercharge to full.")
         .confirmationDialog("Use an Energy Cell?", isPresented: $showEnergyCellConfirm,
                             titleVisibility: .visible) {
             Button("Fill \(skill.displayName)") {

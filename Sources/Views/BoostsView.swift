@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// The Shop, unified around a single currency — **Tokens**. You activate an XP **Boost**, see your
-/// Token balance, **spend Tokens** to stock up on Boost Coupons and Energy Cells, and **buy Tokens**
-/// with real money. Tokens are also earned by completing Tasks in the Diary, so the whole
-/// economy is one pouch of coins. See `docs/ACHIEVEMENTS.md`.
+/// The Shop, unified around a single currency — **Tokens**. See your Token balance, **spend Tokens**
+/// to stock up on Boost Coupons and Energy Cells, and **buy Tokens** with real money. Tokens are also
+/// earned by completing Tasks in the Diary, so the whole economy is one pouch of coins. XP Boosts are
+/// activated from the Skills tab, not here. See `docs/ACHIEVEMENTS.md`.
 struct BoostsView: View {
     @EnvironmentObject private var game: GameState
     @EnvironmentObject private var store: Store
@@ -14,8 +14,6 @@ struct BoostsView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 16) {
-                        BoostStatusCard()
-
                         if Layout.isWide(hSize) {
                             TokenWalletCard()
                             HStack(alignment: .top, spacing: 16) {
@@ -303,96 +301,6 @@ private struct TokenBuyButton: View {
         }
         .buttonStyle(PressableStyle())
         .disabled(store.purchasingID != nil)
-    }
-}
-
-// MARK: - Boost status / activation
-
-/// The hero at the top of the Shop: a live countdown while a Boost is running, or an
-/// "Activate Boost" call-to-action (with the effect explained) when idle.
-private struct BoostStatusCard: View {
-    @EnvironmentObject private var game: GameState
-    @State private var activateHaptic = 0
-
-    var body: some View {
-        Group {
-            if game.isDoubleXPActive {
-                TimelineView(.periodic(from: .now, by: 1)) { _ in activeCard }
-            } else {
-                idleCard
-            }
-        }
-        .sensoryFeedback(.success, trigger: activateHaptic)
-    }
-
-    private var boostMinutes: Int {
-        Int(((Balance.doubleXPDurationSeconds + game.doubleXPBonusDuration) / 60).rounded())
-    }
-
-    private func multText(_ v: Double) -> String {
-        v == v.rounded() ? String(format: "×%.0f", v) : String(format: "×%.1f", v)
-    }
-
-    private var activeCard: some View {
-        VStack(spacing: 12) {
-            Label("XP Boost active", systemImage: "sparkles")
-                .font(.headline.weight(.heavy))
-                .foregroundStyle(Color.doubleXP)
-            Text(Format.clock(game.doubleXPRemaining))
-                .font(.system(size: 54, weight: .heavy, design: .rounded))
-                .monospacedDigit()
-                .contentTransition(.numericText())
-            XPProgressBar(progress: game.doubleXPFraction, tint: .doubleXP, height: 8)
-            Text("Every skill is earning \(multText(game.xpMultiplier)) XP — tap away!")
-                .font(.caption).foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(20)
-        .background(Color.doubleXP.opacity(0.14), in: RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(Color.doubleXP.opacity(0.6), lineWidth: 1.5))
-    }
-
-    private var idleCard: some View {
-        VStack(spacing: 14) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 40, weight: .semibold))
-                .foregroundStyle(Color.doubleXP)
-            Text("XP Boost").font(.title2.bold())
-            Text("Spend a Boost Coupon for **\(boostMinutes) minutes** of \(multText(game.doubleXPPotency)) XP on every skill — taps and AFK training alike. Stacks with Supercharge.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 8)
-
-            Button(action: activate) {
-                Text(game.doubleXPCoupons > 0 ? "Activate Boost" : "Out of coupons")
-                    .font(.headline)
-                    .foregroundStyle(game.canActivateDoubleXP ? .black : .secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(game.canActivateDoubleXP ? Color.doubleXP : Color.white.opacity(0.1),
-                                in: RoundedRectangle(cornerRadius: 14))
-            }
-            .buttonStyle(PressableStyle())
-            .disabled(!game.canActivateDoubleXP)
-
-            if game.doubleXPCoupons == 0 {
-                Text("Come back tomorrow for a free coupon, or buy more with Tokens below.")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(20)
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(Color.white.opacity(0.08)))
-    }
-
-    private func activate() {
-        if game.activateDoubleXP() {
-            if game.hapticsEnabled { activateHaptic += 1 }
-            SoundManager.shared.play(.doubleXP, enabled: game.soundEnabled)
-        }
     }
 }
 
