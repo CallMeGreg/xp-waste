@@ -289,14 +289,17 @@ synergize instead of one obsoleting the other.
   optional — Tokens are fully earnable in-game.
 
 **UX.**
-- The **Skills** hub shows the live **XP Boost** banner (×N XP · M:SS countdown) whenever a boost
-  is running; the multiplier reflects the player's live Magic-perk value, not a hard-coded 1.5×.
+- The **Skills** hub pins an **XP Boost** control in its header: a live banner (×N XP · M:SS
+  countdown) whenever a boost is running, otherwise a one-tap **Activate** card (showing the
+  player's Coupon count) — so Boosts are started here, not in the Shop. The multiplier reflects the
+  player's live Magic-perk value, not a hard-coded 1.5×.
 - The training screen shows a live **×N** Daily Boost badge next to the Supercharge badge (which
   itself shows the Prayer-inclusive effective multiplier) so the stacked multiplier is legible,
-  and tap "+X" pops reflect the true per-tap amount. When you hold Energy Cells, a **Fill** quick
-  action appears right in the Energy control to recharge on the spot.
-- The **Shop** tab handles Boost activation, coupon/cell balances and use, and the Token
-  storefront (earned-and-bought Tokens spent on Boost Coupons and Energy Cells).
+  and tap "+X" pops reflect the true per-tap amount. An Energy-Cell action is **always** present in
+  the Energy control: a **Fill** quick action (with your owned count) to recharge on the spot, or,
+  when you're out of cells, a **Buy** button that jumps to the Shop.
+- The **Shop** tab handles coupon/cell balances and purchases, and the Token storefront
+  (earned-and-bought Tokens spent on Boost Coupons and Energy Cells).
 - Daily rewards, purchases, and cell use surface a top toast.
 
 **Monetization critique (indie-dev self-review).**

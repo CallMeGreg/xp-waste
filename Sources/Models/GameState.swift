@@ -1118,6 +1118,11 @@ final class GameState: ObservableObject {
         superchargeMultiplierBySkill = [:]
         doubleXPCoupons = 3
         energyCells = 2
+        // Screenshot override: force the owned Energy-Cell count. `SEED_CELLS=0` surfaces the
+        // training screen's out-of-cells "Buy" action (which routes to the Shop).
+        if let raw = ProcessInfo.processInfo.environment["SEED_CELLS"], let n = Int(raw) {
+            energyCells = max(0, n)
+        }
         // Banked lamps so the Raids inventory / apply flow is populated for screenshots — gathering
         // holds two tiers (current + one lower) to show the color-coded, multi-tier lamp UI.
         raidLamps = [

@@ -25,6 +25,20 @@ enum AppTab: String, CaseIterable, Identifiable {
     }
 }
 
+/// Environment action to switch the selected root tab from anywhere in the view tree — e.g. the
+/// skill training screen sending a player who's out of Energy Cells to the Shop to buy more. Defaults
+/// to a no-op so views still work in isolation (previews, tests).
+private struct SelectTabKey: EnvironmentKey {
+    static let defaultValue: (AppTab) -> Void = { _ in }
+}
+
+extension EnvironmentValues {
+    var selectTab: (AppTab) -> Void {
+        get { self[SelectTabKey.self] }
+        set { self[SelectTabKey.self] = newValue }
+    }
+}
+
 /// Root switch between onboarding and the main game, plus the global game tick
 /// and a shared level-up toast.
 struct RootView: View {
@@ -118,6 +132,7 @@ struct RootView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .environment(\.selectTab, { tab = $0 })
 
             AppTabBar(selection: $tab)
         }
