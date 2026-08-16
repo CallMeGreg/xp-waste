@@ -162,7 +162,7 @@ enum Balance {
         .construction: BuffScaling(at1: maxOfflineHours, at99: 48.0), // workshop: OFFLINE accrual cap (hours), neutral at the base cap
         // Utility — tempo & meta
         .agility:      BuffScaling(at1: 1.0,   at99: 1.6),    // momentum: tap-streak combo ceiling ×
-        .thieving:     BuffScaling(at1: 0.0,   at99: 0.5),    // pickpocket: chance to refund a spent coupon / Supercharge
+        .thieving:     BuffScaling(at1: 0.0,   at99: 0.5),    // pickpocket: chance to refund a spent coupon / Energy Cell
         .slayer:       BuffScaling(at1: 0.0,   at99: 0.15)    // assassinate: crit chance
     ]
 

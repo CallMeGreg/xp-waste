@@ -344,7 +344,7 @@ final class GameState: ObservableObject {
 
     // Utility — tempo & meta
     var comboCeiling: Double { buffRaw(.agility) }
-    /// Thieving "Pickpocket": chance (0…1) to refund a spent coupon or Supercharge.
+    /// Thieving "Pickpocket": chance (0…1) to refund a spent coupon or Energy Cell.
     var refundChance: Double { buffRaw(.thieving) }
     var critChance: Double { buffRaw(.slayer) }
 
@@ -665,18 +665,11 @@ final class GameState: ObservableObject {
         let duration = banked * superchargeDurationMultiplier                // Firemaking extends the burst
         superchargeExpiryBySkill[skill] = Date().addingTimeInterval(duration)
         superchargeMultiplierBySkill[skill] = effectiveSuperchargeMultiplier // lock the boost so mid-burst level-ups don't change it
-        var triggers: Set<TaskTrigger> = [.supercharge]
         bumpCounter(TaskCounter.supercharges)
         if skill.category == .combat { bumpCounter(TaskCounter.combatSupercharges) }
-        if refundChance > 0, Double.random(in: 0..<1) < refundChance {       // Thieving "Pickpocket": keep the banked Energy
-            notice = Notice(icon: "arrow.uturn.backward", text: "Pickpocket! Energy refunded.")
-            bumpCounter(TaskCounter.refunds)
-            triggers.insert(.refund)
-        } else {
-            energyBySkill[skill] = 0
-        }
+        energyBySkill[skill] = 0
         save()
-        evaluateTasks(triggers)
+        evaluateTasks(.supercharge)
         return true
     }
 
@@ -781,10 +774,18 @@ final class GameState: ObservableObject {
         guard canUseEnergyCell(on: skill) else { return false }
         energyCells -= 1
         energyBySkill[skill] = energyCapSeconds
-        notice = Notice(icon: "bolt.fill", text: "Energy Cell used — \(skill.displayName) charged to full.")
+        var triggers: Set<TaskTrigger> = [.energyCell, .energyFull]
         bumpCounter(TaskCounter.energyCells)
+        if refundChance > 0, Double.random(in: 0..<1) < refundChance {       // Thieving "Pickpocket": nick the Energy Cell back
+            energyCells += 1
+            notice = Notice(icon: "arrow.uturn.backward", text: "Pickpocket! Energy Cell refunded.")
+            bumpCounter(TaskCounter.refunds)
+            triggers.insert(.refund)
+        } else {
+            notice = Notice(icon: "bolt.fill", text: "Energy Cell used — \(skill.displayName) charged to full.")
+        }
         save()
-        evaluateTasks([.energyCell, .energyFull])
+        evaluateTasks(triggers)
         return true
     }
 

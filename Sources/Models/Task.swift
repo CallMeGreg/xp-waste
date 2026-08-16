@@ -140,7 +140,7 @@ enum TaskTrigger: Hashable {
     case energyCell     // an Energy Cell was consumed
     case slot           // an AFK slot assignment changed
     case offlineReturn  // returned from an offline session with credited XP
-    case refund         // Thieving refunded a coupon or Supercharge
+    case refund         // Thieving refunded a coupon or Energy Cell
     case combo          // the Agility combo multiplier advanced
     case currency       // a consumable balance (coupons) changed
 }
@@ -335,7 +335,7 @@ enum TaskCatalog {
              title: "In the Zone", detail: "Build a ×1.4 tap combo.",
              goal: 140, triggers: [.combo]) { $0.taskCounter(TaskCounter.bestComboBips) },
         Task(id: "util.refund", diary: .utility, tier: .medium,
-             title: "Light Fingers", detail: "Pickpocket back a coupon or Supercharge.",
+             title: "Light Fingers", detail: "Pickpocket back a coupon or Energy Cell.",
              goal: 1, triggers: [.refund]) { $0.taskCounter(TaskCounter.refunds) },
         Task(id: "util.level60", diary: .utility, tier: .hard,
              title: "Untouchable", detail: "Reach level 60 in any utility skill.",
@@ -347,7 +347,7 @@ enum TaskCatalog {
              title: "Shadow", detail: "Unlock a tier-6 method on any utility skill.",
              goal: 1, triggers: [.levelUp]) { hasTier6(in: .utility, $0) },
         Task(id: "util.refund25", diary: .utility, tier: .elite,
-             title: "Master Thief", detail: "Pickpocket back 25 coupons or Supercharges.",
+             title: "Master Thief", detail: "Pickpocket back 25 coupons or Energy Cells.",
              goal: 25, triggers: [.refund]) { $0.taskCounter(TaskCounter.refunds) },
         Task(id: "util.all90", diary: .utility, tier: .master,
              title: "Utility Grandmaster", detail: "Reach level 90 in all five utility skills.",
