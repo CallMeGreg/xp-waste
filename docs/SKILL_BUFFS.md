@@ -68,7 +68,7 @@ Values below are **level 1 → level 99** (the full envelope). "Kind" is the `Bu
 | Agility 🏃 | Momentum | `combo` | `×1.0 → ×1.6` | Fast tapping builds a **combo multiplier** (ramps over ~20 taps within a 1.2s window). |
 | Hunter 🪤 | Trapper | `offlineRate` | `×1.0 → ×5.0` | Multiplies **offline** passive XP (app *closed*) — traps keep working while you're away. |
 | Slayer 💀 | Assassinate | `critChance` | `0 → 15%` | Chance for a **critical tap** (magnitude comes from Crafting). |
-| Thieving 🥷 | Pickpocket | `refund` | `0% → 50%` | Chance to **refund a spent coupon or Energy Cell** ("nick it back"). |
+| Thieving 🥷 | Pickpocket | `refund` | `0% → 30%` | Chance to **refund a spent coupon or Energy Cell** ("nick it back"). |
 | Prayer 🙏 | Blessing | `superchargePotency` | `×1.00 → ×3.50` | **Multiplies** the active Supercharge multiplier (base `×2` → up to `×7`). |
 
 ### Gathering — feed the idle engine
