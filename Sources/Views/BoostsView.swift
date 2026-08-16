@@ -23,7 +23,7 @@ struct BoostsView: View {
                                     SpendFamilyCard(spendable: .cell)
                                 }
                                 VStack(spacing: 16) {
-                                    sectionHeader("Get more Tokens")
+                                    sectionHeader("Buy more Tokens")
                                     GetTokensCard()
                                 }
                             }
@@ -32,7 +32,7 @@ struct BoostsView: View {
                             sectionHeader("Spend Tokens")
                             SpendFamilyCard(spendable: .coupon)
                             SpendFamilyCard(spendable: .cell)
-                            sectionHeader("Get more Tokens")
+                            sectionHeader("Buy more Tokens")
                             GetTokensCard()
                         }
 
@@ -221,7 +221,7 @@ private struct GetTokensCard: View {
                 Text("Token Packs").font(.headline)
                 Spacer()
             }
-            Text("Top up your pouch to spend on Boost Coupons and Energy Cells. A big shortcut — one pack is worth many Tasks' worth of Tokens.")
+            Text("Top up your pouch to spend on Boost Coupons and Energy Cells.")
                 .font(.footnote).foregroundStyle(.secondary)
 
             Divider().overlay(Color.white.opacity(0.08))
