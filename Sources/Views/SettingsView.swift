@@ -69,7 +69,7 @@ struct SettingsView: View {
             statRow("AFK slots", "\(game.maxSlots) / \(game.maxPossibleSlots)")
             statRow("Diary Tasks", "\(game.totalTasksCompleted) / \(TaskCatalog.all.count)")
             ForEach(SkillCategory.allCases) { group in
-                statRow("\(group.raidName) killcount", "\(game.raidClears(group))")
+                statRow("\(group.raidName) completions", "\(game.raidClears(group))")
             }
         }
     }

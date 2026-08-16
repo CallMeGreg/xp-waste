@@ -74,7 +74,7 @@ private struct SaveData: Codable {
     var claimedDiaryTiers: [String]?
     // Added later — universal XP lamps earned from Diary-tier clears. Optional so older saves decode.
     var diaryLamps: [RaidLampRecord]?
-    // Added later — per-group successful raid clears ("killcount"). Optional so older saves decode.
+    // Added later — per-group successful raid clears ("completions"). Optional so older saves decode.
     var raidClearsByGroup: [String: Int]?
 
     // The `task*` properties are persisted under their original v1.5 JSON keys ("featCounters",
@@ -134,7 +134,7 @@ final class GameState: ObservableObject {
     @Published private(set) var diaryLamps: [RaidLampRecord] = []
     /// Calendar day (yyyy-MM-dd) each group last attempted a raid, enforcing one shot per day.
     @Published private(set) var raidDayByGroup: [String: String] = [:]
-    /// Lifetime successful raid clears per skill group — the raid "killcount" surfaced in Settings.
+    /// Lifetime successful raid clears per skill group — the raid "completions" surfaced in Settings.
     @Published private(set) var raidClearsByGroup: [String: Int] = [:]
 
     // MARK: Rewards (Diary)
@@ -590,7 +590,7 @@ final class GameState: ObservableObject {
         raidDayByGroup[group.rawValue] != Self.dayKey()
     }
 
-    /// Lifetime successful clears ("killcount") for a group's raid.
+    /// Lifetime successful clears ("completions") for a group's raid.
     func raidClears(_ group: SkillCategory) -> Int { raidClearsByGroup[group.rawValue] ?? 0 }
 
     /// Unspent lamps for a group (newest first).
@@ -1144,7 +1144,7 @@ final class GameState: ObservableObject {
             RaidLampRecord(group: .gathering, tier: raidTier(.gathering)),
             RaidLampRecord(group: .gathering, tier: max(0, raidTier(.gathering) - 1))
         ]
-        // Lifetime raid clears ("killcount") so the Settings per-raid stats aren't all zero.
+        // Lifetime raid clears ("completions") so the Settings per-raid stats aren't all zero.
         raidClearsByGroup = [
             SkillCategory.combat.rawValue: 12,
             SkillCategory.production.rawValue: 5,
