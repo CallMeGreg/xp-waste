@@ -93,7 +93,7 @@ private struct TokenWalletCard: View {
                 Text("TOKENS").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
                 Text("\(game.tokens)")
                     .font(.system(size: 30, weight: .heavy, design: .rounded)).monospacedDigit()
-                Text("Earn from Tasks · spend below").font(.caption2).foregroundStyle(.secondary)
+                Text("Earn from Diary Tasks · spend below").font(.caption2).foregroundStyle(.secondary)
             }
             Spacer()
         }
