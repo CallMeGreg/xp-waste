@@ -98,6 +98,9 @@ enum Balance {
         1 + slotUnlockTotalLevels.filter { total >= $0 }.count
     }
 
+    /// The absolute maximum number of training slots — every unlock threshold met.
+    static var maxPossibleSlots: Int { 1 + slotUnlockTotalLevels.count }
+
     // MARK: Skill perks (per-skill account-wide buffs)
 
     /// How a perk's magnitude interpolates from its level-1 value to its level-99 value.

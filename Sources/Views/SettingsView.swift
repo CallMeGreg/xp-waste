@@ -66,10 +66,11 @@ struct SettingsView: View {
             statRow("Total level", "\(game.totalLevel) / \(game.maxTotalLevel)")
             statRow("Total XP", Format.abbrev(game.totalXP))
             statRow("Skills maxed", "\(game.maxedSkillCount) / \(SkillID.allCases.count)")
-            statRow("AFK slots", "\(game.slots.count) / \(game.maxSlots)")
-            statRow("Supercharge", "\(Format.mult(game.effectiveSuperchargeMultiplier)) tap XP")
-            statRow("Boost Coupons", "\(game.doubleXPCoupons)")
-            statRow("Energy Cells", "\(game.energyCells)")
+            statRow("AFK slots", "\(game.maxSlots) / \(game.maxPossibleSlots)")
+            statRow("Diary Tasks", "\(game.totalTasksCompleted) / \(TaskCatalog.all.count)")
+            ForEach(SkillCategory.allCases) { group in
+                statRow("\(group.raidName) completions", "\(game.raidClears(group))")
+            }
         }
     }
 

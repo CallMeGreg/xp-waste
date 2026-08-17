@@ -74,6 +74,8 @@ private struct SaveData: Codable {
     var claimedDiaryTiers: [String]?
     // Added later — universal XP lamps earned from Diary-tier clears. Optional so older saves decode.
     var diaryLamps: [RaidLampRecord]?
+    // Added later — per-group successful raid clears ("completions"). Optional so older saves decode.
+    var raidClearsByGroup: [String: Int]?
 
     // The `task*` properties are persisted under their original v1.5 JSON keys ("featCounters",
     // "completedFeats"), so saves written before the Feats→Tasks rename keep decoding. The on-disk
@@ -88,6 +90,7 @@ private struct SaveData: Codable {
         case completedTasks = "completedFeats"
         case claimedDiaryTiers
         case diaryLamps
+        case raidClearsByGroup
     }
 }
 
@@ -131,6 +134,8 @@ final class GameState: ObservableObject {
     @Published private(set) var diaryLamps: [RaidLampRecord] = []
     /// Calendar day (yyyy-MM-dd) each group last attempted a raid, enforcing one shot per day.
     @Published private(set) var raidDayByGroup: [String: String] = [:]
+    /// Lifetime successful raid clears per skill group — the raid "completions" surfaced in Settings.
+    @Published private(set) var raidClearsByGroup: [String: Int] = [:]
 
     // MARK: Rewards (Diary)
 
@@ -226,6 +231,8 @@ final class GameState: ObservableObject {
     var totalXP: Int { SkillID.allCases.reduce(0) { $0 + xp(for: $1) } }
     var maxTotalLevel: Int { SkillID.allCases.count * XPTable.maxLevel }
     var maxSlots: Int { Balance.maxSlots(forTotalLevel: totalLevel) }
+    /// The absolute maximum number of AFK slots the account can ever unlock.
+    var maxPossibleSlots: Int { Balance.maxPossibleSlots }
     var superchargeMultiplier: Int { Balance.superchargeMultiplier }
     /// The Supercharge multiplier actually applied to taps, including Prayer's multiplier perk.
     /// Prayer scales the base (×2) by ×1.00 (Lv 1) up to ×3.5 (Lv 99), so the effective burst runs
@@ -583,6 +590,9 @@ final class GameState: ObservableObject {
         raidDayByGroup[group.rawValue] != Self.dayKey()
     }
 
+    /// Lifetime successful clears ("completions") for a group's raid.
+    func raidClears(_ group: SkillCategory) -> Int { raidClearsByGroup[group.rawValue] ?? 0 }
+
     /// Unspent lamps for a group (newest first).
     func lamps(for group: SkillCategory) -> [RaidLampRecord] {
         raidLamps.filter { $0.group == group }.sorted { $0.earned > $1.earned }
@@ -811,6 +821,7 @@ final class GameState: ObservableObject {
         }
         let lamp = RaidLampRecord(group: group, tier: raidTier(group))
         raidLamps.append(lamp)
+        raidClearsByGroup[group.rawValue, default: 0] += 1
         notice = Notice(icon: "trophy.fill", text: "\(group.raidName) cleared — \(group.rawValue) lamp earned!")
         save()
         return lamp
@@ -889,6 +900,7 @@ final class GameState: ObservableObject {
         raidLamps = []
         diaryLamps = []
         raidDayByGroup = [:]
+        raidClearsByGroup = [:]
         tokens = 0
         taskCounters = [:]
         completedTasks = []
@@ -1083,6 +1095,7 @@ final class GameState: ObservableObject {
         raidLamps = saved.raidLamps ?? []
         diaryLamps = saved.diaryLamps ?? []
         raidDayByGroup = saved.raidDayByGroup ?? [:]
+        raidClearsByGroup = saved.raidClearsByGroup ?? [:]
         tokens = saved.tokens ?? 0
         taskCounters = saved.taskCounters ?? [:]
         completedTasks = Set(saved.completedTasks ?? [])
@@ -1130,6 +1143,13 @@ final class GameState: ObservableObject {
             RaidLampRecord(group: .gathering, tier: raidTier(.gathering)),
             RaidLampRecord(group: .gathering, tier: raidTier(.gathering)),
             RaidLampRecord(group: .gathering, tier: max(0, raidTier(.gathering) - 1))
+        ]
+        // Lifetime raid clears ("completions") so the Settings per-raid stats aren't all zero.
+        raidClearsByGroup = [
+            SkillCategory.combat.rawValue: 12,
+            SkillCategory.production.rawValue: 5,
+            SkillCategory.utility.rawValue: 8,
+            SkillCategory.gathering.rawValue: 3
         ]
         if variant == "super" {
             superchargeExpiryBySkill = [.attack: Date().addingTimeInterval(26)]
@@ -1294,7 +1314,8 @@ final class GameState: ObservableObject {
             taskCounters: taskCounters,
             completedTasks: Array(completedTasks),
             claimedDiaryTiers: Array(claimedDiaryTiers),
-            diaryLamps: diaryLamps
+            diaryLamps: diaryLamps,
+            raidClearsByGroup: raidClearsByGroup
         )
         if let data = try? JSONEncoder().encode(snapshot) {
             UserDefaults.standard.set(data, forKey: Self.saveKey)
