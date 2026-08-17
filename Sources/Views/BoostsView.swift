@@ -23,7 +23,7 @@ struct BoostsView: View {
                                     SpendFamilyCard(spendable: .cell)
                                 }
                                 VStack(spacing: 16) {
-                                    sectionHeader("Get more Tokens")
+                                    sectionHeader("Buy more Tokens")
                                     GetTokensCard()
                                 }
                             }
@@ -32,7 +32,7 @@ struct BoostsView: View {
                             sectionHeader("Spend Tokens")
                             SpendFamilyCard(spendable: .coupon)
                             SpendFamilyCard(spendable: .cell)
-                            sectionHeader("Get more Tokens")
+                            sectionHeader("Buy more Tokens")
                             GetTokensCard()
                         }
 
@@ -93,7 +93,7 @@ private struct TokenWalletCard: View {
                 Text("TOKENS").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
                 Text("\(game.tokens)")
                     .font(.system(size: 30, weight: .heavy, design: .rounded)).monospacedDigit()
-                Text("Earn from Tasks · spend below").font(.caption2).foregroundStyle(.secondary)
+                Text("Earn from Diary Tasks · spend below").font(.caption2).foregroundStyle(.secondary)
             }
             Spacer()
         }
@@ -119,8 +119,8 @@ private enum Spendable {
 
     var blurb: String {
         switch self {
-        case .coupon: return "You get one free coupon each day — stock up with Tokens for back-to-back boosts."
-        case .cell:   return "Instantly fills the skill you're training to full Supercharge. Stock up with Tokens."
+        case .coupon: return "Spend one to start a timed XP boost on every skill. You get one free each day — stock up with Tokens for back-to-back boosts."
+        case .cell:   return "Instantly fills the skill you're training to full Supercharge."
         }
     }
 
@@ -221,7 +221,7 @@ private struct GetTokensCard: View {
                 Text("Token Packs").font(.headline)
                 Spacer()
             }
-            Text("Top up your pouch to spend on Boost Coupons and Energy Cells. A big shortcut — one pack is worth many Tasks' worth of Tokens.")
+            Text("Top up your pouch to spend on Boost Coupons and Energy Cells.")
                 .font(.footnote).foregroundStyle(.secondary)
 
             Divider().overlay(Color.white.opacity(0.08))
