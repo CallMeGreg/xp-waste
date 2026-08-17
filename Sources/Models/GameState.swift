@@ -996,13 +996,17 @@ final class GameState: ObservableObject {
         }
 
         let total = entries.reduce(0) { $0 + $1.xpGained }
-        if total > 0 {
-            bumpCounter(TaskCounter.offlineReturns)
-            raiseCounter(TaskCounter.bestOfflineXP, to: total)
-            // Evaluate offline-return and any level-up Tasks once, after all slots are credited.
-            evaluateTasks([.offlineReturn, .levelUp])
-        }
+        // Offline level-ups can still complete level-based Tasks even for a brief absence.
+        if total > 0 { evaluateTasks(.levelUp) }
+
+        // Only a genuine offline return counts: one long enough to surface the welcome-back
+        // summary that shows the XP earned. A quick app switch below `minOfflineSecondsForSummary`
+        // credits a trickle of passive XP but must not advance offline-return Tasks (e.g.
+        // "Creature of Habit") or record a best-return, since the player never sees a summary.
         guard total > 0, timeAway >= Balance.minOfflineSecondsForSummary else { return }
+        bumpCounter(TaskCounter.offlineReturns)
+        raiseCounter(TaskCounter.bestOfflineXP, to: total)
+        evaluateTasks(.offlineReturn)
         offlineProgress = OfflineProgress(
             timeAway: timeAway,
             creditedTime: credited,
