@@ -148,7 +148,7 @@ These map directly onto hooks that already exist in `GameState`, so evaluation i
 | Gathering · Medium | Collect **10 bird's-nest caches** | `rollTap` → `gotCache` (Woodcutting) |
 | Gathering · Hard | Raise your Energy cap to **45s** | `energyCapSeconds` (Mining) |
 | Utility · Medium | Reach a **×1.4 combo** | `comboMultiplier` (Agility) |
-| Utility · Hard | **Refund** a coupon or Supercharge | `refundChance` proc (Thieving) |
+| Utility · Hard | **Refund** a coupon or Energy Cell | `refundChance` proc (Thieving) |
 | Idler's · Easy | Fill **all** your AFK slots | `slots.count == maxSlots` |
 | Idler's · Medium | Return from offline with a **level-up** | `creditOfflineProgress` entry |
 | Idler's · Elite | Earn **500k** XP in a single offline return | `OfflineProgress.totalXP` |

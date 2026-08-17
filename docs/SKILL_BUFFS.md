@@ -68,7 +68,7 @@ Values below are **level 1 → level 99** (the full envelope). "Kind" is the `Bu
 | Agility 🏃 | Momentum | `combo` | `×1.0 → ×1.6` | Fast tapping builds a **combo multiplier** (ramps over ~20 taps within a 1.2s window). |
 | Hunter 🪤 | Trapper | `offlineRate` | `×1.0 → ×5.0` | Multiplies **offline** passive XP (app *closed*) — traps keep working while you're away. |
 | Slayer 💀 | Assassinate | `critChance` | `0 → 15%` | Chance for a **critical tap** (magnitude comes from Crafting). |
-| Thieving 🥷 | Pickpocket | `refund` | `0% → 50%` | Chance to **refund a spent coupon or Supercharge** ("nick it back"). |
+| Thieving 🥷 | Pickpocket | `refund` | `0% → 30%` | Chance to **refund a spent coupon or Energy Cell** ("nick it back"). |
 | Prayer 🙏 | Blessing | `superchargePotency` | `×1.00 → ×3.50` | **Multiplies** the active Supercharge multiplier (base `×2` → up to `×7`). |
 
 ### Gathering — feed the idle engine
@@ -89,7 +89,7 @@ Some perks intentionally pair across skills so leveling two things compounds:
   starts at `0%`, so no tap crits until you train it (preserving non-regression); Crafting starts
   at `×2`, so your first crit is already meaty.
 - **Supercharge power = Prayer, duration = Firemaking, cap = Mining, charge chance = Fishing,
-  charge amount = Hitpoints, refund = Thieving.** The whole Energy/Supercharge loop is levered by
+  charge amount = Hitpoints, Energy-Cell refund = Thieving.** The whole Energy/Supercharge loop is levered by
   several different skills.
 - **Daily Boost = Magic (potency) × Herblore (duration) × Thieving (refund).** The boost economy is
   levered by three skills — Thieving can even hand the spent coupon straight back.

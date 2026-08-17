@@ -28,7 +28,7 @@ enum BuffKind {
     case offlineCap          // Construction: raises the OFFLINE accrual cap (hours)
     // Utility — tempo & meta
     case combo               // Agility: tap-streak combo multiplier
-    case refund              // Thieving: chance to refund a spent coupon or Supercharge
+    case refund              // Thieving: chance to refund a spent coupon or Energy Cell
     case critChance          // Slayer: chance for a critical tap
 }
 
@@ -117,7 +117,7 @@ extension SkillID {
                                  blurb: "Fast tapping builds a combo multiplier.")
         case .thieving:
             return SkillBuffInfo(kind: .refund, name: "Pickpocket", icon: "ticket.fill",
-                                 blurb: "Chance to nick back a spent coupon or Supercharge.")
+                                 blurb: "Chance to nick back a spent coupon or Energy Cell.")
         case .slayer:
             return SkillBuffInfo(kind: .critChance, name: "Assassinate", icon: "burst.fill",
                                  blurb: "Chance for a critical tap.")

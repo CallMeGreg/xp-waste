@@ -116,7 +116,7 @@ Runecraft literally auto-taps for you, and so on across all 23.
   the ceiling, Defence the floor, Attack biases toward the top, Ranged adds extra hits, and
   Slayer × Crafting land the occasional crit. Non-combat perks feed the idle engine (Energy,
   foreground idle rate, offline rate/cap), the boost economy (Daily Boost potency/duration, Supercharge
-  power/duration, coupon/Energy refund), or account tempo (combo, auto-tap).
+  power/duration, coupon/Energy-Cell refund), or account tempo (combo, auto-tap).
 
 The full per-skill lever table, designed synergies, and the exact tap pipeline order live in
 **[SKILL_BUFFS.md](SKILL_BUFFS.md)**. All perk numbers are centralized in `Balance.buffScaling`, so
