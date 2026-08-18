@@ -7,7 +7,7 @@ app logistics lives in this folder.
 | Doc | What it covers |
 |-----|----------------|
 | [GAME_DESIGN.md](GAME_DESIGN.md) | Full game design document — vision, skills, mechanics, progression, balance tables, and the indie-dev critique. |
-| [RAID_SYSTEM.md](RAID_SYSTEM.md) | Raid system design — one raid per skill group, tier scaling, the four gameplay loops, daily one-shot pass/fail, and the XP-lamp reward. |
+| [RAID_SYSTEM.md](RAID_SYSTEM.md) | Raid system design — each raid a multi-room expedition (rooms, mini-boss, elite room, final boss), shared timer + raid HP, six distinct room mechanics, boss phases/enrage, tier scaling, flawless bonus, and the XP-lamp reward. |
 | [SKILL_BUFFS.md](SKILL_BUFFS.md) | The 23 unique account-wide skill perks — per-skill lever table, designed synergies, scaling model, and the tap "hit" pipeline. |
 | [ACHIEVEMENTS.md](ACHIEVEMENTS.md) | Design proposal for the **Diary** — Tasks, Reward Tokens, the Reward Vault (XP Lamps + capes), the Collection Log, and how IAP expedites/unlocks it. |
 | [SOUND_DESIGN.md](SOUND_DESIGN.md) | The OSRS-inspired sound palette — event → cue mapping, the audio engine (`SoundManager`), the generator (`Tools/sound_synth.py`), and how to regenerate or re-pick cues. |

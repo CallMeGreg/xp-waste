@@ -1,400 +1,273 @@
 # XP Waste — Raid System (design)
 
-A new **Raids** feature: one thematic raid per skill **category**, gated to **once per group per
-day**, whose **difficulty and reward tier scale with that group's combined skill level**. A raid
-grants **no XP while you play** — clearing it awards a **Skill Lamp** bound to that group, worth
-about **3× the XP you'd have earned tapping that skill for the raid's duration**.
+One thematic **raid per skill category**, gated to **once per group per day**, whose **difficulty,
+room count, and reward tier scale with that group's average skill level**. A raid grants **no XP
+while you play** — clearing every room banks a **Skill Lamp** bound to that group, spendable on any
+one of its skills.
 
-> **Status:** design only. Nothing here is implemented yet. This document is the spec; the
-> implementation PR that follows must obey the repo's universal-app and screenshot rules
-> (both iPhone **and** iPad captures of every new screen) and keep every tunable number in
-> `Balance.swift`.
+Unlike a single minigame, **a raid is a multi-room expedition**: a couple of warm-up rooms, a
+**mini-boss**, sometimes an **elite** room at the top tiers, then a **final boss** that is tougher
+than everything before it. Every room runs a *different* mechanic, and the whole run shares **one
+countdown** and **one pool of raid HP**, so it reads like a real adventure rather than a repeated
+tap-test.
+
+> **Status:** implemented. This document tracks the shipped design. All tunable numbers live in
+> `Balance.swift`; room/boss identities in `RaidPlan.swift`. Any change here must obey the repo's
+> universal-app and screenshot rules (both iPhone **and** iPad captures of every new screen).
 
 ---
 
 ## 1. Goals & pillars
 
-- **A daily, high-stakes, active challenge** that complements — never replaces — the tap/idle
-  loop. One shot per group per day; clear it or come back tomorrow.
-- **Four distinct, skill-faithful gameplay loops**, one per category, each expressing how that
-  group of skills is trained in OSRS.
-- **Rewards that scale with mastery.** Difficulty tracks the group's combined level; the payoff
-  (an XP lamp) scales with the skill you spend it on, so it stays relevant from level 1 to 99.
-- **Zero magic numbers in gameplay/view code.** Every raid constant — duration, difficulty ramp,
-  pass thresholds, reward multiplier — lives in `Balance.swift`, matching the existing pattern.
-
-### Confirmed design decisions
-
-| Question | Decision |
-|----------|----------|
-| Deliverable | **This document only** (design). Implementation is a follow-up. |
-| Structure | **One raid per `SkillCategory`** (Combat, Production, Utility, Gathering). |
-| Difficulty & reward scaling | **Auto-scales with the group's combined level** (no manual tier picking). |
-| Placement | **"Raids" tab** in the app's bottom tab bar (Skills · Raids · Shop · Diary · Settings). |
-| XP during play | **None.** The raid is a minigame; the reward is the lamp. |
-| Frequency | **1 raid per group per day** (up to 4/day across the four groups). |
-| Reward variance | **Pass/fail.** Clear the success threshold → full lamp; fall short → nothing. |
-| Failure cost | **One shot** — a failed attempt consumes that group's daily raid. |
-| Lamp value basis | **Benchmarked against tapping the specific skill the lamp is applied to**, at that skill's current method tier (bigger lamp on a higher-level skill). |
+- **A daily, high-stakes, active challenge** that complements — never replaces — the tap/idle loop.
+  One shot per group per day; clear it or come back tomorrow.
+- **Every raid is an expedition, not a single loop.** Multiple rooms with different goals, a
+  mini-boss and a tougher final boss, and (at high tiers) an extra elite room. Difficulty evolves
+  **structurally** — more rooms, more boss phases, faster/enraged attacks — not merely "fewer
+  mistakes allowed".
+- **Six distinct, skill-faithful room mechanics** mixed across the four raids so each group's
+  expedition feels different from the next.
+- **Bosses that fight back.** Even a *skilling* finale (forge, gathering) layers a telegraphed
+  **dodge** on top of the skilling verb, so a boss room is a real fight whether or not you're
+  swinging a sword.
+- **Rewards that scale with mastery.** Difficulty tracks the group's average level; the payoff (an
+  XP lamp) scales with the skill you spend it on, so it stays relevant from level 1 to 99. A
+  **flawless** clear (no raid HP lost) banks a bonus lamp.
+- **Zero magic numbers in gameplay/view code.** Every raid constant lives in `Balance.swift`.
 
 ---
 
 ## 2. Where it lives (navigation)
 
-Today `RootView` shows `OnboardingView` until `hasSeenOnboarding`, then `HomeView` inside a
-`NavigationStack`, with global level-up / notice toasts and the offline-progress sheet layered on
-top.
+Raids is one tab of the app's **custom bottom tab bar** (`AppTabBar`): **Skills · Raids · Shop ·
+Diary · Settings**. `RaidsView` hosts a width-capped, centered 2-column grid of the four raid
+cards; tapping **Raid** presents `RaidSessionView` as a `fullScreenCover`. Global toasts and the
+offline sheet stay at the root so they overlay every tab.
 
-**Change:** once onboarding is complete, the game lives behind a **custom bottom tab bar**
-(`AppTabBar`, in place of the native `TabView` so the bar sits at the bottom on iPad too). Raids is
-one of its five tabs:
-
-| Tab | View | Icon (SF Symbol) |
-|-----|------|------------------|
-| **Skills** | `HomeView` (the hub) | `square.grid.2x2.fill` |
-| **Raids** | `RaidsView` | `shield.fill` |
-| **Shop** | `BoostsView` | `cart.fill` |
-| **Diary** | `DiaryView` | `book.closed.fill` |
-| **Settings** | `SettingsView` | `gearshape.fill` |
-
-The level-up toast, notice toast, and `offlineProgress` sheet stay at the **root ZStack** so they
-overlay every tab. Onboarding optionally gains a 5th card introducing raids (kept short — see the
-onboarding-overload note in the game design doc).
-
-> Universal-app rules still apply everywhere: no hard-coded sizes, width-capped & centered content
-> (`.frame(maxWidth: …)`), adaptive layouts via `horizontalSizeClass`, iPad in all orientations.
+Universal-app rules apply throughout: no hard-coded sizes, width-capped & centered content, adaptive
+layouts via `horizontalSizeClass`, iPad in all orientations.
 
 ---
 
-## 3. Raid groups & tiers
+## 3. Raids, tiers & room counts
 
-There is exactly one raid per category, themed to its skills:
+One raid per category, themed to its skills:
 
-| Group (`SkillCategory`) | Raid | Skills | Combined-level max |
-|-------------------------|------|--------|--------------------|
-| **Combat** | **The Colosseum** | Attack, Strength, Defence, Hitpoints, Ranged, Magic | 6 × 99 = **594** |
-| **Production** | **The Grand Forge** | Smithing, Crafting, Fletching, Runecraft, Cooking, Construction, Firemaking | 7 × 99 = **693** |
-| **Utility** | **The Heist** | Agility, Hunter, Slayer, Thieving, Prayer | 5 × 99 = **495** |
-| **Gathering** | **The Expedition** | Woodcutting, Farming, Fishing, Mining, Herblore | 5 × 99 = **495** |
+| Group (`SkillCategory`) | Raid | Tagline |
+|-------------------------|------|---------|
+| **Combat** | **The Colosseum** | Three bouts against the arena's champions. |
+| **Production** | **The Grand Forge** | Fill the war-order before the Forge Master. |
+| **Utility** | **The Vault Heist** | Three wards stand between you and the vault. |
+| **Gathering** | **The Expedition** | Harvest three biomes ahead of the storm. |
 
-### 3.1 Tier = the group's *average* method tier
+### 3.1 Tier = the group's average method tier
 
-Groups have different skill counts (5, 6, 7), so raw combined level isn't comparable across them.
-We normalize by **average level** and reuse the **existing** method-tier ladder:
+A raid's **tier (0…5, Bronze → Rune)** is `Balance.trainingTierIndex` of the group's **average
+level** (`GameState.raidTier`). The tier drives everything difficulty-related through
+`Balance.raidTierParams[tier]` (`RaidTierParams`) and `Balance.raidRoomCounts[tier]`.
 
+| Tier | Name | Rooms | Raid HP | Final-boss phases | Windows / cadence | Memory len | Decoys | Goal ×|
+|-----:|------|:----:|:------:|:-----------------:|:-----------------:|:----------:|:------:|:-----:|
+| 0 | Bronze  | 3 | 6 | 1 | widest | 3 | 2 | 1.00 |
+| 1 | Iron    | 3 | 6 | 1 | ↓ | 3 | 3 | 1.10 |
+| 2 | Steel   | 3 | 5 | 2 | ↓ | 4 | 4 | 1.20 |
+| 3 | Mithril | 3 | 5 | 2 | ↓ | 4 | 5 | 1.35 |
+| 4 | Adamant | **4** | 4 | 3 | ↓ | 5 | 6 | 1.50 |
+| 5 | Rune    | **4** | 4 | **3** | tightest | 5 | 7 | 1.70 |
+
+So a Rune raid isn't just "the Bronze raid with less slack" — it has **an extra room**, a **3-phase
+final boss**, fewer hearts, tighter dodge windows, longer memory sequences, and more decoys.
+
+The **timer** is budgeted per room: `raidDuration = raidBaseSeconds + raidSecondsPerRoom × rooms`
+(`Balance.raidDuration(forTier:)`), so 3- and 4-room raids both feel fair.
+
+---
+
+## 4. Room mechanics
+
+Each room is one of six `RaidRoomKind`s (`RaidRooms.swift`), each a *distinct* interface with its
+own objective. A room clears when its objective count reaches
+`Balance.raidRoomGoal(kind:isBoss:tier:)`.
+
+| Kind | Verb | What you do | Boss overlay |
+|------|------|-------------|:------------:|
+| **barrage** | Dodge & strike | Slide your ward into the one safe lane of a three-lane volley; surviving a wave lands a counter-strike. Pure dodge-and-punish. | owns its dodge |
+| **assault** | Break the weakpoints | Tap glowing weakpoints on a looming foe while it telegraphs and **slams**; a missed slam costs a heart. | owns its dodge |
+| **forge** | Time the strikes | Rhythm: strike the sweeping meter's moving **sweet-spot**, build a combo. | engine slam |
+| **recognition** | Gather the called | Tap the **called** resource among tier-scaled **decoys** (recognition + speed). | engine slam |
+| **stealth** | Loot unseen | Grab loot only while the sweeping **searchlight** is turned away; grabbing while watched costs a heart. | self-draws boss |
+| **sequence** | Repeat the pattern | Memorise then repeat a lit **glyph sequence** of length `sequenceLength`. | engine slam |
+
+### 4.1 Raid HP vs. tempo
+
+**Raid HP** (hearts, `RaidTierParams.playerHP`) is the *combat* resource for the whole run. Only a
+**failed dodge / slam / alarm** (`onMistake`) costs a heart; at zero the raid ends immediately.
+Skilling slips (a mistimed forge strike, a wrong recognition pick) cost only **tempo/combo**, never
+HP. That's what makes a **flawless** run (no hearts lost) a meaningful, rewardable feat.
+
+---
+
+## 5. Room sequences (per raid)
+
+Built by `SkillCategory.raidRooms(tier:)`. Every raid has a **mini-boss** midway and a **final
+boss** last; the extra room at tiers 4–5 (`fourRooms`) splices an **elite** room in before the
+finale. Mechanic mixes are deliberately varied per raid.
+
+| Raid | Room 1 | Room 2 (mini-boss) | Elite (tier ≥ 4) | Final boss |
+|------|--------|--------------------|------------------|------------|
+| **The Colosseum** | Volley Pit (barrage) | **The Sand Beast** (assault) | The Gauntlet (barrage) | **The Champion** (assault) |
+| **The Grand Forge** | The Smeltery (forge) | **The Slag Golem** (assault) | The Assembly (sequence) | **The Forge Master** (forge) |
+| **The Vault Heist** | Long Corridor (stealth) | **The Warhound** (barrage) | The Tumblers (sequence) | **The Vault Warden** (stealth) |
+| **The Expedition** | The Grove (recognition) | **The River Serpent** (barrage) | Drying Racks (forge) | **The Grove Colossus** (recognition) |
+
+---
+
+## 6. Bosses
+
+`RaidBoss` (`RaidPlan.swift`) enumerates eight creatures, each with a proper **name** and a
+one-line **threat** flavor. They're drawn by `RaidBossView` (`RaidBossArt.swift`): a **parametrised
+vector silhouette on a `Canvas`** — one archetype per boss (brute / construct / hound / warden /
+serpent) sharing chrome, so the roster looks varied without a bespoke asset each. The boss
+**breathes** (idle bob), its **eyes pulse**, it **flinches + flashes white** when struck
+(`hitToken`), darkens as it's wounded (`hpFraction`), and gains an **angry rim + faster pulse** when
+**enraged**.
+
+- **Boss HP bar.** In a boss room the objective bar is styled as **boss HP** (`1 − progress/goal`),
+  labelled with the boss name and, for a multi-phase final boss, a row of **phase pips**.
+- **Phases & enrage.** The final room fights through `RaidTierParams.bossPhases` phases (up to 3);
+  the boss is **enraged** in its last third, which tightens the engine slam cadence.
+- **Boss goals are longer.** `raidRoomGoal` multiplies a boss room's base objective by
+  `raidBossGoalMultiplier + raidBossPhaseGoalBonus × (phases − 1)`, so the finale always outlasts
+  the warm-up rooms.
+- **Who draws the boss.** `assault` and `stealth` self-draw their boss inside the mechanic; for
+  `barrage / forge / recognition / sequence` boss rooms the **engine** renders a boss banner above
+  the mechanic. `RaidRoomKind.usesEngineHazards(isBoss:)` marks the *skilling* boss kinds (forge /
+  recognition / stealth / sequence) that also receive the shared telegraphed **DODGE!** overlay.
+
+---
+
+## 7. The engine (`RaidSessionView`)
+
+Owns the whole run: it walks `group.raidRooms(tier:)`, runs the shared **countdown**, tracks
+**objective progress** per room and global **raid HP**, computes **boss HP / phase / enrage** from
+progress, and renders:
+
+- a **HUD** — close, raid name + tier, timer + countdown bar, an **expedition room map** (one node
+  per room; bosses flagged, final boss crowned), the objective/boss-HP bar, and **heart** pips;
+- an animated `RaidRoomBackdrop` (themed gradient + drifting motes + vignette, reddening on enrage);
+- **room-intro cards** (room *x* of *N*, boss art or mechanic glyph, threat, objective, mechanic +
+  mini-boss/final-boss chips, and an **Enter / Advance / Face the Boss** button — the timer is
+  paused while reading);
+- the **shared slam overlay** for `usesEngineHazards` boss rooms (tap to dodge; a lapse costs a
+  heart);
+- a **result overlay** — win/fail, flawless callout, and the earned **lamp(s)** with the flawless
+  bonus.
+
+Clearing the final room wins; running out of hearts or time loses. Both outcomes spend the daily
+attempt (spent up-front in `beginRaid`, so quitting can't farm retries).
+
+---
+
+## 8. Daily limit & one-shot pass/fail
+
+`Balance.raidsPerGroupPerDay = 1`. `GameState.beginRaid(group)` stamps the group's day key the
+moment the session opens; `isRaidAvailableToday` gates the card's **Raid** button. A finished
+attempt (win *or* loss) has already spent the day.
+
+---
+
+## 9. Reward — Skill Lamps
+
+Clearing a raid banks a **Skill Lamp** bound to the group (`RaidLampRecord`); a **flawless** clear
+banks `Balance.raidFlawlessBonusLamps` extra (default **1**). `GameState.finishRaid(_:passed:
+flawless:)` returns every lamp earned.
+
+### 9.1 Application rules
+- A raid lamp is spent from the **Raids** tab (`LampApplySheet`) on **any one skill in its group**.
+- Value is computed **at application time** from the target skill's current level, so a lamp banked
+  early and spent on a high-level skill is worth more — OSRS-faithful.
+
+### 9.2 Value formula
 ```
-avgLevel(group)  = combinedLevel(group) / skillCount(group)          // 1…99
-raidTier(group)  = Balance.trainingTierIndex(forSkillLevel: avgLevel) // 0…5
+lampXP(skill, tier) = level(skill) × Balance.lampTierCoefficients[tier]
 ```
+`lampTierCoefficients = [500, 900, 1650, 3000, 5500, 10000]` (Bronze → Rune). The tier's coefficient
+grows steeply, and multiplying by the skill's **current level** means no two levels look identical.
+`GameState.projectedLampXP` shows the exact number before you commit.
 
-So a raid is **Rune tier** exactly when the group's skills *average* level 90+, the same ladder
-(`1 / 15 / 30 / 50 / 70 / 90`) that governs training methods. No new threshold table needed — the
-raid tier reads as "your Combat skills average a Mithril-tier fighter."
+### 9.3 Example payouts
 
-| Raid tier | Reuses method unlock level | Theme name (flavor) |
-|-----------|----------------------------|---------------------|
-| 0 | avg ≥ 1  | Bronze |
-| 1 | avg ≥ 15 | Iron |
-| 2 | avg ≥ 30 | Steel |
-| 3 | avg ≥ 50 | Mithril |
-| 4 | avg ≥ 70 | Adamant |
-| 5 | avg ≥ 90 | Rune |
+| Target skill level | Bronze (×500) | Steel (×1650) | Rune (×10000) |
+|-------------------:|--------------:|--------------:|--------------:|
+| 20 | 10,000 | 33,000 | 200,000 |
+| 50 | 25,000 | 82,500 | 500,000 |
+| 90 | 45,000 | 148,500 | 900,000 |
 
-Higher tiers make the raid **harder** (§4) and — because you'll spend the lamp on higher-level
-skills — **more rewarding** (§6).
+Re-tuning lamps is a one-line `Balance.swift` edit — never gameplay or view code.
 
 ---
 
-## 4. The four gameplay loops
+## 10. Balance constants (all in `Balance.swift`)
 
-Every loop shares a frame: a **countdown** (`Balance.raidDurationSeconds`, a few minutes), an
-on-screen **progress/score** read-out, and a **pass threshold** you must reach before time runs
-out. **No XP is granted during play.** Each loop is a different verb; difficulty parameters are
-selected by `raidTier(group)` from a centralized per-tier table (§7). All are fully responsive
-(single column on compact width; roomier framing on iPad/regular width).
-
-### 4.1 Combat — **The Colosseum** (precision boss fight)
-*Attack · Strength · Defence · Hitpoints · Ranged · Magic*
-
-- A **boss with a health bar**. Glowing **weakpoints** flash on/around it; **tap them quickly and
-  accurately** before they fade to deal damage (the "precise, quick clicks" loop).
-- The boss periodically **telegraphs an attack** (wind-up indicator); tap the **Block/Dodge**
-  prompt inside a short window or take damage to your **raid HP**.
-- **Pass:** deplete the boss's HP before the timer **and** survive (raid HP > 0).
-- **Tier ramp:** boss HP ↑, weakpoint visible-time ↓, attack cadence ↑, dodge window ↓.
-
-### 4.2 Production — **The Grand Forge** (assembly rhythm)
-*Smithing · Crafting · Fletching · Runecraft · Cooking · Construction · Firemaking*
-
-- An assembly line. Each **product** is a short **recipe** of station steps (e.g. Smelt → Hammer →
-  Quench). A sweeping **"strike" meter** passes over a highlighted **sweet-spot**; tap in the
-  sweet-spot to complete each step and finish the product.
-- **Pass:** complete a **quota** of products before the timer. Mis-timed strikes waste time.
-- **Tier ramp:** quota ↑, sweet-spot width ↓, meter speed ↑, longer recipes (more steps).
-
-### 4.3 Utility — **The Heist** (stealth-agility gauntlet)
-*Agility · Hunter · Slayer · Thieving · Prayer*
-
-- A guard alternates between **WATCHING** and **DISTRACTED**. **Loot only while the guard is turned
-  away** — tapping while watched trips the alarm (a mistake). It's purely **timing-based**: every tap
-  during a distracted window counts, so you can land **several loots per window**, but mashing risks a
-  tap landing the instant the guard turns back. A **restraint** element: don't tap while watched.
-- **Pass:** loot the quota before the timer with **fewer than N** alarms tripped.
-- **Tier ramp:** shorter safe windows, faster guard cycles, fewer allowed slip-ups.
-
-### 4.4 Gathering — **The Expedition** (correct-resource collection)
-*Woodcutting · Farming · Fishing · Mining · Herblore*
-
-- A resource field of **nodes** laid out in **full rows** — the grid fits the screen width on iPhone
-  and iPad and never leaves a stray single-item row. A **target resource** is indicated ("catch the
-  trout", "mine the coal", "chop the willow"); **tap the correct nodes** among decoys. Tapped nodes
-  respawn; wrong species **cost a strike**. The **called resource rotates every 10 correct gathers**.
-- **Pass:** gather a **quota** of correct resources before the timer.
-- **Tier ramp:** quota ↑, more decoys, shorter windows.
-
-| Group | Raid | Core verb | Pass condition | Primary fail |
-|-------|------|-----------|----------------|--------------|
-| Combat | The Colosseum | Precise/fast target taps + dodge | Boss HP → 0 & survive | Timer out / raid HP → 0 |
-| Production | The Grand Forge | Rhythm/timing strikes | Product quota met | Quota missed by timer |
-| Utility | The Heist | Reaction + restraint | Loot quota met, few alarms | Caught too often / timer out |
-| Gathering | The Expedition | Recognition + speed | Resource quota met | Quota missed by timer |
+- `raidBaseSeconds`, `raidSecondsPerRoom`, `raidDuration(forTier:)` — the shared clock.
+- `raidRoomCounts`, `raidRoomCount(forTier:)` — 3 rooms (tiers 0–3) / 4 rooms (tiers 4–5).
+- `RaidTierParams` + `raidTierParams[6]`, `raidParams(forTier:)` — per-tier `playerHP`,
+  `bossPhases`, `targetLifetime`, `spawnInterval`, `sweetHalfWidth`, `sequenceLength`, `decoyCount`,
+  `goalScale`.
+- `raidRoomBaseGoal(_:)`, `raidBossGoalMultiplier`, `raidBossPhaseGoalBonus`,
+  `raidRoomGoal(kind:isBoss:tier:)` — objective sizes.
+- `raidFlawlessBonusLamps` — bonus lamps for a no-hit clear.
+- `raidsPerGroupPerDay` — daily gate.
+- `lampTierCoefficients`, `lampCoefficient(forTier:)` — lamp value.
 
 ---
 
-## 5. Daily limit & one-shot pass/fail
+## 11. Data model & persistence
 
-- **One raid per group per day.** Availability is tracked per category by calendar day, mirroring
-  the existing free-coupon `dayKey()` pattern.
-- **Starting a raid consumes that group's daily attempt** — a completed run (pass **or** fail)
-  marks the group done for the day. (Guard against mid-raid app kill: mark the attempt spent when
-  the raid **begins**, so quitting can't farm retries. See open question Q1.)
-- **Pass → full lamp** (§6). **Fail → nothing**; the group shows "Come back tomorrow."
-- Difficulty is auto-tuned to the group's tier, so the challenge is always a stretch at your
-  current mastery. Pass thresholds (§7) are calibrated so an attentive player *at that combined
-  level* can clear it — but with real risk, since a miss costs the day.
+- **`RaidPlan.swift`** — `RaidRoomKind`, `RaidBoss`, `RaidRoom`, the `SkillCategory` raid identity
+  (`raidName`, `raidTagline`, `raidSymbol`, `raidTint`, `raidTintDeep`, `raidRooms(tier:)`,
+  `raidTierName`, `raidTierColor`), and `RaidLampRecord`.
+- **`GameState`** — `raidTier`, `raidAverageLevel`, `isRaidAvailableToday`, `raidClears`,
+  `lamps(for:)`, `projectedLampXP`, `beginRaid`, `finishRaid(_:passed:flawless:) -> [RaidLampRecord]`,
+  `applyLamp`. Persisted `SaveData` fields (`raidDayByGroup`, `raidClearsByGroup`, `raidLamps`) are
+  optional for backward-compatible decoding.
 
 ---
 
-## 6. Reward — Skill Lamps
+## 12. Screens & files
 
-Clearing a raid awards **one Skill Lamp bound to that group** (a "Combat Lamp", "Gathering Lamp",
-…). Lamps are **stored in an inventory** (persisted) and applied whenever the player chooses.
-
-### 6.1 Application rules
-- A lamp can be applied to **exactly one skill within its group** (Combat lamp → any one of Attack/
-  Strength/Defence/Hitpoints/Ranged/Magic).
-- **One-time use**, then it's consumed. Grants a **flat block of XP** via the existing `addXP`
-  pipeline, so it respects the 200M ceiling and fires the normal level-up toast.
-- **Not** multiplied by Supercharge or Daily Boost — a lamp is its own reward and stands outside
-  the tap-boost economy (prevents runaway stacking).
-- Players may **bank** lamps and spend them on whichever group skill they like (typically their
-  highest-tier one) — OSRS-authentic, and it's what makes "amount depends on the skill it's used
-  on" true.
-
-### 6.2 Value formula
-The lamp is worth ~**3×** the XP you'd earn **tapping the target skill** for the raid's duration:
-
-```
-tapYieldPerMinute(S) = Balance.raidRapidTapsPerMinute × baseXPPerAction(S)   // S at its current tier
-lampXP(S, tier)      = round( Balance.raidRewardMultiplier              // 3.0
-                              × raidMinutes                             // raidDurationSeconds / 60
-                              × tapYieldPerMinute(S)
-                              × Balance.raidTierRewardBonus[tier] )     // Bronze→Rune: 1.0…5.0
-```
-
-- `baseXPPerAction(S)` already scales with **S's method tier** (`1/3/6/12/25/50`), i.e. with S's
-  level — so **"amount depends on the level of the skill it's used on."** ✓
-- The **raid tier** matters two ways: (a) you can only earn a higher-tier lamp once the group's
-  skills are high enough to spend it on (correlated payoff), and (b) the explicit
-  `raidTierRewardBonus[tier]` lever makes higher tiers extra-rewarding (Bronze `1.0` → Rune `5.0`)
-  **without touching code.** ✓
-- Because the value is computed **at application time** from the target skill's current tier, a
-  lamp banked early and spent late is worth more — exactly like an OSRS XP lamp.
-
-### 6.3 Example payouts
-With defaults `raidRewardMultiplier = 3.0`, `raidDurationSeconds = 180` (3 min),
-`raidRapidTapsPerMinute = 300`, and a **Bronze-tier** lamp (`raidTierRewardBonus = 1.0`) →
-`lampXP = 2700 × baseXPPerAction(S)`:
-
-| Target skill's method tier | XP/tap | Lamp XP | For scale (OSRS curve) |
-|----------------------------|--------|---------|------------------------|
-| 1 (lv 1–14)  | 1  | **2,700**   | a big early-game jump |
-| 2 (lv 15–29) | 3  | **8,100**   | several early levels |
-| 3 (lv 30–49) | 6  | **16,200**  | ~a level in the 30s–40s |
-| 4 (lv 50–69) | 12 | **32,400**  | a solid chunk of a 50s level |
-| 5 (lv 70–89) | 25 | **67,500**  | meaningful in the 70s |
-| 6 (lv 90–99) | 50 | **135,000** | ~a chunk of a level near 99 |
-
-Higher **raid tiers** scale these further via `raidTierRewardBonus` (Bronze `1.0`, Iron `1.2`,
-Steel `1.5`, Mithril `2.0`, Adamant `3.0`, Rune `5.0`) — e.g. a Rune-tier lamp on a top-tier skill
-is `135,000 × 5.0 = 675,000` XP.
-
-All three inputs (`3.0`, the duration, the reference taps/minute) are one-line `Balance.swift`
-edits, so re-tuning the 3× promise never touches gameplay or view code.
-
-> **Calibration note:** `raidRapidTapsPerMinute` (default 300 ≈ 5 taps/s) anchors "clicking
-> rapidly." It's a deliberate reference rate, not a measurement of any given player. At the 3×
-> multiplier a cleared raid comfortably out-earns rapid tapping at every tier — including once a
-> group reaches the top (Rune) tier — while staying gated to one attempt per group per day. Tune
-> per playtest.
+| File | Role |
+|------|------|
+| `Sources/Models/RaidPlan.swift` | Room/boss data model + per-group room sequences. |
+| `Sources/Models/Balance.swift` (Raids section) | All raid tuning. |
+| `Sources/Views/RaidsView.swift` | Raids tab: cards with room/boss lineup, tier, lamp inventory + `LampApplySheet`. |
+| `Sources/Views/RaidSessionView.swift` | The multi-room engine, HUD, intro cards, slam overlay, result. |
+| `Sources/Views/RaidRooms.swift` | The six room mechanics + `RaidRoomContext`. |
+| `Sources/Views/RaidBossArt.swift` | `RaidBossView` (Canvas boss art) + `RaidRoomBackdrop`. |
 
 ---
 
-## 7. New balance constants (all in `Balance.swift`)
+## 13. Debug hooks (deterministic screenshots)
 
-```swift
-// MARK: Raids
-static let raidDurationSeconds: Double = 180          // ~3 min per raid (a few minutes)
-static let raidRapidTapsPerMinute: Double = 300       // reference "rapid tapping" rate for the 3× promise
-static let raidRewardMultiplier: Double = 3.0         // lamp ≈ 3× tapping-for-duration
-static let raidsPerGroupPerDay: Int = 1               // one shot per group per day
+Guarded by `#if DEBUG`, passed via the `SIMCTL_CHILD_` prefix:
 
-/// Explicit per-tier reward lever (index = raidTier 0…5, Bronze→Rune).
-static let raidTierRewardBonus: [Double] = [1.0, 1.2, 1.5, 2.0, 3.0, 5.0]
+- `OPEN_RAID=<combat|production|utility|gathering>` — open that group's raid session.
+- `FORCE_RAID_TIER=<0-5>` — override the raid tier (Bronze…Rune).
+- `RAID_ROOM=<n>` — start on room *n* (0-based); shows its **intro card** by default.
+- `RAID_PLAY=1` — with `RAID_ROOM`, skip the intro and drop into the live mechanic.
+- `RAID_RESULT=<win|lose>` — show the **result overlay** without playing (visual-only, doesn't spend
+  the day); pair with `RAID_FLAWLESS=1` for the flawless-bonus win.
 
-/// Per-tier difficulty knobs consumed by the four loops. Index = raidTier 0…5.
-struct RaidTierParams {
-    let goal: Int              // successful actions to clear (boss damage / products / rooms / resources)
-    let allowedMistakes: Int   // starting lives; the raid is lost the moment mistakes reach this (0 left)
-    let targetLifetime: Double // seconds a target/prompt/safe-window stays actionable (tightens with tier)
-    let spawnInterval: Double  // seconds between spawns / prompt cadence (shrinks with tier)
-    let decoyCount: Int        // wrong targets / distinct resource types present (recognition pressure)
-}
-static let raidTierParams: [RaidTierParams] = [ /* 6 entries, ascending difficulty */ ]
-static func raidParams(forTier tier: Int) -> RaidTierParams // clamped lookup
-static func raidTierBonus(forTier tier: Int) -> Double       // clamped reward lever
-```
-
-A single shared `goal` (successes-before-timer) drives every loop, so the win condition and the
-HUD are uniform; each loop maps `goal` to its own fantasy (boss weakpoints, forge strikes, looted
-rooms, gathered resources). `targetLifetime` doubles as the Forge's timing tolerance and the Heist's
-safe-window length. Each loop reads `raidParams(forTier: raidTier(group))`; re-balancing difficulty
-is a one-file change.
-
----
-
-## 8. Data model & persistence
-
-`GameState` remains the single source of truth. Additions follow the **additive, optional-field**
-save pattern so older saves keep decoding.
-
-### 8.1 `SaveData` (append optional fields)
-```swift
-// Added in v1.5 — Raids. Optional for backward-compatible decoding.
-var raidLamps: [RaidLampRecord]?         // owned, unspent lamps
-var lastRaidDay: [String: String]?       // categoryRawValue → dayKey of last attempt
+Example:
+```sh
+SIMCTL_CHILD_OPEN_RAID=combat SIMCTL_CHILD_FORCE_RAID_TIER=4 \
+SIMCTL_CHILD_RAID_ROOM=1 xcrun simctl launch <device> com.callmegreg.xpwaste
 ```
 
-```swift
-/// A banked, unspent XP lamp bound to a skill group. `tier` is the raid tier it was earned at
-/// (drives `raidTierRewardBonus`); final XP is computed at application from the target skill.
-struct RaidLampRecord: Codable, Identifiable, Equatable {
-    let id: UUID
-    let group: SkillCategory
-    let tier: Int
-    let earned: Date
-}
-```
-
-### 8.2 `GameState` API (new)
-```swift
-// Derived
-func raidCombinedLevel(_ group: SkillCategory) -> Int          // Σ level(for:) over the group
-func raidTier(_ group: SkillCategory) -> Int                   // via trainingTierIndex(avgLevel)
-func raidParams(_ group: SkillCategory) -> Balance.RaidTierParams
-func isRaidAvailableToday(_ group: SkillCategory) -> Bool      // dayKey vs lastRaidDay[group]
-func lamps(for group: SkillCategory) -> [RaidLampRecord]
-func projectedLampXP(_ lamp: RaidLampRecord, on skill: SkillID) -> Int   // §6.2, for UI preview
-
-// Actions
-func beginRaid(_ group: SkillCategory)                         // marks the daily attempt spent, save()
-func finishRaid(_ group: SkillCategory, passed: Bool)          // passed → append RaidLampRecord; save()
-@discardableResult
-func applyLamp(_ lamp: RaidLampRecord, to skill: SkillID) -> Bool  // guard skill.category == lamp.group;
-                                                                  // addXP(projected…); remove lamp; save()
-```
-
-`projectedLampXP` reuses `baseXPPerAction(skill)` and the §6.2 formula. `applyLamp` routes through
-the existing `addXP`, so the 200M cap and level-up toast come for free.
-
 ---
 
-## 9. Screens & UX
+## 14. Future
 
-### 9.1 `RaidsView` (the Raids tab hub)
-A single **overview header** ("Difficulty & rewards scale with a group's level") sits above an
-adaptive list/grid of **four raid cards** (width-capped & centered, like the rest of the app):
-- Group name + raid name, category **SF Symbol** and **tint** (from `SkillCategory` / skills).
-- **Current tier** badge (Bronze…Rune) + combined level and a progress bar to the next tier.
-- **Status:** "Available today" (primary CTA) or "Come back tomorrow" (with a countdown to reset).
-- **Lamps owned** for this group, shown as **tier-color-coded** chips (one per tier held) with an
-  **Apply** affordance — so a mixed-tier inventory reads at a glance.
-
-### 9.2 `RaidSessionView` (the minigame)
-Full-screen, per-group loop (§4): countdown, live score/progress, pause/quit (quitting still spends
-the daily attempt), and a **result screen** (Victory → lamp awarded, with a shine; Defeat → "no
-lamp, try again tomorrow"). Responsive: single column on compact width, roomier framing on iPad;
-survives rotation and Split View / Slide Over.
-
-### 9.3 Lamp application sheet
-From a raid card or the skill screen: pick **which group skill** to spend the lamp on. When the
-group holds lamps of more than one tier, a **color-coded tier selector** chooses which tier to spend
-first. Show the **projected XP** and the **resulting level** (via `projectedLampXP`) before
-confirming, so the choice is informed. A gentle warning if the target is already at the 200M ceiling.
-
-### 9.4 Art
-All raid/loop art goes through **`Artwork.swift`** (`SkillArt` → SF Symbol or hand-authored
-`VectorIcon`). **No emoji art** in the app (docs may use emoji for flavor, as here). Reuse each
-category's symbol/tint for cohesion; add any new vector emblems (boss, forge, mask, node) to
-`Artwork.swift`, not inline in views. The lamp reward is drawn as the hand-authored
-**`genieLamp`** `VectorIcon` (an Aladdin-style magic lamp), not a household lightbulb.
-
----
-
-## 10. Debug hooks (for deterministic screenshots)
-
-Add, guarded by `#if DEBUG`, consistent with the existing `SEED_DEMO` / `OPEN_SKILL` hooks and
-passed via `SIMCTL_CHILD_*`:
-
-- `OPEN_TAB=raids` — launch straight onto the Raids tab (the hub).
-- `OPEN_RAID=<combat|production|utility|gathering>` — deep-link straight into a raid session
-  (implies the Raids tab).
-- `FORCE_RAID_TIER=<0…5>` — override the auto tier for capturing every difficulty.
-- `SEED_LAMPS=<group:count,…>` — seed banked lamps to shoot the inventory/apply UI.
-- `OPEN_APPLY=<combat|production|utility|gathering>` — auto-present that group's lamp-apply sheet.
-- `RAID_RESULT=<win|lose>` — jump to a result screen for deterministic victory/defeat shots.
-
-The implementation PR must include **iPhone and iPad** captures of `RaidsView`, a session of each of
-the four loops, the result screen, and the lamp-apply sheet.
-
----
-
-## 11. Open questions / future
-
-- **Q1 — Mid-raid quit:** the spec marks the attempt spent at **begin** (can't farm retries). If
-  that feels harsh for accidental exits, an alternative is a short "abandon within N seconds =
-  no-charge" grace. *Default: spend on begin.*
-- **Q2 — Fail consolation:** currently **none** (fail = nothing). A tunable
-  `raidConsolationFraction` (default 0) could later grant a fractional lamp on a near-miss without
-  code changes.
-- **Q3 — Onboarding:** whether to add a 5th onboarding card for raids or teach it contextually the
-  first time a raid tier unlocks. *Leaning contextual, to avoid onboarding overload.*
-- **Future:** raid-specific cosmetics/titles; a weekly "grandmaster" raid; leaderboards for fastest
-  clear; letting Utility's Thieving perk (`refundChance`) occasionally refund a spent lamp.
-
----
-
-## 12. Implementation checklist (for the follow-up PR)
-
-1. `Balance.swift` — add §7 constants + `RaidTierParams` table (ascending difficulty).
-2. New `SkillCategory` raid metadata (raid name, tier theme names) — co-locate with `SkillID.swift`
-   or a small `Raid.swift`.
-3. `GameState` — §8 `SaveData` optional fields, `RaidLampRecord`, derived getters, and the
-   `beginRaid` / `finishRaid` / `applyLamp` actions (route XP through `addXP`).
-4. `Artwork.swift` — any new vector emblems (boss, forge, mask, resource node).
-5. `RootView` — host the custom bottom tab bar (`AppTabBar`); keep toasts + offline sheet at the root.
-6. `RaidsView`, `RaidSessionView` (four loops), and the lamp-apply sheet — responsive, width-capped,
-   universal.
-7. `#if DEBUG` hooks (§10).
-8. Build & verify on an **iPhone** *and* an **iPad** simulator; capture screenshots for the PR.
-9. Update `docs/GAME_DESIGN.md` (new section) and this file if the design shifts during build.
+- Per-boss bespoke attack patterns (currently a shared telegraphed slam for skilling bosses).
+- Room modifiers / mutators for replayability within a day's tier.
+- A cosmetic "raid log" of best clears and flawless streaks.

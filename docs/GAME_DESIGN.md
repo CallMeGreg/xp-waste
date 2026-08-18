@@ -155,9 +155,13 @@ re-balancing a perk is a one-line change that never touches gameplay or view cod
    vertical column on both iPhone and iPad, height-capped and centered so the object doesn't float
    on large canvases.
 5. **Raids** — one raid per skill category, whose tier scales with the group's **average** level.
-   Each raid is a short themed minigame (combat, production, utility, gathering) played once per
-   day; clearing it awards a tier-colored **Lamp** you use on any skill in that group for a burst
-   of XP (XP scales with the chosen skill's level).
+   Each raid is a **multi-room expedition** (warm-up rooms → a mini-boss → sometimes an elite room
+   → a tougher **final boss**) sharing one countdown and one pool of **raid HP**. Every room runs a
+   different mechanic (dodge volleys, break boss weakpoints, forge-rhythm, resource recognition,
+   stealth looting, memory sequences); bosses gain **phases** and **enrage** at higher tiers.
+   Clearing every room awards a tier-colored **Lamp** you use on any skill in that group (XP scales
+   with the chosen skill's level); a **flawless** run (no raid HP lost) banks a bonus lamp. Played
+   once per day per group. See [RAID_SYSTEM.md](RAID_SYSTEM.md).
 6. **Shop** — spend **Tokens** on Boost Coupons and Energy Cells, or buy Tokens with real money via
    StoreKit Token Packs.
 7. **Diary** — themed Task diaries (one per category plus Idler / Tycoon / Completionist) with an

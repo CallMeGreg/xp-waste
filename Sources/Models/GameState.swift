@@ -811,21 +811,31 @@ final class GameState: ObservableObject {
         return true
     }
 
-    /// Resolves a finished raid. On a win, banks a lamp for the group at its current raid tier; on a
-    /// loss, nothing (the daily attempt was already spent in `beginRaid`). Returns the earned lamp.
+    /// Resolves a finished raid. On a win, banks a lamp for the group at its current raid tier, plus
+    /// `Balance.raidFlawlessBonusLamps` extra lamps when the run was **flawless** (no raid-HP lost);
+    /// on a loss, nothing (the daily attempt was already spent in `beginRaid`). Returns every lamp
+    /// earned (empty on a loss) so the result screen can present them.
     @discardableResult
-    func finishRaid(_ group: SkillCategory, passed: Bool) -> RaidLampRecord? {
+    func finishRaid(_ group: SkillCategory, passed: Bool, flawless: Bool = false) -> [RaidLampRecord] {
         guard passed else {
             notice = Notice(icon: "xmark.octagon.fill", text: "\(group.raidName) failed — come back tomorrow.")
             save()
-            return nil
+            return []
         }
-        let lamp = RaidLampRecord(group: group, tier: raidTier(group))
-        raidLamps.append(lamp)
+        let tier = raidTier(group)
+        var earned = [RaidLampRecord(group: group, tier: tier)]
+        if flawless {
+            for _ in 0..<max(0, Balance.raidFlawlessBonusLamps) {
+                earned.append(RaidLampRecord(group: group, tier: tier))
+            }
+        }
+        raidLamps.append(contentsOf: earned)
         raidClearsByGroup[group.rawValue, default: 0] += 1
-        notice = Notice(icon: "trophy.fill", text: "\(group.raidName) cleared — \(group.rawValue) lamp earned!")
+        let plural = earned.count > 1 ? "s" : ""
+        let bonus = flawless && Balance.raidFlawlessBonusLamps > 0 ? " (flawless bonus!)" : ""
+        notice = Notice(icon: "trophy.fill", text: "\(group.raidName) cleared — \(earned.count) \(group.rawValue) lamp\(plural)\(bonus)!")
         save()
-        return lamp
+        return earned
     }
 
     /// Spends a lamp on a single skill within its group, granting the projected XP through the

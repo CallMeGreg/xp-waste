@@ -68,7 +68,7 @@ private struct RaidsOverviewCard: View {
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text("Raids").font(.subheadline.weight(.bold))
-                Text("One raid per skill group, once a day. Clear it to bank an XP lamp you can spend on any skill in that group. Difficulty & rewards scale with a group's level.")
+                Text("Each raid is a multi-room expedition — warm-up rooms, a mini-boss, then a tougher final boss — sharing one timer and one pool of raid HP. Clear every room to bank an XP lamp; finish flawlessly (no hearts lost) for a bonus lamp. Difficulty, rooms & rewards scale with a group's level.")
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -94,6 +94,7 @@ private struct RaidCard: View {
         let average = game.raidAverageLevel(group)
         let available = game.isRaidAvailableToday(group)
         let lamps = game.lamps(for: group)
+        let rooms = group.raidRooms(tier: tier)
         // Distinct tiers present, best first, so mixed-tier inventories read clearly.
         let lampsByTier = Dictionary(grouping: lamps, by: { $0.tier })
             .map { (tier: $0.key, count: $0.value.count) }
@@ -109,7 +110,7 @@ private struct RaidCard: View {
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(group.raidName).font(.headline.weight(.bold))
-                    Text("\(group.rawValue) · \(group.raidVerb)")
+                    Text("\(group.rawValue) · \(rooms.count) rooms · \(rooms.filter { $0.isBoss }.count) bosses")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -119,6 +120,8 @@ private struct RaidCard: View {
             Text(group.raidTagline)
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+
+            roomLineup(rooms)
 
             // Average-level → next tier progress
             VStack(alignment: .leading, spacing: 4) {
@@ -181,6 +184,29 @@ private struct RaidCard: View {
         .frame(maxWidth: .infinity, maxHeight: fillHeight ? .infinity : nil, alignment: .topLeading)
         .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(group.raidTint.opacity(0.25)))
+    }
+
+    /// A compact preview of the raid's room sequence — one node per room, bosses marked with a flame
+    /// and the final boss with a crown — so the multi-room structure is legible before you enter.
+    private func roomLineup(_ rooms: [RaidRoom]) -> some View {
+        HStack(spacing: 4) {
+            ForEach(rooms) { r in
+                let isFinal = r.id == rooms.count - 1
+                let c = r.isBoss ? (isFinal ? Color.yellow : Color.orange) : group.raidTint
+                ZStack {
+                    Circle().fill(c.opacity(0.16)).frame(width: 26, height: 26)
+                    Circle().strokeBorder(c.opacity(0.5), lineWidth: 1).frame(width: 26, height: 26)
+                    Image(systemName: isFinal ? "crown.fill" : (r.isBoss ? "flame.fill" : r.kind.symbol))
+                        .font(.system(size: 11, weight: .bold)).foregroundStyle(c)
+                }
+                if r.id != rooms.count - 1 {
+                    Image(systemName: "chevron.compact.right")
+                        .font(.caption2.weight(.bold)).foregroundStyle(.secondary.opacity(0.6))
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .accessibilityLabel("\(rooms.count) rooms ending in a boss")
     }
 
     /// A tier-colored lamp count chip (e.g. a Rune lamp reads runite-colored, an Iron lamp iron-colored).
