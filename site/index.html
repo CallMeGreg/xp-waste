@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XP Waste — Support</title>
+  <meta name="description" content="Support and help for XP Waste, a cozy idle skilling game for iPhone and iPad." />
+  <style>
+    :root {
+      --bg: #0f1216;
+      --panel: #171b22;
+      --panel-2: #1e242d;
+      --text: #e8edf2;
+      --muted: #9aa7b4;
+      --accent: #f4c542;
+      --accent-2: #6fc3ff;
+      --border: #2a313c;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 50% -200px, #1b2230 0%, var(--bg) 60%) no-repeat, var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 40px 20px 80px; }
+    header { text-align: center; padding: 24px 0 8px; }
+    .logo {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 84px; height: 84px; border-radius: 20px;
+      background: linear-gradient(160deg, #2a3140, #12161c);
+      border: 1px solid var(--border);
+      font-size: 40px; margin-bottom: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    h1 { font-size: 32px; margin: 0 0 6px; letter-spacing: -0.5px; }
+    .tagline { color: var(--muted); font-size: 16px; margin: 0; }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 24px;
+      margin-top: 20px;
+    }
+    h2 { font-size: 20px; margin: 0 0 12px; }
+    h2 .dot { color: var(--accent); }
+    p { margin: 0 0 12px; color: #d3dbe4; }
+    a { color: var(--accent-2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .contact-btn {
+      display: inline-block; margin-top: 6px;
+      background: var(--accent); color: #1a1300; font-weight: 600;
+      padding: 12px 20px; border-radius: 12px; text-decoration: none;
+    }
+    .contact-btn:hover { filter: brightness(1.05); text-decoration: none; }
+    details {
+      border-top: 1px solid var(--border);
+      padding: 14px 0 4px;
+    }
+    details:first-of-type { border-top: none; }
+    summary {
+      cursor: pointer; font-weight: 600; font-size: 16px;
+      list-style: none; outline: none;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "+"; color: var(--accent); font-size: 22px; line-height: 1; }
+    details[open] summary::after { content: "–"; }
+    details p { margin-top: 10px; }
+    .muted { color: var(--muted); font-size: 14px; }
+    footer { text-align: center; margin-top: 36px; }
+    footer p { color: var(--muted); font-size: 13px; margin: 4px 0; }
+    ul { margin: 0 0 12px; padding-left: 20px; color: #d3dbe4; }
+    li { margin-bottom: 6px; }
+    code { background: var(--panel-2); padding: 2px 6px; border-radius: 6px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">⚔️</div>
+      <h1>XP Waste</h1>
+      <p class="tagline">Level every skill to 99, one tap at a time.</p>
+    </header>
+
+    <section>
+      <h2><span class="dot">›</span> Contact &amp; Support</h2>
+      <p>Have a question, found a bug, or want to share feedback? Open an issue on our GitHub page and we'll take a look.</p>
+      <p><a class="contact-btn" href="https://github.com/CallMeGreg/xp-waste/issues">Report an Issue on GitHub</a></p>
+      <p class="muted">We aim to respond within a few business days.</p>
+    </section>
+
+    <section>
+      <h2><span class="dot">›</span> About XP Waste</h2>
+      <p>
+        XP Waste is a cozy idle skilling game for iPhone and iPad. Tap thematic training
+        objects to level all 23 skills toward 99, set skills to train passively while you're
+        away, and bank Energy for Supercharge bursts. It's a single-player game that runs
+        entirely on your device.
+      </p>
+    </section>
+
+    <section>
+      <h2><span class="dot">›</span> Frequently Asked Questions</h2>
+
+      <details>
+        <summary>How do I restore my in-app purchases?</summary>
+        <p>
+          Token packs are consumable purchases (they're spent as you use them), so they can't
+          be "restored" like a subscription. If you completed a purchase but didn't receive
+          your tokens, please reach out through the support link above with your App Store
+          receipt and we'll sort it out.
+        </p>
+      </details>
+
+      <details>
+        <summary>Where is my progress saved? Is it in the cloud?</summary>
+        <p>
+          Your progress is stored locally on your device. XP Waste does not require an account
+          and does not sync to the cloud, so deleting the app will erase your progress.
+        </p>
+      </details>
+
+      <details>
+        <summary>Do I need an internet connection to play?</summary>
+        <p>
+          No. XP Waste is fully playable offline. An internet connection is only used when you
+          choose to make an optional in-app purchase.
+        </p>
+      </details>
+
+      <details>
+        <summary>What are the in-app purchases?</summary>
+        <p>
+          XP Waste is free to play. Optional token packs (Pouch, Sack, and Chest of Tokens)
+          can be spent in-app on Daily Boost coupons and Energy Cells to speed up your bursts.
+          Everything the tokens buy can also be earned for free by playing.
+        </p>
+      </details>
+
+      <details>
+        <summary>How do I reset my progress?</summary>
+        <p>
+          You can reset your account from the in-app <strong>Settings</strong> tab. This action
+          is permanent and cannot be undone.
+        </p>
+      </details>
+
+      <details>
+        <summary>What data do you collect?</summary>
+        <p>
+          None. XP Waste has no accounts, no analytics, no third-party trackers, and no ads.
+          The app collects no personal data and makes no network requests other than to
+          Apple's App Store for optional purchases.
+        </p>
+      </details>
+    </section>
+
+    <section>
+      <h2><span class="dot">›</span> Privacy</h2>
+      <p>
+        XP Waste does not collect, store, or share any personal data. All game progress lives
+        locally on your device. Purchases are processed by Apple; we never see your payment
+        details.
+      </p>
+    </section>
+
+    <footer>
+      <p>XP Waste is an unofficial, non-commercial fan project. It is not affiliated with,
+        endorsed by, or associated with any third party.</p>
+      <p>© 2026 Greg Mohler. All rights reserved.</p>
+    </footer>
+  </div>
+</body>
+</html>
