@@ -1,8 +1,7 @@
 # XP Waste ⚔️ 🎣 ⛏️
 
-**Level every skill to 99 — one tap at a time.** XP Waste is a cozy skilling game inspired by
-Old School RuneScape. Tap to train, unlock passive training that keeps going even while you're
-away, build up Energy for big bursts, and chase the max cape across **all 23 skills**.
+**Level every skill to 99 — one tap at a time.** Tap to train, unlock passive training that keeps going even while you're
+away, build up Energy for big bursts, and chase max status across **all 23 skills**.
 
 ---
 
@@ -14,9 +13,6 @@ Twenty-three skills across four categories — each with its own thematic traini
 - **🔨 Production** — Smithing, Crafting, Fletching, Runecraft, Cooking, Construction, Firemaking
 - **✨ Utility** — Agility, Hunter, Slayer, Thieving, Prayer
 - **🌳 Gathering** — Woodcutting, Farming, Fishing, Mining, Herblore
-
-Every skill uses the **authentic OSRS experience curve** — level 99 is a hard-earned
-13,034,431 XP, and maxing every skill means a **total level of 2277**.
 
 ## How to play
 
@@ -76,6 +72,5 @@ taps wide. It's your account.
 
 ---
 
-*XP Waste is an unofficial fan project inspired by Old School RuneScape. It is not affiliated
-with, endorsed by, or associated with Jagex Ltd. "RuneScape" and "Old School RuneScape" are
-trademarks of Jagex Ltd.*
+*XP Waste is an unofficial fan project inspired by MMOs. It is not affiliated
+with, endorsed by, or associated with any gaming studios.*
