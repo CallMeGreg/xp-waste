@@ -246,8 +246,8 @@ private struct BowIcon: View {
             let c = CGPoint(x: 0.18 * s, y: 0.50 * s)
             let r = 0.40 * s
             let a0 = Angle.degrees(-62), a1 = Angle.degrees(62)
-            let tip0 = CGPoint(x: c.x + r * cos(a0.radians), y: c.y + r * sin(a0.radians))
-            let tip1 = CGPoint(x: c.x + r * cos(a1.radians), y: c.y + r * sin(a1.radians))
+            let tip0 = CGPoint(x: c.x + r * CGFloat(cos(a0.radians)), y: c.y + r * CGFloat(sin(a0.radians)))
+            let tip1 = CGPoint(x: c.x + r * CGFloat(cos(a1.radians)), y: c.y + r * CGFloat(sin(a1.radians)))
             ZStack {
                 // Bow limb
                 Path { p in p.addArc(center: c, radius: r, startAngle: a0, endAngle: a1, clockwise: false) }
