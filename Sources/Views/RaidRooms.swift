@@ -310,8 +310,8 @@ struct DuelRoom: View {
     }
 }
 
-/// One duel circle: a solid **red** strike orb (tap to hit) or a **green** parry ring whose closing
-/// arc is its timer (tap before it seals).
+/// One duel circle: a **red** strike orb (tap to hit) or a **green** parry ring — each with a closing
+/// arc timer showing how long the opening stays open / before the incoming blow lands.
 private struct DuelOrb: View {
     let strike: Bool
     let tint: Color
@@ -322,7 +322,11 @@ private struct DuelOrb: View {
                 Circle().fill(RadialGradient(colors: [.white, Color(red: 0.95, green: 0.32, blue: 0.28),
                                                       Color(red: 0.6, green: 0.12, blue: 0.12)],
                                              center: .center, startRadius: 0, endRadius: 30))
-                Circle().stroke(.white.opacity(0.9), lineWidth: 2)
+                // Closing timer arc — the opening seals when it completes (mirrors the parry ring).
+                Circle().stroke(.white.opacity(0.3), lineWidth: 3)
+                Circle().trim(from: 0, to: remaining)
+                    .stroke(.white, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
                 Image(systemName: "burst.fill").font(.system(size: 20, weight: .black)).foregroundStyle(.white)
             }
             .shadow(color: Color.red.opacity(0.7), radius: 8)

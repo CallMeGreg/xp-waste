@@ -289,7 +289,10 @@ struct RaidSessionView: View {
                         .font(.caption2.weight(.black)).foregroundStyle(.secondary).tracking(0.5)
                 }
                 Spacer()
-                Text("\(min(roomProgress, roomGoal))/\(roomGoal)")
+                // Bosses read as *remaining* HP (drains from max → 0, matching the health bar);
+                // skill rooms count progress up toward the goal.
+                Text(room.isBoss ? "\(max(0, roomGoal - roomProgress))/\(roomGoal)"
+                                 : "\(min(roomProgress, roomGoal))/\(roomGoal)")
                     .font(.caption.weight(.bold)).monospacedDigit()
             }
             let frac = room.isBoss ? bossHPFraction : Double(roomProgress) / Double(max(1, roomGoal))
