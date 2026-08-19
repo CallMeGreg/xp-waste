@@ -771,7 +771,8 @@ struct StealthRoom: View {
                 }
                 .padding(.top, 8)
 
-                // Searchlight beam sweeping across.
+                // Searchlight beam — only lit when it's actually sweeping over you (button red);
+                // the corridor stays dark during the safe window.
                 SearchBeam(position: beam, half: beamHalf, watched: watched)
 
                 // Vault / loot target near the bottom centre.
@@ -842,8 +843,12 @@ private struct SearchBeam: View {
                 p.addLine(to: CGPoint(x: x + CGFloat(half) * geo.size.width, y: geo.size.height))
                 p.closeSubpath()
             }
-            .fill(LinearGradient(colors: [(watched ? Color.red : Color.yellow).opacity(0.32), .clear],
+            .fill(LinearGradient(colors: [Color.red.opacity(0.34), .clear],
                                  startPoint: .top, endPoint: .bottom))
+            // The light is on only while the beam is on you (button red); it goes dark the instant
+            // the sweep turns away, so darkness == safe to loot.
+            .opacity(watched ? 1 : 0)
+            .animation(.easeInOut(duration: 0.12), value: watched)
         }
         .allowsHitTesting(false)
     }
