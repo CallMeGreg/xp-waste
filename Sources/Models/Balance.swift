@@ -67,8 +67,8 @@ enum Balance {
     /// Base Supercharge multiplier: while supercharged, taps earn `method XP × multiplier`.
     /// This no longer ramps with total level — per-tap payout already scales as a skill's
     /// training method upgrades with level, so the burst stays a constant multiplier on top of
-    /// that. Prayer's perk multiplies this base (see `superchargePrayerMultiplier`), scaling the
-    /// effective Supercharge from ×2 up to ×7 at Prayer 99.
+    /// that. Prayer's perk adds to this base (see `superchargePrayerBonus`), scaling the
+    /// effective Supercharge from ×2 up to ×5 at Prayer 99.
     static let superchargeMultiplier: Int = 2
 
     // MARK: Daily Boost (formerly "Double XP")
@@ -146,7 +146,7 @@ enum Balance {
         .defence:      BuffScaling(at1: 1.0,   at99: 1.75),   // guard: min-hit floor (× base, clamped ≤ max)
         .hitpoints:    BuffScaling(at1: 1.0,   at99: 2.0),    // vitality: charge banked per tap-proc ×
         .ranged:       BuffScaling(at1: 0.0,   at99: 0.60),   // rapid fire: chance for an extra hit
-        .prayer:       BuffScaling(at1: 1.0,   at99: 3.5),    // blessing: ×multiplier on the Supercharge multiplier (×2 base → ×7)
+        .prayer:       BuffScaling(at1: 0.0,   at99: 3.0),    // blessing: +bonus added to the Supercharge multiplier (×2 base → ×5)
         .magic:        BuffScaling(at1: doubleXPMultiplier, at99: 3.0),    // enchantment: Daily Boost multiplier value
         // Gathering — feeds the idle engine
         .woodcutting:  BuffScaling(at1: 0.0,   at99: 0.12),   // bird's nests: bonus-XP cache chance
