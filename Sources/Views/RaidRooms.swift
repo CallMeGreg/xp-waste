@@ -170,63 +170,101 @@ private struct WardIcon: View {
     }
 }
 
-// MARK: - Assault — break the boss's weakpoints, dodge its slams
+// MARK: - Duel — trade blows with the boss (tap red to strike, tap green to parry)
 
-/// The signature boss fight: the boss looms; glowing weakpoints flash across it — tap them fast to
-/// deal damage. It telegraphs a slam (a closing red ring); tap **DODGE** before it lands or take a
-/// hit. Enrages in its final phase with faster, tighter slams.
-struct AssaultRoom: View {
+/// The marquee combat finale. The boss looms in the centre and the fight is fought entirely with
+/// **circles**: **red** rings flash open on the boss — tap them to land a blow (damage) — while
+/// **green** rings close in from the edges as the boss attacks — tap them to parry before they seal,
+/// or take the hit (a heart). Both can crowd the screen at once, so you triage offence against
+/// defence. There is **no full-screen dodge**; enrage floods more green, faster.
+struct DuelRoom: View {
     let ctx: RaidRoomContext
 
-    private struct Weakpoint: Identifiable { let id = UUID(); let x: CGFloat; let y: CGFloat; let born: Date }
+    private enum Kind { case strike, parry }
+    private struct Orb: Identifiable {
+        let id = UUID()
+        let kind: Kind
+        let x: CGFloat
+        let y: CGFloat
+        let born: Date
+        let life: Double
+    }
 
-    @State private var points: [Weakpoint] = []
-    @State private var spawnAccumulator: Double = 0
-    @State private var sinceSlam: Double = 0
-    @State private var slamStart: Date?
+    @State private var orbs: [Orb] = []
+    @State private var sinceStrike: Double = 0
+    @State private var sinceParry: Double = 0
     @State private var lastTick = Date()
+    @State private var hurtFlash = false
 
-    private let tick = Timer.publish(every: 0.04, on: .main, in: .common).autoconnect()
+    private let tick = Timer.publish(every: 0.033, on: .main, in: .common).autoconnect()
 
-    private var slamWindow: Double { ctx.params.targetLifetime }
-    private var slamEvery: Double { ctx.params.spawnInterval * (ctx.enraged ? 2.4 : 3.4) }
+    private var strikeEvery: Double { ctx.params.spawnInterval * (ctx.enraged ? 0.7 : 0.95) }
+    private var parryEvery: Double { ctx.params.spawnInterval * (ctx.enraged ? 1.25 : 1.9) }
+    private var strikeLife: Double { ctx.params.targetLifetime * 1.35 }
+    private var parryLife: Double { ctx.params.targetLifetime }
 
     var body: some View {
         GeometryReader { geo in
+            let side = min(geo.size.width, geo.size.height)
             ZStack {
                 if let boss = ctx.boss {
                     RaidBossView(boss: boss, hpFraction: ctx.bossHPFraction, enraged: ctx.enraged,
-                                 hitToken: ctx.hitToken, size: min(geo.size.width, geo.size.height) * 0.66)
-                        .position(x: geo.size.width / 2, y: geo.size.height * 0.42)
+                                 hitToken: ctx.hitToken, size: side * 0.6)
+                        .position(x: geo.size.width / 2, y: geo.size.height * 0.44)
                 }
 
-                ForEach(points) { pt in
-                    let age = Date().timeIntervalSince(pt.born)
-                    let remaining = max(0, 1 - age / (slamWindow + 0.3))
-                    WeakpointReticle(tint: ctx.tint, remaining: remaining)
-                        .frame(width: 54, height: 54)
-                        .position(x: pt.x * geo.size.width, y: pt.y * geo.size.height)
-                        .onTapGesture {
-                            guard ctx.running else { return }
-                            points.removeAll { $0.id == pt.id }
-                            ctx.onSuccess()
-                        }
+                ForEach(orbs) { orb in
+                    let age = Date().timeIntervalSince(orb.born)
+                    let remaining = max(0, 1 - age / orb.life)
+                    DuelOrb(strike: orb.kind == .strike, tint: ctx.tint, remaining: remaining)
+                        .frame(width: 60, height: 60)
+                        .position(x: orb.x * geo.size.width, y: orb.y * geo.size.height)
+                        .onTapGesture { hit(orb) }
                         .transition(.scale.combined(with: .opacity))
                 }
 
-                if let start = slamStart {
-                    let age = Date().timeIntervalSince(start)
-                    let close = max(0, 1 - age / slamWindow)
-                    SlamPrompt(close: close)
-                        .contentShape(Rectangle())
-                        .onTapGesture { if ctx.running { slamStart = nil } }
+                if hurtFlash {
+                    RoundedRectangle(cornerRadius: 22).stroke(Color.red, lineWidth: 5)
                         .transition(.opacity)
+                }
+
+                VStack {
+                    Spacer()
+                    HStack(spacing: 16) {
+                        legendChip(color: Color(red: 0.95, green: 0.32, blue: 0.28),
+                                   symbol: "burst.fill", label: "Strike")
+                        legendChip(color: Color(red: 0.30, green: 0.95, blue: 0.5),
+                                   symbol: "shield.lefthalf.filled", label: "Parry")
+                    }
+                    .padding(.bottom, 10)
                 }
             }
         }
         .raidPanel(ctx.tint)
         .onReceive(tick) { _ in step() }
-        .onAppear { lastTick = Date() }
+        .onAppear {
+            lastTick = Date()
+            // Prime the first strike so the fight reads as active from the very first frame.
+            sinceStrike = strikeEvery * 0.7
+            sinceParry = parryEvery * 0.4
+        }
+    }
+
+    private func legendChip(color: Color, symbol: String, label: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: symbol).font(.caption2.weight(.black))
+            Text(label).font(.caption2.weight(.bold))
+        }
+        .foregroundStyle(color)
+        .padding(.horizontal, 9).padding(.vertical, 5)
+        .background(color.opacity(0.14), in: Capsule())
+        .overlay(Capsule().strokeBorder(color.opacity(0.4)))
+    }
+
+    private func hit(_ orb: Orb) {
+        guard ctx.running, orbs.contains(where: { $0.id == orb.id }) else { return }
+        orbs.removeAll { $0.id == orb.id }
+        if orb.kind == .strike { ctx.onSuccess() }   // parrying is pure defence — no damage dealt
     }
 
     private func step() {
@@ -235,60 +273,202 @@ struct AssaultRoom: View {
         lastTick = now
         guard ctx.running else { return }
 
-        points.removeAll { now.timeIntervalSince($0.born) > slamWindow + 0.3 }
-
-        if let start = slamStart, now.timeIntervalSince(start) >= slamWindow {
-            slamStart = nil
-            ctx.onMistake()
+        // Expire orbs: a lapsed strike is just a missed opening; a lapsed parry lands a blow.
+        var missedParry = false
+        orbs.removeAll { orb in
+            guard now.timeIntervalSince(orb.born) >= orb.life else { return false }
+            if orb.kind == .parry { missedParry = true }
+            return true
         }
+        if missedParry { flashHurt(); ctx.onMistake() }
 
-        spawnAccumulator += dt
-        sinceSlam += dt
-        let spawnEvery = ctx.params.spawnInterval * 0.9
-        if spawnAccumulator >= spawnEvery, points.count < 3, slamStart == nil {
-            spawnAccumulator = 0
+        sinceStrike += dt; sinceParry += dt
+        let strikes = orbs.filter { $0.kind == .strike }.count
+        let parries = orbs.filter { $0.kind == .parry }.count
+        if sinceStrike >= strikeEvery, strikes < 3 {
+            sinceStrike = 0
             withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
-                points.append(Weakpoint(x: .random(in: 0.2...0.8), y: .random(in: 0.2...0.62), born: now))
+                orbs.append(Orb(kind: .strike, x: .random(in: 0.30...0.70), y: .random(in: 0.26...0.60),
+                                born: now, life: strikeLife))
             }
         }
-        if slamStart == nil, sinceSlam >= slamEvery {
-            sinceSlam = 0
-            withAnimation { slamStart = now }
+        if sinceParry >= parryEvery, parries < (ctx.enraged ? 3 : 2) {
+            sinceParry = 0
+            // Parry orbs arrive at the edges, reading as incoming blows.
+            let edge = [CGPoint(x: .random(in: 0.10...0.24), y: .random(in: 0.24...0.80)),
+                        CGPoint(x: .random(in: 0.76...0.90), y: .random(in: 0.24...0.80)),
+                        CGPoint(x: .random(in: 0.30...0.70), y: .random(in: 0.74...0.90))].randomElement()!
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                orbs.append(Orb(kind: .parry, x: edge.x, y: edge.y, born: now, life: parryLife))
+            }
         }
+    }
+
+    private func flashHurt() {
+        hurtFlash = true
+        withAnimation(.easeOut(duration: 0.35)) { hurtFlash = false }
     }
 }
 
-private struct WeakpointReticle: View {
+/// One duel circle: a solid **red** strike orb (tap to hit) or a **green** parry ring whose closing
+/// arc is its timer (tap before it seals).
+private struct DuelOrb: View {
+    let strike: Bool
     let tint: Color
     let remaining: Double
     var body: some View {
-        ZStack {
-            Circle().fill(tint.opacity(0.28))
-            Circle().strokeBorder(.white, lineWidth: 2.5)
-            Circle().trim(from: 0, to: remaining)
-                .stroke(tint, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-            Image(systemName: "burst.fill").font(.system(size: 18, weight: .black)).foregroundStyle(.white)
+        if strike {
+            ZStack {
+                Circle().fill(RadialGradient(colors: [.white, Color(red: 0.95, green: 0.32, blue: 0.28),
+                                                      Color(red: 0.6, green: 0.12, blue: 0.12)],
+                                             center: .center, startRadius: 0, endRadius: 30))
+                Circle().stroke(.white.opacity(0.9), lineWidth: 2)
+                Image(systemName: "burst.fill").font(.system(size: 20, weight: .black)).foregroundStyle(.white)
+            }
+            .shadow(color: Color.red.opacity(0.7), radius: 8)
+        } else {
+            ZStack {
+                Circle().fill(Color(red: 0.20, green: 0.85, blue: 0.45).opacity(0.18))
+                Circle().stroke(Color(red: 0.30, green: 0.95, blue: 0.5).opacity(0.5), lineWidth: 2)
+                // Closing timer arc — the blow lands when it completes.
+                Circle().trim(from: 0, to: remaining)
+                    .stroke(Color(red: 0.30, green: 1.0, blue: 0.55),
+                            style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                Image(systemName: "shield.lefthalf.filled").font(.system(size: 18, weight: .black))
+                    .foregroundStyle(Color(red: 0.4, green: 1.0, blue: 0.6))
+            }
+            .shadow(color: Color.green.opacity(0.6), radius: 7)
         }
-        .shadow(color: tint.opacity(0.8), radius: 7)
     }
 }
 
-private struct SlamPrompt: View {
-    let close: Double
+// MARK: - Swipe-dodge — read the beast's lunge, sidestep, counter
+
+/// The Sand Beast mini-boss. It rears and **telegraphs a lunge** with a bright arrow and a closing
+/// ring; **swipe the shown way** to sidestep and land an automatic counter (damage). Let the ring
+/// close without swiping and it mauls you (a heart). A pure read-and-react gesture duel — no taps.
+struct SwipeDodgeRoom: View {
+    let ctx: RaidRoomContext
+
+    private enum Dir: CaseIterable { case left, right, up
+        var vector: CGSize { switch self { case .left: return .init(width: -1, height: 0)
+            case .right: return .init(width: 1, height: 0); case .up: return .init(width: 0, height: -1) } }
+        var symbol: String { switch self { case .left: return "arrow.left"; case .right: return "arrow.right"; case .up: return "arrow.up" } }
+    }
+
+    @State private var lunge: (dir: Dir, born: Date)?
+    @State private var sinceLunge: Double = 0
+    @State private var lastTick = Date()
+    @State private var counterFlash = false
+    @State private var missFlash = false
+
+    private let tick = Timer.publish(every: 0.033, on: .main, in: .common).autoconnect()
+    private var window: Double { ctx.params.targetLifetime * 1.15 }
+    private var cadence: Double { ctx.params.spawnInterval * (ctx.enraged ? 1.1 : 1.7) }
+
+    var body: some View {
+        GeometryReader { geo in
+            let side = min(geo.size.width, geo.size.height)
+            ZStack {
+                if let boss = ctx.boss {
+                    RaidBossView(boss: boss, hpFraction: ctx.bossHPFraction, enraged: ctx.enraged,
+                                 hitToken: ctx.hitToken, size: side * 0.6)
+                        .position(x: geo.size.width / 2, y: geo.size.height * 0.44)
+                        .scaleEffect(lunge != nil ? 1.06 : 1)
+                        .animation(.easeInOut(duration: 0.2), value: lunge != nil)
+                }
+
+                if let l = lunge {
+                    let remaining = max(0, 1 - Date().timeIntervalSince(l.born) / window)
+                    LungeTell(dir: l.dir.symbol, remaining: remaining,
+                              offset: CGSize(width: l.dir.vector.width * side * 0.32,
+                                             height: l.dir.vector.height * side * 0.32))
+                        .position(x: geo.size.width / 2, y: geo.size.height * 0.44)
+                }
+
+                if counterFlash {
+                    Text("COUNTER!").font(.system(size: 26, weight: .heavy, design: .rounded))
+                        .foregroundStyle(ctx.tint).shadow(color: .black.opacity(0.5), radius: 3)
+                        .position(x: geo.size.width / 2, y: geo.size.height * 0.16)
+                        .transition(.scale.combined(with: .opacity))
+                }
+                if missFlash {
+                    RoundedRectangle(cornerRadius: 22).stroke(Color.red, lineWidth: 5).transition(.opacity)
+                }
+
+                VStack {
+                    Spacer()
+                    Text(lunge == nil ? "Watch for the lunge…" : "Swipe \(swipeWord)!")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(lunge == nil ? Color.secondary : Color.white)
+                        .padding(.bottom, 12)
+                }
+            }
+            .contentShape(Rectangle())
+            .gesture(DragGesture(minimumDistance: 24).onEnded { value in resolve(swipe: value.translation) })
+        }
+        .raidPanel(ctx.tint)
+        .onReceive(tick) { _ in step() }
+        .onAppear { lastTick = Date() }
+    }
+
+    private var swipeWord: String {
+        switch lunge?.dir { case .left: return "left"; case .right: return "right"; case .up: return "up"; case nil: return "" }
+    }
+
+    private func resolve(swipe: CGSize) {
+        guard ctx.running, let l = lunge else { return }
+        let horizontal = abs(swipe.width) > abs(swipe.height)
+        let matched: Bool
+        switch l.dir {
+        case .left:  matched = horizontal && swipe.width < 0
+        case .right: matched = horizontal && swipe.width > 0
+        case .up:    matched = !horizontal && swipe.height < 0
+        }
+        if matched {
+            lunge = nil; sinceLunge = 0
+            counterFlash = true
+            withAnimation(.easeOut(duration: 0.4)) { counterFlash = false }
+            ctx.onSuccess()
+        }
+    }
+
+    private func step() {
+        let now = Date()
+        let dt = min(0.15, now.timeIntervalSince(lastTick))
+        lastTick = now
+        guard ctx.running else { return }
+        if let l = lunge {
+            if now.timeIntervalSince(l.born) >= window {
+                lunge = nil; sinceLunge = 0
+                missFlash = true
+                withAnimation(.easeOut(duration: 0.35)) { missFlash = false }
+                ctx.onMistake()
+            }
+            return
+        }
+        sinceLunge += dt
+        if sinceLunge >= cadence {
+            sinceLunge = 0
+            withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
+                lunge = (Dir.allCases.randomElement()!, now)
+            }
+        }
+    }
+}
+
+private struct LungeTell: View {
+    let dir: String
+    let remaining: Double
+    let offset: CGSize
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 22).fill(Color.red.opacity(0.22))
-            // Closing danger ring.
-            Circle().strokeBorder(Color.red.opacity(0.9), lineWidth: 6)
-                .scaleEffect(0.5 + close * 0.9)
-                .frame(width: 160, height: 160)
-            VStack(spacing: 8) {
-                Image(systemName: "hand.raised.fill").font(.system(size: 40, weight: .black))
-                Text("DODGE!").font(.system(size: 30, weight: .heavy, design: .rounded))
-            }
-            .foregroundStyle(.white)
-            .shadow(color: .black.opacity(0.5), radius: 4)
+            Circle().stroke(Color.red.opacity(0.9), lineWidth: 5)
+                .scaleEffect(0.6 + remaining * 0.8).frame(width: 130, height: 130)
+            Image(systemName: dir).font(.system(size: 44, weight: .black))
+                .foregroundStyle(.white).shadow(color: .red, radius: 6)
+                .offset(offset)
         }
     }
 }
@@ -301,31 +481,34 @@ private struct SlamPrompt: View {
 struct ForgeRoom: View {
     let ctx: RaidRoomContext
 
-    @State private var marker: Double = 0.5
-    @State private var direction: Double = 1
+    @State private var startDate = Date()
     @State private var sweetCenter = 0.5
-    @State private var lastTick = Date()
     @State private var combo = 0
     @State private var flash: FlashKind?
 
     private enum FlashKind { case perfect, good, miss }
 
-    private let tick = Timer.publish(every: 0.016, on: .main, in: .common).autoconnect()
-
     private var perfectHalf: Double { ctx.params.sweetHalfWidth }
     private var goodHalf: Double { ctx.params.sweetHalfWidth * 2.1 }
     private var speed: Double { 1.0 / (ctx.params.spawnInterval * 1.5) }
+
+    /// The marker is a pure triangle wave of elapsed time, so the sweep is driven by a lightweight
+    /// `TimelineView` (only the marker layer redraws), capped to ~30 fps to match the other rooms
+    /// rather than free-running at the display refresh rate.
+    private func markerValue(_ elapsed: Double) -> Double {
+        let phase = (max(0, elapsed) * speed).truncatingRemainder(dividingBy: 2)
+        return phase <= 1 ? phase : 2 - phase
+    }
 
     var body: some View {
         VStack(spacing: 22) {
             Spacer(minLength: 0)
 
-            // Heat / combo readout.
             HStack(spacing: 8) {
-                Image(systemName: "flame.fill").foregroundStyle(combo >= 3 ? .orange : .secondary)
+                Image(systemName: "flame.fill").foregroundStyle(combo >= 3 ? Color.orange : Color.secondary)
                 Text(combo > 1 ? "Combo ×\(combo)" : "Strike the sweet-spot")
                     .font(.headline.weight(.bold))
-                    .foregroundStyle(combo > 1 ? .orange : .secondary)
+                    .foregroundStyle(combo > 1 ? Color.orange : Color.secondary)
                     .contentTransition(.numericText())
             }
 
@@ -339,15 +522,15 @@ struct ForgeRoom: View {
                     Capsule().fill(ctx.tint)
                         .frame(width: CGFloat(perfectHalf * 2) * w)
                         .position(x: CGFloat(sweetCenter) * w, y: geo.size.height / 2)
-                    // Marker.
-                    RoundedRectangle(cornerRadius: 3).fill(Color.white)
-                        .frame(width: 6)
-                        .shadow(color: .white.opacity(0.8), radius: 4)
-                        .position(x: CGFloat(marker) * w, y: geo.size.height / 2)
+                    TimelineView(.periodic(from: .now, by: 1.0 / 30.0)) { tl in
+                        let m = markerValue(tl.date.timeIntervalSince(startDate))
+                        RoundedRectangle(cornerRadius: 3).fill(Color.white)
+                            .frame(width: 6)
+                            .shadow(color: .white.opacity(0.8), radius: 4)
+                            .position(x: CGFloat(m) * w, y: geo.size.height / 2)
+                    }
                 }
-                .overlay(
-                    Capsule().strokeBorder(flashColor, lineWidth: flash == nil ? 0 : 3)
-                )
+                .overlay(Capsule().strokeBorder(flashColor, lineWidth: flash == nil ? 0 : 3))
             }
             .frame(height: 52)
             .padding(.horizontal, 6)
@@ -369,8 +552,7 @@ struct ForgeRoom: View {
         }
         .padding(18)
         .raidPanel(ctx.tint)
-        .onReceive(tick) { _ in step() }
-        .onAppear { lastTick = Date(); randomize() }
+        .onAppear { startDate = Date(); randomize() }
     }
 
     private var flashColor: Color {
@@ -382,18 +564,9 @@ struct ForgeRoom: View {
         }
     }
 
-    private func step() {
-        let now = Date()
-        let dt = min(0.08, now.timeIntervalSince(lastTick))
-        lastTick = now
-        guard ctx.running else { return }
-        marker += direction * speed * dt
-        if marker >= 1 { marker = 1; direction = -1 }
-        else if marker <= 0 { marker = 0; direction = 1 }
-    }
-
     private func strike() {
         guard ctx.running else { return }
+        let marker = markerValue(Date().timeIntervalSince(startDate))
         let d = abs(marker - sweetCenter)
         if d <= perfectHalf {
             combo += 1; show(.perfect); ctx.onSuccess(); randomize()
@@ -569,7 +742,7 @@ struct StealthRoom: View {
     @State private var caught = false
     @State private var lootPulse = false
 
-    private let tick = Timer.publish(every: 0.02, on: .main, in: .common).autoconnect()
+    private let tick = Timer.publish(every: 0.033, on: .main, in: .common).autoconnect()
 
     /// The beam covers a band around its centre; you're safe when its centre is far from the vault
     /// (fixed at 0.5). Faster sweep + wider beam at higher tiers.
@@ -687,8 +860,10 @@ struct SequenceRoom: View {
     @State private var highlight: Int?
     @State private var phase: Phase = .watch
     @State private var started = false
+    @State private var alarm = 0     // boss room: two slips trip the Warden's alarm → a heart
 
     private let padCount = 4
+    private let alarmLimit = 2
 
     private var glyphs: [String] { ["circle.hexagongrid.fill", "seal.fill", "sparkle", "hexagon.fill"] }
     private var glyphColors: [Color] {
@@ -702,6 +877,17 @@ struct SequenceRoom: View {
                 .font(.headline.weight(.bold))
                 .foregroundStyle(promptColor)
                 .contentTransition(.opacity)
+
+            if ctx.isBoss {
+                HStack(spacing: 6) {
+                    Image(systemName: "eye.fill").font(.caption2).foregroundStyle(.secondary)
+                    ForEach(0..<alarmLimit, id: \.self) { i in
+                        Circle().fill(i < alarm ? Color.red : Color.white.opacity(0.22))
+                            .frame(width: 7, height: 7)
+                    }
+                    Text("alarm").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                }
+            }
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 14), count: 2), spacing: 14) {
                 ForEach(0..<padCount, id: \.self) { i in
@@ -780,11 +966,665 @@ struct SequenceRoom: View {
             }
         } else {
             phase = .wrong
+            if ctx.isBoss {
+                alarm += 1
+                if alarm >= alarmLimit { alarm = 0; ctx.onMistake() }
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
                 inputIndex = 0
                 phase = .watch
                 playback()
             }
+        }
+    }
+}
+
+// MARK: - Charge — stoke the Slag Golem's core, release inside the band (press-and-hold)
+
+struct ChargeRoom: View {
+    let ctx: RaidRoomContext
+
+    @State private var heat: Double = 0
+    @State private var holding = false
+    @State private var bandCenter: Double = 0.6
+    @State private var lastTick = Date()
+    @State private var flash: Flash?
+    @State private var started = false
+
+    private enum Flash { case good, over, early }
+
+    private let tick = Timer.publish(every: 0.033, on: .main, in: .common).autoconnect()
+    private var bandHalf: Double { max(0.07, ctx.params.sweetHalfWidth * 2.1) }
+    private var overheatAt: Double { min(0.99, bandCenter + bandHalf + 0.05) }
+    private var fillRate: Double { 1.0 / max(0.7, ctx.params.spawnInterval * 1.5) }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Spacer(minLength: 0)
+            Text(hint).font(.headline.weight(.bold)).foregroundStyle(hintColor)
+                .contentTransition(.opacity)
+
+            GeometryReader { geo in
+                let h = geo.size.height, w = geo.size.width
+                ZStack {
+                    Capsule().fill(Color.black.opacity(0.35))
+                    // Overheat zone (top)
+                    Rectangle().fill(Color.red.opacity(0.22))
+                        .frame(height: CGFloat(1 - overheatAt) * h)
+                        .position(x: w / 2, y: CGFloat(1 - overheatAt) * h / 2)
+                    // Target band
+                    Rectangle().fill(ctx.tint.opacity(0.9))
+                        .frame(height: CGFloat(bandHalf * 2) * h)
+                        .position(x: w / 2, y: CGFloat(1 - bandCenter) * h)
+                    Rectangle().fill(.white.opacity(0.9)).frame(height: 2)
+                        .position(x: w / 2, y: CGFloat(1 - bandCenter) * h)
+                    // Heat fill
+                    LinearGradient(colors: [Color.orange, Color.red, Color.yellow],
+                                   startPoint: .bottom, endPoint: .top)
+                        .frame(height: CGFloat(heat) * h)
+                        .position(x: w / 2, y: h - CGFloat(heat) * h / 2)
+                        .opacity(0.92)
+                    Rectangle().fill(.white).frame(height: 3)
+                        .shadow(color: .orange, radius: 6)
+                        .position(x: w / 2, y: CGFloat(1 - heat) * h)
+                }
+                .clipShape(Capsule())
+                .overlay(Capsule().strokeBorder(borderColor, lineWidth: 3))
+            }
+            .frame(width: 96)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            RoundedRectangle(cornerRadius: 18)
+                .fill(holding ? ctx.tint.opacity(0.9) : ctx.tint.opacity(0.5))
+                .frame(height: 68)
+                .frame(maxWidth: 320)
+                .overlay(
+                    Label(holding ? "Release in the band" : "Hold to stoke",
+                          systemImage: holding ? "flame.fill" : "flame")
+                        .font(.headline.weight(.bold)).foregroundStyle(.white)
+                )
+                .scaleEffect(holding ? 0.97 : 1)
+                .animation(.easeOut(duration: 0.12), value: holding)
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { _ in if !holding, ctx.running { startHold() } }
+                        .onEnded { _ in release() }
+                )
+            Spacer(minLength: 0)
+        }
+        .padding(18)
+        .raidPanel(ctx.tint)
+        .onAppear { if !started { started = true; randomizeBand() } }
+        .onReceive(tick) { now in
+            let dt = now.timeIntervalSince(lastTick); lastTick = now
+            guard ctx.running, holding else { return }
+            heat = min(1, heat + fillRate * dt)
+            if heat >= overheatAt {
+                holding = false
+                heat = overheatAt
+                flash = .over
+                ctx.onMistake()
+                resetSoon()
+            }
+        }
+    }
+
+    private var hint: String {
+        switch flash {
+        case .good: return "Tempered!"
+        case .over: return "Overheated!"
+        case .early: return "Too cold — hold longer"
+        case nil: return "Stoke into the band, then release"
+        }
+    }
+    private var hintColor: Color {
+        switch flash { case .good: return .green; case .over, .early: return .red; case nil: return .secondary }
+    }
+    private var borderColor: Color {
+        switch flash { case .good: return .green; case .over: return .red; default: return .white.opacity(0.18) }
+    }
+
+    private func startHold() {
+        holding = true; heat = 0; flash = nil; lastTick = Date()
+    }
+    private func release() {
+        guard holding else { return }
+        holding = false
+        if abs(heat - bandCenter) <= bandHalf {
+            flash = .good; ctx.onSuccess()
+        } else if heat < bandCenter - bandHalf {
+            flash = .early; ctx.onMistake()
+        } else {
+            flash = .over; ctx.onMistake()
+        }
+        resetSoon()
+    }
+    private func resetSoon() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            heat = 0; flash = nil; randomizeBand()
+        }
+    }
+    private func randomizeBand() {
+        bandCenter = Double.random(in: 0.42...(0.9 - bandHalf))
+    }
+}
+
+// MARK: - Dial — align the Forge Master's key notch to the top before the press-timer runs out
+
+struct DialRoom: View {
+    let ctx: RaidRoomContext
+
+    @State private var keyAngle: Double = .pi
+    @State private var dialRotation: Double = 0
+    @State private var lastDragWidth: CGFloat = 0
+    @State private var pressStart = Date()
+    @State private var spark = false
+    @State private var started = false
+    @State private var lastTick = Date()
+
+    private let tick = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
+    private var tolerance: Double { max(0.14, ctx.params.sweetHalfWidth * 2.6) }
+    private var pressWindow: Double { max(1.4, ctx.params.targetLifetime * 2.4 * (ctx.enraged ? 0.75 : 1)) }
+    private let sensitivity: Double = 0.012
+    private var offset: Double { wrap(keyAngle + dialRotation) }
+    private var aligned: Bool { abs(offset) <= tolerance }
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Spacer(minLength: 0)
+            Text(aligned ? "Aligned — hold steady!" : "Rotate the key notch to the top")
+                .font(.headline.weight(.bold))
+                .foregroundStyle(aligned ? Color.green : Color.secondary)
+                .contentTransition(.opacity)
+
+            GeometryReader { geo in
+                let side = min(geo.size.width, geo.size.height)
+                let radius = side * 0.42
+                ZStack {
+                    // Press timer ring
+                    TimelineView(.periodic(from: .now, by: 1.0 / 30.0)) { tl in
+                        let left = max(0, 1 - tl.date.timeIntervalSince(pressStart) / pressWindow)
+                        Circle()
+                            .trim(from: 0, to: left)
+                            .stroke(left < 0.3 ? Color.red : ctx.tint.opacity(0.8),
+                                    style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                            .frame(width: radius * 2 + 30, height: radius * 2 + 30)
+                    }
+                    // Dial body
+                    Circle().fill(Color.black.opacity(0.35))
+                        .frame(width: radius * 2, height: radius * 2)
+                    Circle().strokeBorder(Color.white.opacity(0.12), lineWidth: 2)
+                        .frame(width: radius * 2, height: radius * 2)
+                    ForEach(0..<12, id: \.self) { t in
+                        Capsule().fill(.white.opacity(0.16)).frame(width: 2, height: 10)
+                            .offset(y: -radius + 8)
+                            .rotationEffect(.degrees(Double(t) / 12 * 360))
+                    }
+                    // Top target wedge
+                    Triangle().fill(aligned ? Color.green : Color.white.opacity(0.55))
+                        .frame(width: 20, height: 14)
+                        .offset(y: -radius - 14)
+                    // Key notch
+                    ZStack {
+                        Capsule().fill(aligned ? Color.green : ctx.tint)
+                            .frame(width: 14, height: 34)
+                        Image(systemName: "key.fill").font(.system(size: 13, weight: .black))
+                            .foregroundStyle(.white).rotationEffect(.degrees(180))
+                    }
+                    .offset(y: -radius)
+                    .rotationEffect(.radians(keyAngle + dialRotation))
+                    .shadow(color: aligned ? .green.opacity(0.8) : .clear, radius: 8)
+                    // Hub
+                    Circle().fill(ctx.tint.opacity(0.85)).frame(width: 34, height: 34)
+                    Image(systemName: "gearshape.fill").font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.white).opacity(0.9)
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
+                .scaleEffect(spark ? 1.04 : 1)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { v in
+                            guard ctx.running else { return }
+                            let d = v.translation.width - lastDragWidth
+                            lastDragWidth = v.translation.width
+                            dialRotation += Double(d) * sensitivity
+                            if aligned { lockIn() }
+                        }
+                        .onEnded { _ in lastDragWidth = 0 }
+                )
+            }
+            .frame(maxWidth: 360, maxHeight: 360)
+            .frame(maxWidth: .infinity)
+            Spacer(minLength: 0)
+        }
+        .padding(18)
+        .raidPanel(ctx.tint)
+        .onAppear { if !started { started = true; newRound() } }
+        .onReceive(tick) { now in
+            guard ctx.running else { return }
+            if now.timeIntervalSince(pressStart) >= pressWindow {
+                ctx.onMistake()
+                sparkMiss()
+                newRound()
+            }
+        }
+    }
+
+    private func lockIn() {
+        ctx.onSuccess()
+        newRound()
+    }
+    private func sparkMiss() {
+        withAnimation(.easeOut(duration: 0.12)) { spark = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+            withAnimation(.easeIn(duration: 0.12)) { spark = false }
+        }
+    }
+    private func newRound() {
+        pressStart = Date()
+        let target = Double.random(in: 0.9...(2 * Double.pi - 0.9))
+        keyAngle = wrap(target - dialRotation)
+    }
+    private func wrap(_ a: Double) -> Double {
+        var x = a.truncatingRemainder(dividingBy: 2 * .pi)
+        if x > .pi { x -= 2 * .pi }
+        if x < -.pi { x += 2 * .pi }
+        return x
+    }
+}
+
+private struct Triangle: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: r.midX, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.minX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.maxX, y: r.minY))
+        p.closeSubpath()
+        return p
+    }
+}
+
+// MARK: - Path trace — guide the loot past the Warhound without straying from the corridor
+
+struct PathTraceRoom: View {
+    let ctx: RaidRoomContext
+
+    @State private var waypoints: [CGPoint] = []
+    @State private var current = 1
+    @State private var token = CGPoint(x: 0.5, y: 0.9)
+    @State private var strayUntil = Date.distantPast
+    @State private var strayFlash = false
+    @State private var started = false
+
+    private var corridorHalf: CGFloat { max(0.09, CGFloat(ctx.params.sweetHalfWidth) * 2.0) }
+    private let reachR: CGFloat = 0.075
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text(strayFlash ? "Off the trail!" : "Trace the path — keep inside the corridor")
+                .font(.headline.weight(.bold))
+                .foregroundStyle(strayFlash ? Color.red : Color.secondary)
+                .contentTransition(.opacity)
+
+            GeometryReader { geo in
+                let sz = geo.size
+                ZStack {
+                    // Corridor
+                    if waypoints.count > 1 {
+                        Path { p in
+                            p.move(to: pt(waypoints[0], sz))
+                            for w in waypoints.dropFirst() { p.addLine(to: pt(w, sz)) }
+                        }
+                        .stroke(ctx.tint.opacity(0.18),
+                                style: StrokeStyle(lineWidth: corridorHalf * 2 * sz.width, lineCap: .round, lineJoin: .round))
+                        Path { p in
+                            p.move(to: pt(waypoints[0], sz))
+                            for w in waypoints.dropFirst() { p.addLine(to: pt(w, sz)) }
+                        }
+                        .stroke(ctx.tint.opacity(0.5),
+                                style: StrokeStyle(lineWidth: 2, dash: [6, 7]))
+                    }
+                    // Waypoint gems
+                    ForEach(Array(waypoints.enumerated()), id: \.offset) { idx, w in
+                        Circle()
+                            .fill(idx < current ? Color.green : (idx == current ? ctx.tint : Color.white.opacity(0.25)))
+                            .frame(width: idx == current ? 20 : 14, height: idx == current ? 20 : 14)
+                            .position(pt(w, sz))
+                            .shadow(color: idx == current ? ctx.tint.opacity(0.8) : .clear, radius: 6)
+                    }
+                    // Token
+                    ZStack {
+                        Circle().fill(LinearGradient(colors: [.yellow, .orange], startPoint: .top, endPoint: .bottom))
+                            .frame(width: 30, height: 30)
+                        Image(systemName: "bag.fill").font(.system(size: 13, weight: .bold)).foregroundStyle(.brown)
+                    }
+                    .position(pt(token, sz))
+                    .shadow(color: strayFlash ? .red : .black.opacity(0.4), radius: strayFlash ? 10 : 4)
+                }
+                .frame(width: sz.width, height: sz.height)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { v in
+                            guard ctx.running else { return }
+                            let u = CGPoint(x: min(1, max(0, v.location.x / sz.width)),
+                                            y: min(1, max(0, v.location.y / sz.height)))
+                            token = u
+                            evaluate(u)
+                        }
+                )
+            }
+            .frame(maxWidth: 460)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .padding(16)
+        .raidPanel(ctx.tint)
+        .onAppear { if !started { started = true; regenerate(startNear: token) } }
+    }
+
+    private func pt(_ u: CGPoint, _ sz: CGSize) -> CGPoint {
+        CGPoint(x: u.x * sz.width, y: u.y * sz.height)
+    }
+
+    private func evaluate(_ u: CGPoint) {
+        guard current < waypoints.count else { return }
+        let target = waypoints[current]
+        if hypot(u.x - target.x, u.y - target.y) < reachR {
+            ctx.onSuccess()
+            current += 1
+            if current >= waypoints.count { regenerate(startNear: target) }
+            return
+        }
+        // Stray check against the active segment
+        let a = waypoints[current - 1], b = waypoints[current]
+        let d = distToSegment(u, a, b)
+        if d > corridorHalf, Date() > strayUntil {
+            ctx.onMistake()
+            strayUntil = Date().addingTimeInterval(0.7)
+            token = a
+            withAnimation(.easeOut(duration: 0.12)) { strayFlash = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                withAnimation { strayFlash = false }
+            }
+        }
+    }
+
+    private func regenerate(startNear: CGPoint) {
+        let n = max(4, min(7, 3 + ctx.params.sequenceLength))
+        var pts: [CGPoint] = [CGPoint(x: startNear.x, y: 0.9)]
+        let step = 0.78 / CGFloat(n - 1)
+        for i in 1..<n {
+            let y = 0.9 - step * CGFloat(i)
+            let x: CGFloat = i % 2 == 0 ? 0.7 : 0.3
+            pts.append(CGPoint(x: x + CGFloat.random(in: -0.05...0.05), y: y))
+        }
+        waypoints = pts
+        current = 1
+        token = pts[0]
+    }
+
+    private func distToSegment(_ p: CGPoint, _ a: CGPoint, _ b: CGPoint) -> CGFloat {
+        let dx = b.x - a.x, dy = b.y - a.y
+        let len2 = dx * dx + dy * dy
+        if len2 == 0 { return hypot(p.x - a.x, p.y - a.y) }
+        var t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2
+        t = min(1, max(0, t))
+        let px = a.x + t * dx, py = a.y + t * dy
+        return hypot(p.x - px, p.y - py)
+    }
+}
+
+// MARK: - Mash — haul the River Serpent's net, but freeze when it thrashes
+
+struct MashRoom: View {
+    let ctx: RaidRoomContext
+
+    @State private var haul: Double = 0.12
+    @State private var thrashing = false
+    @State private var sinceThrash: Double = 0
+    @State private var thrashAge: Double = 0
+    @State private var lastTick = Date()
+    @State private var badFlash = false
+    @State private var started = false
+
+    private let tick = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
+    private let decay: Double = 0.26
+    private let perTap: Double = 0.085
+    private var thrashEvery: Double { max(1.6, ctx.params.spawnInterval * (ctx.enraged ? 1.7 : 2.6)) }
+    private var thrashWindow: Double { max(0.7, ctx.params.targetLifetime * (ctx.enraged ? 1.1 : 0.85)) }
+
+    var body: some View {
+        VStack(spacing: 18) {
+            Spacer(minLength: 0)
+            Text(thrashing ? "It thrashes — STOP!" : "Mash to haul the net")
+                .font(.headline.weight(.bold))
+                .foregroundStyle(thrashing ? Color.red : Color.secondary)
+                .contentTransition(.opacity)
+
+            // Haul bar
+            GeometryReader { geo in
+                let w = geo.size.width
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.black.opacity(0.35))
+                    Capsule()
+                        .fill(LinearGradient(colors: [ctx.tint, ctx.tint.lightened(0.35)], startPoint: .leading, endPoint: .trailing))
+                        .frame(width: max(6, CGFloat(haul) * w))
+                }
+                .overlay(Capsule().strokeBorder(.white.opacity(0.15), lineWidth: 2))
+            }
+            .frame(height: 26)
+            .frame(maxWidth: 360)
+
+            Button {
+                mash()
+            } label: {
+                ZStack {
+                    Circle()
+                        .fill(thrashing
+                              ? Color.red.opacity(0.85)
+                              : ctx.tint.opacity(0.85))
+                    Circle().strokeBorder(.white.opacity(0.25), lineWidth: 3)
+                    Image(systemName: thrashing ? "hand.raised.fill" : "figure.fishing")
+                        .font(.system(size: 54, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+                .frame(width: 200, height: 200)
+                .scaleEffect(badFlash ? 0.92 : 1)
+                .shadow(color: thrashing ? .red.opacity(0.7) : ctx.tint.opacity(0.6), radius: 16)
+            }
+            .buttonStyle(PressableStyle(scale: 0.9))
+            Spacer(minLength: 0)
+        }
+        .padding(18)
+        .raidPanel(ctx.tint)
+        .onAppear { started = true; lastTick = Date() }
+        .onReceive(tick) { now in
+            let dt = now.timeIntervalSince(lastTick); lastTick = now
+            guard ctx.running else { return }
+            sinceThrash += dt
+            if thrashing {
+                thrashAge += dt
+                if thrashAge >= thrashWindow { thrashing = false; sinceThrash = 0 }
+            } else {
+                haul = max(0, haul - decay * dt)
+                if sinceThrash >= thrashEvery { thrashing = true; thrashAge = 0 }
+            }
+        }
+    }
+
+    private func mash() {
+        guard ctx.running else { return }
+        if thrashing {
+            ctx.onMistake()
+            flashBad()
+            return
+        }
+        haul = min(1, haul + perTap)
+        if haul >= 1 {
+            ctx.onSuccess()
+            haul = 0.12
+        }
+    }
+    private func flashBad() {
+        withAnimation(.easeOut(duration: 0.08)) { badFlash = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            withAnimation(.easeIn(duration: 0.1)) { badFlash = false }
+        }
+    }
+}
+
+// MARK: - Sort — route the Grove Colossus's harvest: ripe to the altar, rotten to the pit
+
+struct SortRoom: View {
+    let ctx: RaidRoomContext
+
+    private struct Item: Identifiable {
+        let id = UUID()
+        let ripe: Bool
+        let icon: String
+    }
+    private enum Side { case altar, pit }
+
+    @State private var queue: [Item] = []
+    @State private var frontStart = Date()
+    @State private var alarm = 0
+    @State private var lastTick = Date()
+    @State private var flash: Side?
+    @State private var started = false
+
+    private let tick = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
+    private let alarmLimit = 2
+    private var deadline: Double { max(1.1, ctx.params.targetLifetime * 1.6 * (ctx.enraged ? 0.75 : 1)) }
+    private let ripeIcons = ["leaf.fill", "carrot.fill", "tree.fill"]
+    private let rotIcons = ["ant.fill", "flame.fill", "smoke.fill"]
+
+    var body: some View {
+        VStack(spacing: 14) {
+            HStack(spacing: 8) {
+                Image(systemName: "eye.trianglebadge.exclamationmark.fill")
+                    .font(.caption).foregroundStyle(.secondary)
+                ForEach(0..<alarmLimit, id: \.self) { i in
+                    Circle().fill(i < alarm ? Color.red : Color.white.opacity(0.22))
+                        .frame(width: 8, height: 8)
+                }
+                Text("wrath").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+            }
+
+            // Upcoming queue (flows toward the front)
+            HStack(spacing: 10) {
+                ForEach(Array(queue.dropFirst().prefix(4))) { item in
+                    itemChip(item, size: 40, dim: true)
+                }
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: 360, alignment: .leading)
+            .frame(height: 48)
+
+            // Front item with deadline ring
+            ZStack {
+                TimelineView(.periodic(from: .now, by: 1.0 / 30.0)) { tl in
+                    let left = max(0, 1 - tl.date.timeIntervalSince(frontStart) / deadline)
+                    Circle()
+                        .trim(from: 0, to: left)
+                        .stroke(left < 0.3 ? Color.red : ctx.tint,
+                                style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .frame(width: 132, height: 132)
+                }
+                if let front = queue.first {
+                    itemChip(front, size: 104, dim: false)
+                }
+            }
+            .frame(height: 150)
+
+            // Bins
+            HStack(spacing: 18) {
+                bin(.altar)
+                bin(.pit)
+            }
+            .frame(maxWidth: 360)
+        }
+        .padding(16)
+        .raidPanel(ctx.tint)
+        .onAppear { if !started { started = true; fill(); frontStart = Date() } }
+        .onReceive(tick) { _ in
+            guard ctx.running, !queue.isEmpty else { return }
+            if Date().timeIntervalSince(frontStart) >= deadline {
+                registerWrong()
+                advance()
+            }
+        }
+    }
+
+    private func itemChip(_ item: Item, size: CGFloat, dim: Bool) -> some View {
+        let color: Color = item.ripe ? .green : Color(red: 0.55, green: 0.36, blue: 0.72)
+        return ZStack {
+            RoundedRectangle(cornerRadius: size * 0.24)
+                .fill(color.opacity(dim ? 0.28 : 0.9))
+            RoundedRectangle(cornerRadius: size * 0.24)
+                .strokeBorder(color.opacity(dim ? 0.4 : 1), lineWidth: 2)
+            Image(systemName: item.icon)
+                .font(.system(size: size * 0.42, weight: .bold))
+                .foregroundStyle(dim ? color : .white)
+        }
+        .frame(width: size, height: size)
+    }
+
+    private func bin(_ side: Side) -> some View {
+        let isAltar = side == .altar
+        let color: Color = isAltar ? .green : Color(red: 0.55, green: 0.36, blue: 0.72)
+        return Button {
+            choose(side)
+        } label: {
+            VStack(spacing: 6) {
+                Image(systemName: isAltar ? "sparkles" : "trash.fill")
+                    .font(.system(size: 30, weight: .bold))
+                Text(isAltar ? "Altar · ripe" : "Pit · rotten")
+                    .font(.caption.weight(.bold))
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 84)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(color.opacity(flash == side ? 0.95 : 0.6))
+            )
+            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.white.opacity(0.2), lineWidth: 2))
+            .scaleEffect(flash == side ? 1.04 : 1)
+        }
+        .buttonStyle(PressableStyle(scale: 0.95))
+    }
+
+    private func choose(_ side: Side) {
+        guard ctx.running, let front = queue.first else { return }
+        let correct = (side == .altar && front.ripe) || (side == .pit && !front.ripe)
+        withAnimation(.easeOut(duration: 0.1)) { flash = side }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) { flash = nil }
+        if correct {
+            ctx.onSuccess()
+        } else {
+            registerWrong()
+        }
+        advance()
+    }
+
+    private func registerWrong() {
+        alarm += 1
+        if alarm >= alarmLimit { alarm = 0; ctx.onMistake() }
+    }
+
+    private func advance() {
+        if !queue.isEmpty { queue.removeFirst() }
+        fill()
+        frontStart = Date()
+    }
+
+    private func fill() {
+        while queue.count < 6 {
+            let ripe = Bool.random()
+            queue.append(Item(ripe: ripe, icon: (ripe ? ripeIcons : rotIcons).randomElement()!))
         }
     }
 }

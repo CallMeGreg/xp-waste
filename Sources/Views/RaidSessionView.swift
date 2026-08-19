@@ -1,10 +1,10 @@
 import SwiftUI
 
 /// Immersive, multi-room raid. A run is an **expedition through several rooms** — a warm-up, a
-/// mini-boss, sometimes an elite room, then a tougher **final boss** — sharing one countdown and one
-/// pool of **raid HP**. Each room runs a different mechanic (`RaidRooms.swift`); the engine owns the
-/// clock, objective progress, HP, boss phases, the room-intro cards, and the shared telegraphed-slam
-/// overlay that makes even a skilling finale fight back.
+/// mini-boss, then a tougher **final boss** — sharing one countdown and one pool of **raid HP**.
+/// Every room runs a **different** mechanic (`RaidRooms.swift`), and no mechanic repeats across the
+/// four raids. The engine owns the clock, objective progress, HP, boss phases, and the room-intro
+/// cards; each boss threatens the player natively from inside its own mechanic.
 ///
 /// Clear every room before the timer to win and bank an XP lamp (a **flawless** run — no HP lost —
 /// banks a bonus). All numbers come from `Balance`; room identities from `RaidPlan`.
@@ -33,11 +33,8 @@ struct RaidSessionView: View {
     @State private var earnedLamps: [RaidLampRecord] = []
     @State private var bonusLamp = false
 
-    // Boss reactions & engine slam overlay (skilling boss rooms).
+    // Boss reaction feedback (flinch on each boss-room hit) + hurt shake.
     @State private var hitToken = 0
-    @State private var slamActive = false
-    @State private var slamStart: Date?
-    @State private var sinceSlam: Double = 0
     @State private var screenShake: CGFloat = 0
 
     @State private var didBegin = false
@@ -54,7 +51,7 @@ struct RaidSessionView: View {
     private var params: Balance.RaidTierParams { Balance.raidParams(forTier: tier) }
     private var room: RaidRoom {
         rooms.indices.contains(roomIndex) ? rooms[roomIndex]
-            : RaidRoom(id: 0, title: "", kind: .assault, boss: .champion, objectiveNoun: "", objective: "")
+            : RaidRoom(id: 0, title: "", kind: .duel, boss: .champion, objectiveNoun: "", objective: "")
     }
     private var isFinalRoom: Bool { roomIndex == rooms.count - 1 }
     private var bossPhases: Int { isFinalRoom ? params.bossPhases : 1 }
@@ -147,7 +144,6 @@ struct RaidSessionView: View {
     private func enterRoom(startPlaying: Bool) {
         roomProgress = 0
         roomGoal = Balance.raidRoomGoal(kind: room.kind, isBoss: room.isBoss, tier: tier)
-        slamActive = false; slamStart = nil; sinceSlam = 0
         phase = startPlaying ? .playing : .introRoom
     }
 
@@ -158,8 +154,7 @@ struct RaidSessionView: View {
     private func tickClock() {
         guard phase == .playing, !debugVisualOnly else { return }
         timeLeft -= 0.1
-        if timeLeft <= 0 { timeLeft = 0; end(passed: false); return }
-        updateSlams()
+        if timeLeft <= 0 { timeLeft = 0; end(passed: false) }
     }
 
     // MARK: Progress
@@ -208,32 +203,6 @@ struct RaidSessionView: View {
     private func shake() {
         screenShake = 9
         withAnimation(.interpolatingSpring(stiffness: 700, damping: 7)) { screenShake = 0 }
-    }
-
-    // MARK: Engine slam overlay (skilling boss rooms)
-
-    private func updateSlams() {
-        guard room.kind.usesEngineHazards(isBoss: room.isBoss) else { return }
-        if slamActive, let start = slamStart {
-            if Date().timeIntervalSince(start) >= params.targetLifetime {
-                slamActive = false; slamStart = nil
-                registerMistake()
-            }
-            return
-        }
-        sinceSlam += 0.1
-        let cadence = params.spawnInterval * (enraged ? 3.0 : 4.6)
-        if sinceSlam >= cadence {
-            sinceSlam = 0
-            withAnimation { slamActive = true }
-            slamStart = Date()
-        }
-    }
-
-    private func dodgeSlam() {
-        guard slamActive else { return }
-        slamActive = false; slamStart = nil
-        if game.hapticsEnabled { hitHaptic &+= 1 }
     }
 
     // MARK: HUD
@@ -340,20 +309,17 @@ struct RaidSessionView: View {
         .accessibilityLabel("Raid health \(playerHP) of \(maxHP)")
     }
 
-    // MARK: Stage (current room's mechanic + engine boss banner + slam overlay)
+    // MARK: Stage (current room's mechanic + engine boss banner)
 
     private var stage: some View {
-        ZStack {
-            // Boss banner above the mechanic for engine-drawn boss rooms; assault & stealth self-draw.
-            VStack(spacing: 8) {
-                if room.isBoss, room.kind != .assault, room.kind != .stealth {
-                    bossBanner
-                }
-                mechanic
-                    .id(roomIndex)
+        // Boss banner sits above the mechanic, except for bosses that draw themselves inside their
+        // own stage (the duel and the beast lunge).
+        VStack(spacing: 8) {
+            if room.isBoss, !room.kind.selfDrawsBoss {
+                bossBanner
             }
-
-            if slamActive { slamOverlay }
+            mechanic
+                .id(roomIndex)
         }
     }
 
@@ -378,37 +344,25 @@ struct RaidSessionView: View {
     @ViewBuilder private var mechanic: some View {
         let ctx = RaidRoomContext(
             params: params, tint: group.raidTint, group: group,
-            running: phase == .playing && !slamActive && !debugVisualOnly,
+            running: phase == .playing && !debugVisualOnly,
             boss: room.boss, bossHPFraction: bossHPFraction,
             bossPhase: currentPhaseIndex, enraged: enraged, hitToken: hitToken,
             onSuccess: registerSuccess, onMistake: registerMistake
         )
         switch room.kind {
-        case .barrage:     BarrageRoom(ctx: ctx)
-        case .assault:     AssaultRoom(ctx: ctx)
-        case .forge:       ForgeRoom(ctx: ctx)
-        case .recognition: RecognitionRoom(ctx: ctx)
+        case .laneDodge:   BarrageRoom(ctx: ctx)
+        case .swipeDodge:  SwipeDodgeRoom(ctx: ctx)
+        case .duel:        DuelRoom(ctx: ctx)
+        case .rhythm:      ForgeRoom(ctx: ctx)
+        case .charge:      ChargeRoom(ctx: ctx)
+        case .dial:        DialRoom(ctx: ctx)
         case .stealth:     StealthRoom(ctx: ctx)
-        case .sequence:    SequenceRoom(ctx: ctx)
+        case .pathTrace:   PathTraceRoom(ctx: ctx)
+        case .memory:      SequenceRoom(ctx: ctx)
+        case .recognition: RecognitionRoom(ctx: ctx)
+        case .mash:        MashRoom(ctx: ctx)
+        case .sort:        SortRoom(ctx: ctx)
         }
-    }
-
-    private var slamOverlay: some View {
-        let close = slamStart.map { max(0, 1 - Date().timeIntervalSince($0) / params.targetLifetime) } ?? 1
-        return ZStack {
-            RoundedRectangle(cornerRadius: 22).fill(Color.red.opacity(0.22))
-            Circle().strokeBorder(Color.red.opacity(0.9), lineWidth: 6)
-                .scaleEffect(0.5 + close * 0.9).frame(width: 150, height: 150)
-            VStack(spacing: 6) {
-                Image(systemName: "hand.raised.fill").font(.system(size: 38, weight: .black))
-                Text("DODGE!").font(.system(size: 28, weight: .heavy, design: .rounded))
-                Text(room.boss?.threat ?? "").font(.caption).foregroundStyle(.white.opacity(0.85))
-            }
-            .foregroundStyle(.white).shadow(color: .black.opacity(0.5), radius: 4)
-        }
-        .contentShape(Rectangle())
-        .onTapGesture { dodgeSlam() }
-        .transition(.opacity)
     }
 
     // MARK: Room intro
@@ -553,12 +507,18 @@ extension RaidRoomKind {
     /// SF Symbol used on the room-intro card and preview chips.
     var symbol: String {
         switch self {
-        case .barrage:     return "arrow.down.to.line"
-        case .assault:     return "burst.fill"
-        case .forge:       return "hammer.fill"
-        case .recognition: return "leaf.fill"
+        case .laneDodge:   return "arrow.down.to.line"
+        case .swipeDodge:  return "arrow.left.arrow.right"
+        case .duel:        return "shield.lefthalf.filled"
+        case .rhythm:      return "hammer.fill"
+        case .charge:      return "flame.fill"
+        case .dial:        return "dial.max.fill"
         case .stealth:     return "eye.slash.fill"
-        case .sequence:    return "square.grid.2x2.fill"
+        case .pathTrace:   return "scribble.variable"
+        case .memory:      return "square.grid.2x2.fill"
+        case .recognition: return "leaf.fill"
+        case .mash:        return "hand.tap.fill"
+        case .sort:        return "arrow.triangle.branch"
         }
     }
 }

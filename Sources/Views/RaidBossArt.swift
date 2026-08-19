@@ -43,7 +43,7 @@ struct RaidBossView: View {
     @State private var flash: Double = 0
 
     var body: some View {
-        TimelineView(.animation) { timeline in
+        TimelineView(.periodic(from: .now, by: 1.0 / 30.0)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             Canvas { ctx, sz in draw(ctx, size: sz, time: t) }
                 .frame(width: size, height: size)
@@ -311,34 +311,53 @@ private enum BossArt {
 
 // MARK: - Animated room backdrop
 
-/// A living backdrop for a raid room: a themed vertical gradient, a vignette, a floor line, and a
+/// A living backdrop for a raid room: a themed vertical gradient, a vignette, a floor glow, and a
 /// drift of ambient motes (embers in the Forge, dust in the Colosseum, sparks in the Vault, spores
-/// in the Grove). Cheap `TimelineView` motion so it feels alive on every device.
+/// in the Grove). The static chrome (gradient, blurred floor pool, vignette) is drawn **once**; only
+/// the motes redraw, capped at ~30fps, so the backdrop stays alive without burning frames.
 struct RaidRoomBackdrop: View {
     let group: SkillCategory
     var enraged: Bool = false
 
     var body: some View {
-        TimelineView(.animation) { timeline in
+        ZStack {
+            staticChrome
+            moteLayer
+        }
+        .ignoresSafeArea()
+    }
+
+    /// Non-animated layer: gradient + one blurred floor pool + vignette. Redraws only when `group`
+    /// or `enraged` change — not every frame.
+    private var staticChrome: some View {
+        Canvas { ctx, size in
+            let top = group.raidTintDeep.mixed(with: enraged ? .red : .clear, amount: enraged ? 0.28 : 0)
+            ctx.fill(Path(CGRect(origin: .zero, size: size)),
+                     with: .linearGradient(
+                        Gradient(colors: [top.lightened(0.05),
+                                          Color(red: 0.05, green: 0.06, blue: 0.07)]),
+                        startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)))
+
+            let pool = Path(ellipseIn: CGRect(x: size.width * 0.1, y: size.height * 0.72,
+                                              width: size.width * 0.8, height: size.height * 0.4))
+            var poolCtx = ctx
+            poolCtx.addFilter(.blur(radius: size.width * 0.08))
+            poolCtx.fill(pool, with: .color(group.raidTint.opacity(0.18)))
+
+            ctx.fill(Path(CGRect(origin: .zero, size: size)),
+                     with: .radialGradient(
+                        Gradient(colors: [.clear, .black.opacity(0.45)]),
+                        center: CGPoint(x: size.width / 2, y: size.height * 0.42),
+                        startRadius: size.width * 0.2, endRadius: size.width * 0.75))
+        }
+    }
+
+    /// Only the drifting motes animate, at ~30fps with cheap circle fills (no blur).
+    private var moteLayer: some View {
+        TimelineView(.periodic(from: .now, by: 1.0 / 30.0)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             Canvas { ctx, size in
-                // Base gradient.
-                let top = group.raidTintDeep.mixed(with: enraged ? .red : .clear, amount: enraged ? 0.28 : 0)
-                ctx.fill(Path(CGRect(origin: .zero, size: size)),
-                         with: .linearGradient(
-                            Gradient(colors: [top.lightened(0.05),
-                                              Color(red: 0.05, green: 0.06, blue: 0.07)]),
-                            startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)))
-
-                // A soft glow pool on the floor in the raid's accent.
-                let pool = Path(ellipseIn: CGRect(x: size.width * 0.1, y: size.height * 0.72,
-                                                  width: size.width * 0.8, height: size.height * 0.4))
-                var poolCtx = ctx
-                poolCtx.addFilter(.blur(radius: size.width * 0.08))
-                poolCtx.fill(pool, with: .color(group.raidTint.opacity(0.18)))
-
-                // Ambient motes drifting upward.
-                let count = 22
+                let count = 12
                 for i in 0..<count {
                     let seed = Double(i)
                     let speed = 0.03 + (seed.truncatingRemainder(dividingBy: 5) / 5) * 0.05
@@ -351,16 +370,8 @@ struct RaidRoomBackdrop: View {
                     ctx.fill(Path(ellipseIn: CGRect(x: x + wobble - r, y: y - r, width: r * 2, height: r * 2)),
                              with: .color(group.raidTint.opacity(alpha)))
                 }
-
-                // Vignette.
-                ctx.fill(Path(CGRect(origin: .zero, size: size)),
-                         with: .radialGradient(
-                            Gradient(colors: [.clear, .black.opacity(0.45)]),
-                            center: CGPoint(x: size.width / 2, y: size.height * 0.42),
-                            startRadius: size.width * 0.2, endRadius: size.width * 0.75))
             }
         }
-        .ignoresSafeArea()
     }
 }
 

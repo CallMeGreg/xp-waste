@@ -1,36 +1,53 @@
 import SwiftUI
 
-/// The interactive verb a single raid room runs. Each kind is a *distinct* on-screen interface with
-/// its own goal, so a raid strings several together and reads like an expedition through rooms —
-/// not one repeated tap-test. Boss rooms layer a telegraphed dodge on top of the skilling kinds
-/// (see `usesEngineHazards`), so even a "skilling" finale is a real fight.
+/// The interactive verb a single raid room runs. **Every kind is a wholly distinct game loop** — no
+/// two rooms in the whole game share one — so a raid reads like an expedition through genuinely
+/// different challenges, not one tap-test re-skinned. Twelve kinds fill the twelve rooms (four raids
+/// × three rooms). Boss rooms are self-threatening: a reaction boss punishes a missed defence with a
+/// heart; a skilling boss trips an alarm. There is **no full-screen dodge** — the combat boss trades
+/// blows through red (you strike) and green (incoming) circles instead.
 enum RaidRoomKind: String {
-    case barrage      // dodge sweeping hazards across three lanes, strike in the gaps
-    case assault      // tap glowing weakpoints on a foe while it slams
-    case forge        // rhythm: strike the sweeping meter's sweet-spot, build a combo
-    case recognition  // tap the *called* resource among decoys (recognition + speed)
-    case stealth      // loot while the sweeping searchlight is turned away (restraint)
-    case sequence     // memorise then repeat a lit glyph sequence (puzzle)
+    // Combat — The Colosseum
+    case laneDodge    // slip the falling volley across three lanes, counter in the gap
+    case swipeDodge   // read a beast's telegraphed lunge, swipe away, land the counter
+    case duel         // trade blows: tap red openings to strike, tap green blows to parry
+    // Production — The Grand Forge
+    case rhythm       // strike the sweeping sweet-spot, build a heat combo
+    case charge       // hold to stoke heat, release inside the band before it overheats
+    case dial         // rotate the key mark to the notch and lock before the press fires
+    // Utility — The Vault Heist
+    case stealth      // loot only while the sweeping searchlight is turned away
+    case pathTrace    // drag along the safe route past the patrol, hitting each waypoint
+    case memory       // memorise then repeat the lit rune sequence
+    // Gathering — The Expedition
+    case recognition  // tap the *called* resource among decoys
+    case mash         // rapid-tap to overpower the haul — but freeze on the thrash
+    case sort         // route each streaming offering to the correct side
 
     /// The core verb shown on room-intro cards and the raid preview.
     var verb: String {
         switch self {
-        case .barrage:     return "Dodge & strike"
-        case .assault:     return "Break the weakpoints"
-        case .forge:       return "Time the strikes"
-        case .recognition: return "Gather the called"
+        case .laneDodge:   return "Dodge & strike"
+        case .swipeDodge:  return "Read & sidestep"
+        case .duel:        return "Trade blows"
+        case .rhythm:      return "Time the strikes"
+        case .charge:      return "Stoke & release"
+        case .dial:        return "Align the press"
         case .stealth:     return "Loot unseen"
-        case .sequence:    return "Repeat the pattern"
+        case .pathTrace:   return "Trace the route"
+        case .memory:      return "Repeat the pattern"
+        case .recognition: return "Gather the called"
+        case .mash:        return "Haul it in"
+        case .sort:        return "Sort the offerings"
         }
     }
 
-    /// A boss room of a *skilling* kind (forge/recognition/stealth/sequence) gets the shared
-    /// telegraphed-slam overlay so it fights back; `barrage` and `assault` already own their dodge.
-    func usesEngineHazards(isBoss: Bool) -> Bool {
-        guard isBoss else { return false }
+    /// The combat-centric kinds render the boss creature *inside* the mechanic (it is the fight); the
+    /// rest are interface-led rooms that show the boss in the engine's banner above the stage.
+    var selfDrawsBoss: Bool {
         switch self {
-        case .barrage, .assault: return false
-        default:                 return true
+        case .duel, .swipeDodge: return true
+        default:                 return false
         }
     }
 }
@@ -107,10 +124,10 @@ extension SkillCategory {
     /// A one-line pitch for the raid card.
     var raidTagline: String {
         switch self {
-        case .combat:     return "Three bouts against the arena's champions."
-        case .production: return "Fill the war-order before the Forge Master."
-        case .utility:    return "Three wards stand between you and the vault."
-        case .gathering:  return "Harvest three biomes ahead of the storm."
+        case .combat:     return "Slip the volley, out-duel two champions of the arena."
+        case .production: return "Pour, temper and stamp the war-order under the Forge Master."
+        case .utility:    return "Sneak, slip the hound and crack the vault's every lock."
+        case .gathering:  return "Read the grove, haul the serpent, feed the Colossus."
         }
     }
 
@@ -155,58 +172,51 @@ extension SkillCategory {
         Palette.metal[min(max(tier, 0), Palette.metal.count - 1)]
     }
 
-    /// The ordered rooms for this raid at `tier`. Every raid has a **mini-boss** midway and a
-    /// **final boss** that is tougher than the rest; the top tiers (`roomCount == 4`) splice in an
-    /// extra "elite" room before the finale, so difficulty grows *structurally*, not just by tighter
-    /// windows. The mechanic mix per raid is deliberately varied (dodge / assault / skilling).
+    /// The ordered rooms for this raid. Each raid is a warm-up **skill room → a mini-boss → a tougher
+    /// final boss**, and — the core rule — **no mechanic is ever reused**, within a raid or across the
+    /// four raids: twelve rooms, twelve distinct game loops. Concrete difficulty (goal size, windows,
+    /// boss phases) is resolved from `Balance` at play time, so this stays pure identity.
     func raidRooms(tier: Int) -> [RaidRoom] {
-        let fourRooms = Balance.raidRoomCount(forTier: tier) >= 4
-        var specs: [(String, RaidRoomKind, RaidBoss?, String, String)]
-
         switch self {
         case .combat:
-            specs = [
-                ("The Volley Pit", .barrage, nil, "Waves cleared", "Slip the volley, strike the archers"),
-                ("The Sand Beast", .assault, .beast, "Boss HP", "Batter the beast, dodge its slams"),
+            return [
+                RaidRoom(id: 0, title: "The Volley Pit", kind: .laneDodge, boss: nil,
+                         objectiveNoun: "Volleys slipped", objective: "Slide to the safe lane, then strike in the gap"),
+                RaidRoom(id: 1, title: "The Sand Beast", kind: .swipeDodge, boss: .beast,
+                         objectiveNoun: "Boss HP", objective: "Read the lunge, swipe clear, land the counter"),
+                RaidRoom(id: 2, title: "The Champion", kind: .duel, boss: .champion,
+                         objectiveNoun: "Boss HP", objective: "Strike the red openings — parry the green blows"),
             ]
-            if fourRooms { specs.append(
-                ("The Gauntlet", .barrage, nil, "Waves cleared", "Run the twin volleys")) }
-            specs.append(
-                ("The Champion", .assault, .champion, "Boss HP", "Fell the Champion through every phase"))
 
         case .production:
-            specs = [
-                ("The Smeltery", .forge, nil, "Bars poured", "Strike the sweet-spot, pour the bars"),
-                ("The Slag Golem", .assault, .golem, "Boss HP", "Shatter its molten core, dodge the splash"),
+            return [
+                RaidRoom(id: 0, title: "The Smeltery", kind: .rhythm, boss: nil,
+                         objectiveNoun: "Bars poured", objective: "Strike the sweet-spot, build the heat combo"),
+                RaidRoom(id: 1, title: "The Slag Golem", kind: .charge, boss: .golem,
+                         objectiveNoun: "Boss HP", objective: "Stoke the heat, release in the band — don't overheat"),
+                RaidRoom(id: 2, title: "The Forge Master", kind: .dial, boss: .foreman,
+                         objectiveNoun: "Boss HP", objective: "Turn the mark to the notch, lock before the press drops"),
             ]
-            if fourRooms { specs.append(
-                ("The Assembly", .sequence, nil, "Recipes done", "Repeat each recipe in order")) }
-            specs.append(
-                ("The Forge Master", .forge, .foreman, "Boss HP", "Out-smith the master — mind the sparks"))
 
         case .utility:
-            specs = [
-                ("The Long Corridor", .stealth, nil, "Loot grabbed", "Loot only while the light is turned"),
-                ("The Warhound", .barrage, .hound, "Boss HP", "Slip the hound's lunges, land your strikes"),
+            return [
+                RaidRoom(id: 0, title: "The Long Corridor", kind: .stealth, boss: nil,
+                         objectiveNoun: "Loot grabbed", objective: "Loot only while the searchlight is turned away"),
+                RaidRoom(id: 1, title: "The Warhound", kind: .pathTrace, boss: .hound,
+                         objectiveNoun: "Boss HP", objective: "Trace the route past the hound — stay on the path"),
+                RaidRoom(id: 2, title: "The Vault Warden", kind: .memory, boss: .warden,
+                         objectiveNoun: "Boss HP", objective: "Watch, then repeat each lock rune in order"),
             ]
-            if fourRooms { specs.append(
-                ("The Tumblers", .sequence, nil, "Locks picked", "Repeat each tumbler pattern")) }
-            specs.append(
-                ("The Vault Warden", .stealth, .warden, "Boss HP", "Rob the vault under its sweeping eye"))
 
         case .gathering:
-            specs = [
-                ("The Grove", .recognition, nil, "Gathered", "Gather the called resource, skip decoys"),
-                ("The River Serpent", .barrage, .serpent, "Boss HP", "Catch the drift, dodge its thrashing tail"),
+            return [
+                RaidRoom(id: 0, title: "The Grove", kind: .recognition, boss: nil,
+                         objectiveNoun: "Gathered", objective: "Gather only the called resource, skip the decoys"),
+                RaidRoom(id: 1, title: "The River Serpent", kind: .mash, boss: .serpent,
+                         objectiveNoun: "Boss HP", objective: "Hammer the haul — but freeze the instant it thrashes"),
+                RaidRoom(id: 2, title: "The Grove Colossus", kind: .sort, boss: .colossus,
+                         objectiveNoun: "Boss HP", objective: "Send each offering to its side — ripe or rot"),
             ]
-            if fourRooms { specs.append(
-                ("The Drying Racks", .forge, nil, "Racks filled", "Time the racks, cure the catch")) }
-            specs.append(
-                ("The Grove Colossus", .recognition, .colossus, "Boss HP", "Feed it the right offerings, dodge its stomps"))
-        }
-
-        return specs.enumerated().map { index, s in
-            RaidRoom(id: index, title: s.0, kind: s.1, boss: s.2, objectiveNoun: s.3, objective: s.4)
         }
     }
 }

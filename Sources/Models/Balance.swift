@@ -186,9 +186,9 @@ enum Balance {
 
     // MARK: Raids
 
-    /// A raid is a short **expedition through several rooms** (a warm-up, a mini-boss, sometimes an
-    /// elite room, then a tougher final boss). The whole run shares one countdown; clear every room
-    /// before it expires to win. Duration is budgeted per room so 3- and 4-room raids both feel fair.
+    /// A raid is a short **expedition through three rooms** — a warm-up skill room, a mini-boss, then
+    /// a tougher final boss — every room a *different* game loop. The whole run shares one countdown;
+    /// clear every room before it expires to win.
     static let raidBaseSeconds: Double = 40
     static let raidSecondsPerRoom: Double = 46
 
@@ -211,9 +211,10 @@ enum Balance {
     /// a large one). Re-balancing lamps is a one-line change here — no gameplay or view code.
     static let lampTierCoefficients: [Int] = [500, 900, 1650, 3000, 5500, 10000]
 
-    /// Rooms per raid by tier (0…5). Bronze→Mithril run three rooms; Adamant & Rune splice in an
-    /// extra elite room, so higher tiers grow *structurally*, not merely by tighter timing.
-    static let raidRoomCounts: [Int] = [3, 3, 3, 3, 4, 4]
+    /// Rooms per raid by tier (0…5). Every raid runs three rooms — a warm-up, a mini-boss and a
+    /// final boss — at all tiers; higher tiers grow harder through the multi-axis `RaidTierParams`
+    /// ramp (fewer hearts, tighter windows, more boss phases, bigger goals), never by adding filler.
+    static let raidRoomCounts: [Int] = [3, 3, 3, 3, 3, 3]
     static func raidRoomCount(forTier tier: Int) -> Int {
         raidRoomCounts[min(max(tier, 0), raidRoomCounts.count - 1)]
     }
@@ -262,12 +263,18 @@ enum Balance {
     /// room content in `RaidPlan` or any view.
     static func raidRoomBaseGoal(_ kind: RaidRoomKind) -> Int {
         switch kind {
-        case .barrage:     return 8
-        case .assault:     return 12
-        case .forge:       return 10
-        case .recognition: return 14
+        case .laneDodge:   return 8
+        case .swipeDodge:  return 8    // boss (×mult): dodge-and-counter openings
+        case .duel:        return 10   // boss (×mult): red-circle strikes on the Champion
+        case .rhythm:      return 10
+        case .charge:      return 7    // boss (×mult): each stoke-and-release is a slow, big blow
+        case .dial:        return 8    // boss (×mult): each aligned stamp
         case .stealth:     return 12
-        case .sequence:    return 3   // rounds (each round is `sequenceLength` glyphs)
+        case .pathTrace:   return 6    // boss (×mult): waypoints traced to the exit
+        case .memory:      return 3    // boss (×mult): rounds (each round is `sequenceLength` runes)
+        case .recognition: return 14
+        case .mash:        return 8    // boss (×mult): haul bars filled
+        case .sort:        return 12   // boss (×mult): offerings sent to the right side
         }
     }
 
