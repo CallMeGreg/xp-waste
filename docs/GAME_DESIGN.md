@@ -90,7 +90,7 @@ Every skill can bank **Energy** toward a Supercharge, earned through active tapp
   to ~1% per tap) and **Hitpoints' *Vitality* perk raises the amount** banked per proc. Energy is
   capped at **30 seconds** (Mining's *Deep Reserves* raises the cap).
 - Tap **Supercharge** to spend all banked Energy. For that many seconds, taps on that skill earn a
-  base **×2** multiplier. (Prayer's *Blessing* perk multiplies this — up to **×7** at Prayer 99 —
+  base **×2** multiplier. (Prayer's *Blessing* perk adds to this — up to **×5** at Prayer 99 —
   see [§4](#4-skill-perks-account-wide-passive-buffs).)
 
 The multiplier applies to the **current method's** XP-per-tap (e.g. a tier-4 method at +12/tap,
@@ -211,7 +211,7 @@ regenerate or re-pick the cues.
 | Energy cap | 30 sec Supercharge (Mining raises it) |
 | Slot eligibility | skill level ≥ 10 |
 | Slot 2 / Slot 3 unlock | total level 100 / 300 |
-| Supercharge multiplier | base **×2** tap multiplier (Prayer's *Blessing* perk scales it ×1.00 → ×3.50, up to **×7**) |
+| Supercharge multiplier | base **×2** tap multiplier (Prayer's *Blessing* perk adds +0.0 → +3.0, up to **×5**) |
 | Daily Boost | 1.5× all XP for 5 min (base; Magic/Herblore perks scale ×/duration); 1 free coupon/day; extra Boost Coupons cost **250 Tokens** each in the Shop |
 | Energy Cells | Consumable that instantly fills the skill you're training to its Energy cap; **100 Tokens** each in the Shop |
 | Tokens | Single spendable currency — earned from Diary Tasks, or bought as Token Packs (500 / 3,000 / 7,500) via IAP; spent on Boost Coupons (250) and Energy Cells (100) |

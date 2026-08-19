@@ -61,7 +61,7 @@ private struct SaveData: Codable {
     // Added in v1.4 — the Supercharge multiplier locked in when each active burst was triggered,
     // so a mid-burst level-up can't retroactively change it. Optional so older saves still decode;
     // a burst without a snapshot falls back to the live multiplier. Now a Double since Prayer's perk
-    // scales it by a fractional multiplier (older Int saves decode into Double transparently).
+    // adds a fractional bonus (older Int saves decode into Double transparently).
     var superchargeMultiplier: [String: Double]?
     // Added in v1.5 — Raids. Optional for backward-compatible decoding of older saves.
     var raidLamps: [RaidLampRecord]?
@@ -108,7 +108,7 @@ final class GameState: ObservableObject {
     /// The effective Supercharge multiplier locked in when each active burst was triggered.
     /// Snapshotting it here (instead of recomputing from total level on every tap) keeps an
     /// in-progress burst at the value it started with, so leveling up mid-burst — Mining or any
-    /// other skill crossing a Supercharge tier, or Prayer's multiplier — can't retroactively pump the
+    /// other skill crossing a Supercharge tier, or Prayer's bonus — can't retroactively pump the
     /// boost that's already running. The *next* Supercharge picks up the new, higher value.
     @Published private(set) var superchargeMultiplierBySkill: [SkillID: Double] = [:]
     @Published private(set) var slots: [SkillID] = []
@@ -234,10 +234,10 @@ final class GameState: ObservableObject {
     /// The absolute maximum number of AFK slots the account can ever unlock.
     var maxPossibleSlots: Int { Balance.maxPossibleSlots }
     var superchargeMultiplier: Int { Balance.superchargeMultiplier }
-    /// The Supercharge multiplier actually applied to taps, including Prayer's multiplier perk.
-    /// Prayer scales the base (×2) by ×1.00 (Lv 1) up to ×3.5 (Lv 99), so the effective burst runs
-    /// ×2 → ×7.
-    var effectiveSuperchargeMultiplier: Double { Double(superchargeMultiplier) * superchargePrayerMultiplier }
+    /// The Supercharge multiplier actually applied to taps, including Prayer's bonus perk.
+    /// Prayer adds +0.0 (Lv 1) up to +3.0 (Lv 99) to the base (×2), so the effective burst runs
+    /// ×2 → ×5.
+    var effectiveSuperchargeMultiplier: Double { Double(superchargeMultiplier) + superchargePrayerBonus }
 
     /// The Supercharge multiplier applied to a skill's *active* burst — the value locked in when it
     /// was triggered, so leveling up mid-burst doesn't change the boost already running. Falls back
@@ -324,7 +324,7 @@ final class GameState: ObservableObject {
     var minHitMultiplier: Double { buffRaw(.defence) }     // × base method XP (the hit floor)
     var energyRateMultiplier: Double { buffRaw(.hitpoints) }  // Energy banked per tap-proc
     var extraHitChance: Double { buffRaw(.ranged) }
-    var superchargePrayerMultiplier: Double { buffRaw(.prayer) }  // Prayer "Blessing": ×base Supercharge multiplier (×1 → ×3.5)
+    var superchargePrayerBonus: Double { buffRaw(.prayer) }  // Prayer "Blessing": +bonus added to the Supercharge multiplier (+0 → +3)
     var doubleXPPotency: Double { buffRaw(.magic) }        // the live Daily Boost multiplier value
 
     // Gathering — idle engine
@@ -495,7 +495,7 @@ final class GameState: ObservableObject {
         case .minHit:              return z((v - 1) * 100, places: 0) { String(format: "+%.0f%% min tap XP", (v - 1) * 100) }
         case .energyRate:          return z(v - 1, places: 2) { String(format: "×%.2f Energy per trigger", v) }
         case .extraHit:            return z(v * 100, places: 0) { String(format: "+%.0f%% bonus-tap chance", v * 100) }
-        case .superchargePotency:  return z(v - 1, places: 2) { String(format: "×%.2f Supercharge multiplier", v) }
+        case .superchargePotency:  return z(v, places: 2) { String(format: "+%.2f× Supercharge multiplier", v) }
         case .doubleXPPotency:     return String(format: "×%.2f Boost potency", v)
         case .cache:               return z(v * 100, places: 0) { String(format: "+%.0f%% bonus-XP chance", v * 100) }
         case .energyProc:          return z(Balance.baseEnergyTapChance * v * 100, places: 2) { String(format: "+%.2f%% Energy chance per tap", Balance.baseEnergyTapChance * v * 100) }
