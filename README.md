@@ -57,12 +57,15 @@ Both boosts get stronger as you level up: certain skills grant perks that raise 
 multiplier, extend it, hand out extra daily coupons, and make every Energy Cell charge bigger.
 
 ### 🪔 Raids & Diaries (XP Lamps)
-There's more to chase than taps. Each day you can run a **Raid** for every skill group — a short,
-themed challenge that scales to your levels — and work through the **Diary's** tasks as you hit
-milestones across the game. Clear a Raid, or complete a whole Diary tier, and you'll bank an **XP
-Lamp**: a one-time reward you spend on a skill of your choice for an instant burst of experience,
-worth more the higher that skill's level. Lamps sit outside the Supercharge and Daily Boost
-economy — pure bonus progress toward 99.
+There's more to chase than taps. Each day you can run a **Raid** for every skill group — a themed,
+**multi-room boss expedition** that scales to your levels. Fight through three rooms — a warm-up, a
+mini-boss, then a tougher **final boss** — each a completely different challenge: dodge arena
+volleys, out-duel a champion by striking the **red** openings and parrying the **green** blows, time
+the forge, crack the vault, trace a path past the hound, haul a thrashing serpent and more. Meanwhile,
+work through the **Diary's** tasks as you hit milestones across the game. Clear a Raid, or complete a
+whole Diary tier, and you'll bank an **XP Lamp**: a one-time reward you spend on a skill of your
+choice for an instant burst of experience, worth more the higher that skill's level. Lamps sit
+outside the Supercharge and Daily Boost economy — pure bonus progress toward 99.
 
 ## Your goal 🏆
 

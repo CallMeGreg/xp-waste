@@ -186,13 +186,24 @@ enum Balance {
 
     // MARK: Raids
 
-    /// How long a raid runs, in seconds — "a few minutes". A raid ends early on a win (goal met);
-    /// otherwise the clock is the fail deadline. Reward scales with this (see `raidRapidTapsPerMinute`).
-    static let raidDurationSeconds: Double = 180
+    /// A raid is a short **expedition through three rooms** — a warm-up skill room, a mini-boss, then
+    /// a tougher final boss — every room a *different* game loop. The whole run shares one countdown;
+    /// clear every room before it expires to win.
+    static let raidBaseSeconds: Double = 40
+    static let raidSecondsPerRoom: Double = 46
+
+    /// Total clock for a raid at `tier`, scaled by its room count.
+    static func raidDuration(forTier tier: Int) -> Double {
+        raidBaseSeconds + raidSecondsPerRoom * Double(raidRoomCount(forTier: tier))
+    }
 
     /// How many raids each skill group can be attempted per calendar day. One shot: a completed
     /// attempt (win *or* loss) spends the day for that group.
     static let raidsPerGroupPerDay: Int = 1
+
+    /// A **flawless** clear (finished without losing a single raid-HP heart) banks this many *extra*
+    /// lamps on top of the guaranteed one — the reason to sweat every dodge on a daily run.
+    static let raidFlawlessBonusLamps: Int = 1
 
     /// Per-raid-tier lamp value coefficient (index = raid tier 0…5, Bronze → Rune). A lamp applied
     /// to a skill grants `skillLevel × coefficient` XP, so a lamp's worth scales with the skill's
@@ -200,34 +211,103 @@ enum Balance {
     /// a large one). Re-balancing lamps is a one-line change here — no gameplay or view code.
     static let lampTierCoefficients: [Int] = [500, 900, 1650, 3000, 5500, 10000]
 
-    /// Per-tier difficulty knobs the four raid loops read, selected by a group's raid tier (0…5).
-    /// Ascending difficulty: the goal climbs while the windows tighten and decoys multiply.
+    /// Rooms per raid by tier (0…5). Every raid runs three rooms — a warm-up, a mini-boss and a
+    /// final boss — at all tiers; higher tiers grow harder through the multi-axis `RaidTierParams`
+    /// ramp (fewer hearts, tighter windows, more boss phases, bigger goals), never by adding filler.
+    static let raidRoomCounts: [Int] = [3, 3, 3, 3, 3, 3]
+    static func raidRoomCount(forTier tier: Int) -> Int {
+        raidRoomCounts[min(max(tier, 0), raidRoomCounts.count - 1)]
+    }
+
+    /// Per-tier difficulty knobs every room mechanic reads, selected by a group's raid tier (0…5).
+    /// Ascending difficulty: raid HP shrinks, windows tighten, decoys & memory-length grow, and the
+    /// final boss gains phases — a multi-axis ramp, not just "fewer mistakes allowed".
     struct RaidTierParams {
-        /// Successful actions needed to clear (boss damage / products / rooms / resources).
-        let goal: Int
-        /// Failures tolerated before the raid is lost (missed dodges / mistimes / catches / wrong taps).
-        let allowedMistakes: Int
-        /// Seconds a target or prompt stays actionable before it lapses (tightens with tier).
+        /// Shared "raid HP" hearts for the whole run — a missed dodge / trap / catch / alarm costs
+        /// one; at zero the raid ends immediately. Fewer at higher tiers.
+        let playerHP: Int
+        /// Extra phases the final boss fights through (1 = single phase; up to 3 = an enrage ladder,
+        /// each phase tightening its slam cadence).
+        let bossPhases: Int
+        /// Seconds a tap-target / dodge telegraph stays actionable before it lapses (tightens).
         let targetLifetime: Double
-        /// Seconds between spawns / prompt cadence (shrinks with tier).
+        /// Base cadence (seconds) between spawns / hazards / beam sweeps (shrinks with tier).
         let spawnInterval: Double
-        /// Wrong targets present alongside the right one (recognition pressure).
+        /// Half-width of the rhythm "perfect" sweet-spot as a fraction of the bar (narrows).
+        let sweetHalfWidth: Double
+        /// Glyphs to repeat per round in a memory (sequence) room (grows with tier).
+        let sequenceLength: Int
+        /// Distinct decoy resource types on a recognition board (grows with tier).
         let decoyCount: Int
+        /// Multiplier applied to every room's base objective size, so runs lengthen with tier.
+        let goalScale: Double
     }
 
     /// Six ascending-difficulty tiers, aligned to the training-method ladder (avg level 1/15/30/50/70/90).
     static let raidTierParams: [RaidTierParams] = [
-        RaidTierParams(goal: 40, allowedMistakes: 12, targetLifetime: 1.70, spawnInterval: 1.25, decoyCount: 2),
-        RaidTierParams(goal: 48, allowedMistakes: 10, targetLifetime: 1.50, spawnInterval: 1.10, decoyCount: 3),
-        RaidTierParams(goal: 56, allowedMistakes: 9,  targetLifetime: 1.35, spawnInterval: 1.00, decoyCount: 4),
-        RaidTierParams(goal: 64, allowedMistakes: 8,  targetLifetime: 1.20, spawnInterval: 0.90, decoyCount: 5),
-        RaidTierParams(goal: 72, allowedMistakes: 7,  targetLifetime: 1.05, spawnInterval: 0.82, decoyCount: 6),
-        RaidTierParams(goal: 80, allowedMistakes: 6,  targetLifetime: 0.95, spawnInterval: 0.75, decoyCount: 7)
+        RaidTierParams(playerHP: 6, bossPhases: 1, targetLifetime: 1.70, spawnInterval: 1.30, sweetHalfWidth: 0.15, sequenceLength: 3, decoyCount: 2, goalScale: 1.00),
+        RaidTierParams(playerHP: 6, bossPhases: 1, targetLifetime: 1.55, spawnInterval: 1.16, sweetHalfWidth: 0.13, sequenceLength: 3, decoyCount: 3, goalScale: 1.10),
+        RaidTierParams(playerHP: 5, bossPhases: 2, targetLifetime: 1.40, spawnInterval: 1.04, sweetHalfWidth: 0.11, sequenceLength: 4, decoyCount: 4, goalScale: 1.20),
+        RaidTierParams(playerHP: 5, bossPhases: 2, targetLifetime: 1.25, spawnInterval: 0.94, sweetHalfWidth: 0.095, sequenceLength: 4, decoyCount: 5, goalScale: 1.35),
+        RaidTierParams(playerHP: 4, bossPhases: 3, targetLifetime: 1.12, spawnInterval: 0.86, sweetHalfWidth: 0.08, sequenceLength: 5, decoyCount: 6, goalScale: 1.50),
+        RaidTierParams(playerHP: 4, bossPhases: 3, targetLifetime: 1.00, spawnInterval: 0.78, sweetHalfWidth: 0.07, sequenceLength: 5, decoyCount: 7, goalScale: 1.70)
     ]
 
     /// Difficulty parameters for a given raid tier (clamped to the table).
     static func raidParams(forTier tier: Int) -> RaidTierParams {
         raidTierParams[min(max(tier, 0), raidTierParams.count - 1)]
+    }
+
+    /// Base objective size for a room mechanic at tier 0 (successful actions to clear). Boss rooms
+    /// scale this up (see `raidRoomGoal`). All room "sizes" live here so re-tuning never touches the
+    /// room content in `RaidPlan` or any view.
+    static func raidRoomBaseGoal(_ kind: RaidRoomKind) -> Int {
+        switch kind {
+        case .laneDodge:   return 8
+        case .swipeDodge:  return 8    // boss (×mult): dodge-and-counter openings
+        case .duel:        return 10   // boss (×mult): red-circle strikes on the Champion
+        case .rhythm:      return 10
+        case .charge:      return 7    // boss (×mult): each stoke-and-release is a slow, big blow
+        case .dial:        return 8    // boss (×mult): each aligned stamp
+        case .stealth:     return 12
+        case .pathTrace:   return 6    // boss (×mult): waypoints traced to the exit
+        case .memory:      return 3    // boss (×mult): rounds (each round is `sequenceLength` runes)
+        case .recognition: return 14
+        case .mash:        return 8    // boss (×mult): haul bars filled
+        case .sort:        return 12   // boss (×mult): offerings sent to the right side
+        }
+    }
+
+    /// Boss rooms are longer fights: their base objective is multiplied by this and grows with each
+    /// extra phase, so the finale always outlasts the warm-up rooms.
+    static let raidBossGoalMultiplier: Double = 1.7
+    static let raidBossPhaseGoalBonus: Double = 0.5
+
+    /// The concrete objective size (boss HP / quota) for one room at a tier.
+    static func raidRoomGoal(kind: RaidRoomKind, isBoss: Bool, tier: Int) -> Int {
+        let p = raidParams(forTier: tier)
+        var base = Double(raidRoomBaseGoal(kind))
+        if isBoss {
+            base *= raidBossGoalMultiplier + raidBossPhaseGoalBonus * Double(p.bossPhases - 1)
+        }
+        return max(1, Int((base * p.goalScale).rounded()))
+    }
+
+    /// Damage a single well-earned beat deals in specific boss rooms. Most successes are worth one
+    /// boss-HP; a few land a heavier blow so the fight rewards skill instead of dragging on.
+    static let raidMashHaulDamage: Int = 5        // River Serpent: a full haul bar is one big heave.
+    static let raidChargePerfectDamage: Int = 3   // Forge golem: a dead-centre release lands extra.
+    /// A charge released within this fraction of the band's half-width counts as a *perfect* strike.
+    static let raidChargePerfectFraction: Double = 0.4
+
+    /// The Smeltery's rhythm combo pays off precision: once the streak runs *hot* a perfect strike
+    /// pours extra bars, so a maintained combo clears the room faster. Below the threshold — and on
+    /// an outer "good" hit — each success still pours the base 1. The threshold matches the on-screen
+    /// flame that lights at the same combo, so "flame on" reads as "bonus active".
+    static let raidRhythmComboThreshold: Int = 3
+    static func raidRhythmPerfectBars(combo: Int) -> Int {
+        guard combo >= raidRhythmComboThreshold else { return 1 }
+        return min(3, 1 + combo / raidRhythmComboThreshold)   // ×3–5 → 2 bars, ×6+ → 3 bars (capped)
     }
 
     /// Lamp value coefficient for a given raid tier (clamped to the table).

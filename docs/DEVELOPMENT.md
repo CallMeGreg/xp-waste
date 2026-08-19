@@ -136,6 +136,17 @@ Used for deterministic screenshots / UI checks:
 - `OPEN_TAB=<skills|raids|shop|diary|settings>` — launches directly on that bottom tab.
 - `OPEN_SKILL=<rawValue>` — selects the **Skills** tab and deep-links straight into a skill's
   training screen.
+- `OPEN_RAID=<combat|production|utility|gathering>` — selects the **Raids** tab and opens that
+  group's multi-room raid session.
+- `FORCE_RAID_TIER=<0-5>` — overrides the opened raid's tier (Bronze…Rune), so higher-tier
+  4-room layouts, tighter windows, and multi-phase final bosses can be screenshotted at any level.
+- `RAID_ROOM=<n>` — start the raid session on room *n* (0-based). Shows that room's **intro card**
+  (with its boss art / mechanic) by default.
+- `RAID_PLAY=1` — with `RAID_ROOM`, skip the intro card and drop straight into the room's live
+  mechanic (for capturing a mechanic mid-play).
+- `RAID_RESULT=<win|lose>` — show the raid **result overlay** without playing (visual-only; does
+  not spend the daily attempt). Pair with `RAID_FLAWLESS=1` to render the flawless-bonus win with
+  its extra lamp.
 - `OPEN_SHEET=doublexp` — selects the **Shop** tab (Spend Tokens on Coupons/Cells, Token packs).
 - `SHOP_SCROLL=tokens` — after landing on the Shop, auto-scrolls to the bottom (Energy Cells + IAP
   **Token Packs**) so the below-the-fold section can be screenshotted from the CLI (which can't
