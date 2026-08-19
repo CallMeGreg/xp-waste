@@ -901,7 +901,19 @@ struct SequenceRoom: View {
         }
         .padding(18)
         .raidPanel(ctx.tint)
-        .onAppear { if !started { started = true; newRound() } }
+        .onAppear { startIfNeeded() }
+        .onChange(of: ctx.running) { _, running in if running { startIfNeeded() } }
+    }
+
+    /// Kick off the first pattern only once the room is actually *playing*. The mechanic mounts while
+    /// the room-intro card is still up (`running == false`); `playback()` schedules its steps through
+    /// `asyncAfter`, and those closures capture the room state *by value*, so starting at mount would
+    /// arm a sequence that silently bails on every step and never re-fires — leaving the room frozen on
+    /// "Watch the pattern…". Start on appear if we're already live, otherwise when `running` flips true.
+    private func startIfNeeded() {
+        guard ctx.running, !started else { return }
+        started = true
+        newRound()
     }
 
     private var prompt: String {
