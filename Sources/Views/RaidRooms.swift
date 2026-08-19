@@ -2,9 +2,10 @@ import SwiftUI
 
 /// Everything a room mechanic needs from the raid engine. The engine owns the clock, objective
 /// progress, raid HP and boss phase; a mechanic just renders its interface and reports **one unit of
-/// progress** (`onSuccess`) or a **failed dodge** (`onMistake`, which costs a raid-HP heart). Skilling
-/// tempo penalties (a mistimed strike, a wrong pick) are handled inside the mechanic and don't drain
-/// HP — raid HP is the *combat* resource, so a flawless run means you dodged everything.
+/// progress** (`onSuccess`), a **bigger blow** worth several units (`onProgress(n)` — used by rooms
+/// where a beat lands heavy damage), or a **failed dodge** (`onMistake`, which costs a raid-HP heart).
+/// Skilling tempo penalties (a mistimed strike, a wrong pick) are handled inside the mechanic and
+/// don't drain HP — raid HP is the *combat* resource, so a flawless run means you dodged everything.
 struct RaidRoomContext {
     let params: Balance.RaidTierParams
     let tint: Color
@@ -16,6 +17,7 @@ struct RaidRoomContext {
     let enraged: Bool
     let hitToken: Int
     let onSuccess: () -> Void
+    let onProgress: (Int) -> Void
     let onMistake: () -> Void
 
     var isBoss: Bool { boss != nil }
@@ -1012,7 +1014,10 @@ struct ChargeRoom: View {
     @State private var flash: Flash?
     @State private var started = false
 
-    private enum Flash { case good, over, early }
+    private enum Flash { case perfect, good, over, early }
+
+    /// Gold accent that marks a dead-centre "perfect" release as extra-rewarding.
+    private let perfectColor = Color(red: 1.0, green: 0.82, blue: 0.28)
 
     private let tick = Timer.publish(every: 0.033, on: .main, in: .common).autoconnect()
     private var bandHalf: Double { max(0.07, ctx.params.sweetHalfWidth * 2.1) }
@@ -1092,6 +1097,7 @@ struct ChargeRoom: View {
 
     private var hint: String {
         switch flash {
+        case .perfect: return "Perfect temper!"
         case .good: return "Tempered!"
         case .over: return "Overheated!"
         case .early: return "Too cold — hold longer"
@@ -1099,10 +1105,20 @@ struct ChargeRoom: View {
         }
     }
     private var hintColor: Color {
-        switch flash { case .good: return .green; case .over, .early: return .red; case nil: return .secondary }
+        switch flash {
+        case .perfect: return perfectColor
+        case .good: return .green
+        case .over, .early: return .red
+        case nil: return .secondary
+        }
     }
     private var borderColor: Color {
-        switch flash { case .good: return .green; case .over: return .red; default: return .white.opacity(0.18) }
+        switch flash {
+        case .perfect: return perfectColor
+        case .good: return .green
+        case .over: return .red
+        default: return .white.opacity(0.18)
+        }
     }
 
     private func startHold() {
@@ -1111,7 +1127,10 @@ struct ChargeRoom: View {
     private func release() {
         guard holding else { return }
         holding = false
-        if abs(heat - bandCenter) <= bandHalf {
+        let offset = abs(heat - bandCenter)
+        if offset <= bandHalf * Balance.raidChargePerfectFraction {
+            flash = .perfect; ctx.onProgress(Balance.raidChargePerfectDamage)   // dead-centre: bonus blow
+        } else if offset <= bandHalf {
             flash = .good; ctx.onSuccess()
         } else if heat < bandCenter - bandHalf {
             flash = .early; ctx.onMistake()
@@ -1484,7 +1503,7 @@ struct MashRoom: View {
         }
         haul = min(1, haul + perTap)
         if haul >= 1 {
-            ctx.onSuccess()
+            ctx.onProgress(Balance.raidMashHaulDamage)   // a full haul is one heavy heave on the serpent
             haul = 0.12
         }
     }

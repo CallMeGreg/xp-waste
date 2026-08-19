@@ -159,9 +159,9 @@ struct RaidSessionView: View {
 
     // MARK: Progress
 
-    private func registerSuccess() {
+    private func registerSuccess(_ amount: Int = 1) {
         guard phase == .playing else { return }
-        roomProgress += 1
+        roomProgress += max(1, amount)
         if game.hapticsEnabled { hitHaptic &+= 1 }
         if room.isBoss { withAnimation { hitToken &+= 1 } }
         SoundManager.shared.play(.tap, enabled: game.soundEnabled)
@@ -350,7 +350,8 @@ struct RaidSessionView: View {
             running: phase == .playing && !debugVisualOnly,
             boss: room.boss, bossHPFraction: bossHPFraction,
             bossPhase: currentPhaseIndex, enraged: enraged, hitToken: hitToken,
-            onSuccess: registerSuccess, onMistake: registerMistake
+            onSuccess: { registerSuccess() }, onProgress: { registerSuccess($0) },
+            onMistake: registerMistake
         )
         switch room.kind {
         case .laneDodge:   BarrageRoom(ctx: ctx)

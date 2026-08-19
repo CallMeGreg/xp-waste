@@ -293,6 +293,13 @@ enum Balance {
         return max(1, Int((base * p.goalScale).rounded()))
     }
 
+    /// Damage a single well-earned beat deals in specific boss rooms. Most successes are worth one
+    /// boss-HP; a few land a heavier blow so the fight rewards skill instead of dragging on.
+    static let raidMashHaulDamage: Int = 5        // River Serpent: a full haul bar is one big heave.
+    static let raidChargePerfectDamage: Int = 3   // Forge golem: a dead-centre release lands extra.
+    /// A charge released within this fraction of the band's half-width counts as a *perfect* strike.
+    static let raidChargePerfectFraction: Double = 0.4
+
     /// Lamp value coefficient for a given raid tier (clamped to the table).
     static func lampCoefficient(forTier tier: Int) -> Int {
         lampTierCoefficients[min(max(tier, 0), lampTierCoefficients.count - 1)]
