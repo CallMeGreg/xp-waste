@@ -300,6 +300,16 @@ enum Balance {
     /// A charge released within this fraction of the band's half-width counts as a *perfect* strike.
     static let raidChargePerfectFraction: Double = 0.4
 
+    /// The Smeltery's rhythm combo pays off precision: once the streak runs *hot* a perfect strike
+    /// pours extra bars, so a maintained combo clears the room faster. Below the threshold — and on
+    /// an outer "good" hit — each success still pours the base 1. The threshold matches the on-screen
+    /// flame that lights at the same combo, so "flame on" reads as "bonus active".
+    static let raidRhythmComboThreshold: Int = 3
+    static func raidRhythmPerfectBars(combo: Int) -> Int {
+        guard combo >= raidRhythmComboThreshold else { return 1 }
+        return min(3, 1 + combo / raidRhythmComboThreshold)   // ×3–5 → 2 bars, ×6+ → 3 bars (capped)
+    }
+
     /// Lamp value coefficient for a given raid tier (clamped to the table).
     static func lampCoefficient(forTier tier: Int) -> Int {
         lampTierCoefficients[min(max(tier, 0), lampTierCoefficients.count - 1)]

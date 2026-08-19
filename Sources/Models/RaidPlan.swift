@@ -191,7 +191,7 @@ extension SkillCategory {
         case .production:
             return [
                 RaidRoom(id: 0, title: "The Smeltery", kind: .rhythm, boss: nil,
-                         objectiveNoun: "Bars poured", objective: "Strike the sweet-spot, build the heat combo"),
+                         objectiveNoun: "Bars poured", objective: "Strike the sweet-spot — a hot combo pours extra bars"),
                 RaidRoom(id: 1, title: "The Slag Golem", kind: .charge, boss: .golem,
                          objectiveNoun: "Boss HP", objective: "Stoke the heat, release in the band — don't overheat"),
                 RaidRoom(id: 2, title: "The Forge Master", kind: .dial, boss: .foreman,

@@ -482,8 +482,10 @@ private struct LungeTell: View {
 // MARK: - Forge — time the strike, build the combo
 
 /// A marker sweeps a bar with a bright **perfect** core inside a **good** band. Strike inside the
-/// band to land a blow; nailing the core builds a combo that reads as escalating heat. Mistimed
-/// strikes break the combo and waste tempo (the clock is the pressure) — no HP lost outside slams.
+/// band to pour a bar; nailing the core builds a combo that reads as escalating heat. Once the combo
+/// runs hot (see `Balance.raidRhythmPerfectBars`) a perfect pours **extra bars**, so a sustained
+/// streak clears the room faster. Mistimed strikes break the combo and waste tempo (the clock is the
+/// pressure) — no HP lost outside slams.
 struct ForgeRoom: View {
     let ctx: RaidRoomContext
 
@@ -491,6 +493,8 @@ struct ForgeRoom: View {
     @State private var sweetCenter = 0.5
     @State private var combo = 0
     @State private var flash: FlashKind?
+    @State private var pourFlash = 0          // bars from the last hot perfect (0 = hide the badge)
+    @State private var pourToken = 0
 
     private enum FlashKind { case perfect, good, miss }
 
@@ -516,7 +520,16 @@ struct ForgeRoom: View {
                     .font(.headline.weight(.bold))
                     .foregroundStyle(combo > 1 ? Color.orange : Color.secondary)
                     .contentTransition(.numericText())
+                if pourFlash > 1 {
+                    Text("+\(pourFlash) bars")
+                        .font(.subheadline.weight(.heavy)).monospacedDigit()
+                        .foregroundStyle(Color.orange)
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .background(Capsule().fill(Color.orange.opacity(0.18)))
+                        .transition(.scale.combined(with: .opacity))
+                }
             }
+            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: pourFlash)
 
             GeometryReader { geo in
                 let w = geo.size.width
@@ -575,7 +588,12 @@ struct ForgeRoom: View {
         let marker = markerValue(Date().timeIntervalSince(startDate))
         let d = abs(marker - sweetCenter)
         if d <= perfectHalf {
-            combo += 1; show(.perfect); ctx.onSuccess(); randomize()
+            combo += 1
+            let bars = Balance.raidRhythmPerfectBars(combo: combo)
+            show(.perfect)
+            if bars > 1 { flashPour(bars) }
+            ctx.onProgress(bars)
+            randomize()
         } else if d <= goodHalf {
             combo = max(1, combo); show(.good); ctx.onSuccess(); randomize()
         } else {
@@ -586,6 +604,17 @@ struct ForgeRoom: View {
     private func show(_ k: FlashKind) {
         flash = k
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { if flash == k { flash = nil } }
+    }
+
+    /// Briefly surface the "+N bars" badge; a token guards against an earlier strike clearing a
+    /// later one during a fast streak.
+    private func flashPour(_ n: Int) {
+        pourToken &+= 1
+        let token = pourToken
+        withAnimation { pourFlash = n }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            if pourToken == token { withAnimation { pourFlash = 0 } }
+        }
     }
 
     private func randomize() {
