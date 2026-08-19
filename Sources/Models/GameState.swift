@@ -983,7 +983,7 @@ final class GameState: ObservableObject {
                 * Balance.passiveActionsPerSecond
                 * offlineRateMultiplier                                     // Hunter (offline rate)
             let gained = ratePerSecond * credited
-                * Balance.offlineXPMultiplier                              // base offline penalty (40%)
+                * Balance.offlineXPMultiplier                              // base offline penalty (30%)
                 * offlineXPEfficiency                                       // Farming (retention)
             guard gained > 0 else { continue }
             let fromLevel = level(for: skill)

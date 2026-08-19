@@ -69,7 +69,7 @@ and, at a reduced rate, while it's closed.
 - A skill must reach **level 10** before it can be slotted (gives early tapping a purpose).
 - Passive rate: **~1 action / second** per slotted skill, valued at that skill's *current method*
   XP — so passive scales as methods improve, but stays a light trickle versus fast manual tapping.
-- **Offline progress:** slotted skills keep training while the app is closed at **40%** of the
+- **Offline progress:** slotted skills keep training while the app is closed at **30%** of the
   base foreground passive rate — scaled by **Hunter** (Trapper, offline XP rate ×) and **Farming**
   (Patient Growth, offline XP retention ×), credited on return, capped by **Construction**
   (Workshop) at **10 h** of away time by default (up to **48 h** at level 99; the window
@@ -194,7 +194,7 @@ regenerate or re-pick the cues.
 - **Ticking:** a 1 Hz foreground timer applies passive XP + Energy and counts down active
   Supercharges using real elapsed `dt` (rate-correct regardless of tick jitter).
 - **Scene phase:** on background, persist state + timestamp; on foreground, credit **offline XP**
-  (40% base rate × Hunter × Farming, capped by Construction at 10–48 h) for slotted skills, then
+  (30% base rate × Hunter × Farming, capped by Construction at 10–48 h) for slotted skills, then
   reset the offline window. A "welcome back" summary is shown when the player was away long enough.
 - **Persistence:** `Codable` snapshot in `UserDefaults`.
 - **Tuning:** every balance constant lives in `Balance.swift` so re-balancing is a one-file
@@ -206,7 +206,7 @@ regenerate or re-pick the cues.
 |----------|-------|
 | Training method tiers | +1 / 3 / 6 / 12 / 25 / 50 XP-per-tap, unlocking at level 1 / 15 / 30 / 50 / 70 / 90 |
 | Passive rate | ~1 action / sec / slotted skill, valued at the skill's current method XP; **Smithing** multiplies the foreground (app-open) rate up to ×5 |
-| Offline passive XP | 40% base rate, scaled by **Hunter** (×1 → ×5) and capped by **Construction** at 10 h → 48 h of away time (window resets on return) |
+| Offline passive XP | 30% base rate, scaled by **Hunter** (×1 → ×3) and capped by **Construction** at 10 h → 48 h of away time (window resets on return) |
 | Energy charge | ~2% base chance per tap to bank 1 sec (Fishing raises the chance, Hitpoints the amount) |
 | Energy cap | 30 sec Supercharge (Mining raises it) |
 | Slot eligibility | skill level ≥ 10 |
@@ -232,7 +232,7 @@ regenerate or re-pick the cues.
    v1's flat +1; treat further yield-scaling as a balance patch — trivial because all constants
    are centralized. More skills also means more parallel goals and more frequent method-upgrade
    dopamine hits.
-2. **Offline pacing balance.** Slotted skills now earn **offline XP** (40% base, scaled by Hunter
+2. **Offline pacing balance.** Slotted skills now earn **offline XP** (30% base, scaled by Hunter
    and capped by Construction at 10–48 h), so "idle" pays out directly in addition to
    Energy-banking. *Mitigation:* the reduced base rate and per-skill caps keep active tapping +
    Supercharge bursts primary; all are one-line tunables in `Balance.swift` if returns feel too
