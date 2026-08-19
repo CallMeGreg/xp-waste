@@ -17,7 +17,7 @@ enum Balance {
     /// Fraction of the foreground passive rate that *slotted* skills keep earning while the app
     /// is closed. Mirrors the offline-Energy efficiency pattern: idle progress is real but
     /// reduced so active play (taps + Supercharge) stays worthwhile.
-    static let offlineXPMultiplier: Double = 0.4
+    static let offlineXPMultiplier: Double = 0.3
 
     /// Maximum stretch of offline time (hours) that accrues XP. Time away beyond this is ignored,
     /// so the game can't be finished by leaving it closed for days. The window resets every time
@@ -153,7 +153,7 @@ enum Balance {
         .fishing:      BuffScaling(at1: 0.0,   at99: 10.0),   // big catch: ×base Supercharge charge chance (0×→10×)
         .mining:       BuffScaling(at1: maxEnergySeconds, at99: 60.0), // deep reserves: Energy cap (seconds)
         .farming:      BuffScaling(at1: 1.0,   at99: 2.0),    // patient growth: offline XP efficiency ×
-        .hunter:       BuffScaling(at1: 1.0,   at99: 5.0),    // trapper: OFFLINE passive XP rate × (app closed)
+        .hunter:       BuffScaling(at1: 1.0,   at99: 3.0),    // trapper: OFFLINE passive XP rate × (app closed)
         // Production — crafting output & the boost economy
         .cooking:      BuffScaling(at1: 0.0,   at99: 0.50),   // well fed: +fraction to all tap XP
         .firemaking:   BuffScaling(at1: 1.0,   at99: 2.0),    // slow burn: Supercharge duration ×
