@@ -14,7 +14,7 @@ enum RaidRoomKind: String {
     // Production — The Grand Forge
     case rhythm       // strike the sweeping sweet-spot, build a heat combo
     case charge       // hold to stoke heat, release inside the band before it overheats
-    case dial         // rotate the key mark to the notch and lock before the press fires
+    case vents        // bleed each over-pressuring tuyère in its green band before one blows out
     // Utility — The Vault Heist
     case stealth      // loot only while the sweeping searchlight is turned away
     case pathTrace    // drag along the safe route past the patrol, hitting each waypoint
@@ -32,7 +32,7 @@ enum RaidRoomKind: String {
         case .duel:        return "Trade blows"
         case .rhythm:      return "Time the strikes"
         case .charge:      return "Stoke & release"
-        case .dial:        return "Align the press"
+        case .vents:       return "Bleed the vents"
         case .stealth:     return "Loot unseen"
         case .pathTrace:   return "Trace the route"
         case .memory:      return "Repeat the pattern"
@@ -194,8 +194,8 @@ extension SkillCategory {
                          objectiveNoun: "Bars poured", objective: "Strike the sweet-spot — a hot combo pours extra bars"),
                 RaidRoom(id: 1, title: "The Slag Golem", kind: .charge, boss: .golem,
                          objectiveNoun: "Boss HP", objective: "Stoke the heat, release in the band — don't overheat"),
-                RaidRoom(id: 2, title: "The Forge Master", kind: .dial, boss: .foreman,
-                         objectiveNoun: "Boss HP", objective: "Turn the mark to the notch, lock before the press drops"),
+                RaidRoom(id: 2, title: "The Forge Master", kind: .vents, boss: .foreman,
+                         objectiveNoun: "Boss HP", objective: "Bleed each roaring vent in the green — before one blows"),
             ]
 
         case .utility:

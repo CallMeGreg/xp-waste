@@ -359,7 +359,7 @@ struct RaidSessionView: View {
         case .duel:        DuelRoom(ctx: ctx)
         case .rhythm:      ForgeRoom(ctx: ctx)
         case .charge:      ChargeRoom(ctx: ctx)
-        case .dial:        DialRoom(ctx: ctx)
+        case .vents:       VentsRoom(ctx: ctx)
         case .stealth:     StealthRoom(ctx: ctx)
         case .pathTrace:   PathTraceRoom(ctx: ctx)
         case .memory:      SequenceRoom(ctx: ctx)
@@ -516,7 +516,7 @@ extension RaidRoomKind {
         case .duel:        return "shield.lefthalf.filled"
         case .rhythm:      return "hammer.fill"
         case .charge:      return "flame.fill"
-        case .dial:        return "dial.max.fill"
+        case .vents:       return "gauge.with.dots.needle.bottom.50percent"
         case .stealth:     return "eye.slash.fill"
         case .pathTrace:   return "scribble.variable"
         case .memory:      return "square.grid.2x2.fill"

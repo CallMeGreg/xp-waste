@@ -158,7 +158,7 @@ re-balancing a perk is a one-line change that never touches gameplay or view cod
    Each raid is a **multi-room boss expedition** (a warm-up skill room → a mini-boss → a tougher
    **final boss**) sharing one countdown and one pool of **raid HP**. Every one of the **twelve
    rooms runs a different mechanic — none reused** (lane-dodge volleys, a red/green **duel**, forge
-   rhythm, heat charge-and-release, key-dial timing, stealth looting, path-tracing, rune memory,
+   rhythm, heat charge-and-release, vent-pressure bleeding, stealth looting, path-tracing, rune memory,
    resource recognition, net-hauling, offering-sorting); bosses threaten from *inside* their room
    and gain **phases** and **enrage** at higher tiers. Clearing every room awards a tier-colored
    **Lamp** you use on any skill in that group (XP scales with the chosen skill's level); a
