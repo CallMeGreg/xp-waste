@@ -17,7 +17,7 @@ enum Balance {
     /// Fraction of the foreground passive rate that *slotted* skills keep earning while the app
     /// is closed. Mirrors the offline-Energy efficiency pattern: idle progress is real but
     /// reduced so active play (taps + Supercharge) stays worthwhile.
-    static let offlineXPMultiplier: Double = 0.3
+    static let offlineXPMultiplier: Double = 0.2
 
     /// Maximum stretch of offline time (hours) that accrues XP. Time away beyond this is ignored,
     /// so the game can't be finished by leaving it closed for days. The window resets every time
@@ -80,8 +80,10 @@ enum Balance {
     /// How long a single Daily Boost coupon lasts once activated, in seconds (5 minutes).
     static let doubleXPDurationSeconds: TimeInterval = 300
 
-    /// Free Daily Boost coupons granted the first time the app is opened on a new calendar day.
-    static let dailyFreeCoupons: Int = 1
+    /// One-time starter grants for a brand-new game, handed out when onboarding completes so a
+    /// fresh player has something to spend on their first session.
+    static let starterCoupons: Int = 3
+    static let starterEnergyCells: Int = 3
 
     // MARK: Training slots
 
@@ -209,7 +211,8 @@ enum Balance {
     /// to a skill grants `skillLevel × coefficient` XP, so a lamp's worth scales with the skill's
     /// exact level and grows exponentially across tiers (Bronze→Iron is a small step; Adamant→Rune
     /// a large one). Re-balancing lamps is a one-line change here — no gameplay or view code.
-    static let lampTierCoefficients: [Int] = [500, 900, 1650, 3000, 5500, 10000]
+    /// Doubled now that a raid is a multi-room expedition, so each daily clear is worth the effort.
+    static let lampTierCoefficients: [Int] = [1000, 1800, 3300, 6000, 11000, 20000]
 
     /// Rooms per raid by tier (0…5). Every raid runs three rooms — a warm-up, a mini-boss and a
     /// final boss — at all tiers; higher tiers grow harder through the multi-axis `RaidTierParams`
@@ -295,7 +298,7 @@ enum Balance {
 
     /// Damage a single well-earned beat deals in specific boss rooms. Most successes are worth one
     /// boss-HP; a few land a heavier blow so the fight rewards skill instead of dragging on.
-    static let raidMashHaulDamage: Int = 5        // River Serpent: a full haul bar is one big heave.
+    static let raidMashHaulDamageRange: ClosedRange<Int> = 8...12  // River Serpent: a full haul bar is one big, variable heave.
     static let raidChargePerfectDamage: Int = 3   // Forge golem: a dead-centre release lands extra.
     /// A charge released within this fraction of the band's half-width counts as a *perfect* strike.
     static let raidChargePerfectFraction: Double = 0.4
@@ -350,6 +353,9 @@ enum Balance {
         static let boostCouponCost = 250
         /// Tokens to buy one **Energy Cell** (an instant single-skill Supercharge fill).
         static let energyCellCost = 100
+        /// Tokens to instantly refresh **every** raid's daily attempt so they can all be run again
+        /// today — a premium convenience, priced above a single Boost Coupon.
+        static let refreshRaidsCost = 250
 
         // MARK: IAP — Tokens granted per real-money pack
 

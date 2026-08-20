@@ -13,6 +13,7 @@ struct RaidsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 14) {
+                    RaidResetTimer()
                     RaidsOverviewCard()
                     LazyVGrid(columns: Layout.columns(hSize, count: 2, spacing: 14), spacing: 14) {
                         ForEach(SkillCategory.allCases) { group in
@@ -57,18 +58,57 @@ struct RaidsView: View {
     }
 }
 
+/// A live countdown to the next daily raid reset (local midnight).
+///
+/// ABUSE NOTE: the daily lock — and therefore this timer — is driven by the device clock via
+/// `Calendar.current`. A player who moves their device's date/time forward can roll the reset over
+/// early and re-run raids. That's knowingly tolerated: a robust fix would need trusted server time
+/// or monotonic background bookkeeping, which is disproportionate for a single-player idle game.
+private struct RaidResetTimer: View {
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let remaining = Self.secondsUntilReset(from: context.date)
+            HStack(spacing: 8) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.subheadline.weight(.bold)).foregroundStyle(.secondary)
+                Text("Raids reset in").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                Text(Self.format(remaining))
+                    .font(.subheadline.weight(.bold)).monospacedDigit()
+            }
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .frame(maxWidth: .infinity)
+            .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.white.opacity(0.10)))
+        }
+    }
+
+    /// Seconds from `date` until the next local midnight (the raid reset boundary).
+    private static func secondsUntilReset(from date: Date) -> Int {
+        let cal = Calendar.current
+        guard let next = cal.nextDate(after: date,
+                                      matching: DateComponents(hour: 0, minute: 0, second: 0),
+                                      matchingPolicy: .nextTime) else { return 0 }
+        return max(0, Int(next.timeIntervalSince(date)))
+    }
+
+    private static func format(_ seconds: Int) -> String {
+        String(format: "%02d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, seconds % 60)
+    }
+}
+
 /// A single explainer at the top of the Raids tab so each card doesn't have to repeat the rules.
 private struct RaidsOverviewCard: View {
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
                 Circle().fill(Color.white.opacity(0.08)).frame(width: 40, height: 40)
-                Image(systemName: "shield.lefthalf.filled")
+                Image(systemName: "map.fill")
                     .font(.headline.weight(.bold)).foregroundStyle(.secondary)
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text("Raids").font(.subheadline.weight(.bold))
-                Text("Each raid is a multi-room expedition — warm-up rooms, a mini-boss, then a tougher final boss — sharing one timer and one pool of raid HP. Clear every room to bank an XP lamp; finish flawlessly (no hearts lost) for a bonus lamp. Difficulty, rooms & rewards scale with a group's level.")
+                Text("Clear every room to bank an XP lamp; finish flawlessly for a bonus lamp. Difficulty, rooms & reward scale with a skill group's average level.")
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -84,6 +124,7 @@ private struct RaidsOverviewCard: View {
 /// One raid's card: identity, tier + average-level progress, availability CTA, and lamp inventory.
 private struct RaidCard: View {
     @EnvironmentObject private var game: GameState
+    @Environment(\.selectTab) private var selectTab
     let group: SkillCategory
     var onRaid: () -> Void
     var onApply: () -> Void
@@ -176,8 +217,18 @@ private struct RaidCard: View {
             }
 
             if !available {
-                Text("Come back tomorrow for another attempt.")
-                    .font(.caption2).foregroundStyle(.secondary)
+                // Attempted today — point players at the Shop's Raid Refresh instead of a dead end.
+                Button { selectTab(.shop) } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.clockwise")
+                        Text("Raided today — buy a refresh in the Shop")
+                    }
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(group.raidTint)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding(14)

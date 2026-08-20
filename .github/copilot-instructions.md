@@ -127,6 +127,9 @@ Used for deterministic screenshots / UI checks — preserve them when refactorin
   `super`, an active Supercharge + Double XP boost).
 - `SEED_CELLS=<n>` — overrides the `SEED_DEMO` owned Energy-Cell count (e.g. `SEED_CELLS=0` shows the
   training screen's out-of-cells **Buy** action that routes to the Shop).
+- `SEED_RAIDED=1` — marks every group's daily raid as already attempted today (and tops up Tokens), so
+  the Raids tab surfaces the **"Raided today — buy a refresh"** affordance and the Shop's **Raid
+  Refresh** reads enabled.
 - `OPEN_TAB=<skills|raids|shop|diary|settings>` — launches directly on that bottom tab.
 - `OPEN_SKILL=<rawValue>` — selects the **Skills** tab and deep-links straight into a skill's
   training screen.

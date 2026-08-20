@@ -3,9 +3,10 @@ import SwiftUI
 /// Everything a room mechanic needs from the raid engine. The engine owns the clock, objective
 /// progress, raid HP and boss phase; a mechanic just renders its interface and reports **one unit of
 /// progress** (`onSuccess`), a **bigger blow** worth several units (`onProgress(n)` — used by rooms
-/// where a beat lands heavy damage), or a **failed dodge** (`onMistake`, which costs a raid-HP heart).
-/// Skilling tempo penalties (a mistimed strike, a wrong pick) are handled inside the mechanic and
-/// don't drain HP — raid HP is the *combat* resource, so a flawless run means you dodged everything.
+/// where a beat lands heavy damage), or a **mistake** (`onMistake`, which costs a raid-HP heart).
+/// Every room drains from a full raid-HP bar, and **any** mistake — a missed dodge, a mistimed
+/// strike, a wrong pick, a lapsed deadline — costs a heart; at zero the raid ends. A flawless run
+/// therefore means you made no mistakes at all.
 struct RaidRoomContext {
     let params: Balance.RaidTierParams
     let tint: Color
@@ -597,7 +598,7 @@ struct ForgeRoom: View {
         } else if d <= goodHalf {
             combo = max(1, combo); show(.good); ctx.onSuccess(); randomize()
         } else {
-            combo = 0; show(.miss)
+            combo = 0; show(.miss); ctx.onMistake()   // missing the sweet spot altogether costs a heart
         }
     }
 
@@ -725,6 +726,7 @@ struct RecognitionRoom: View {
             if correctSinceSwitch >= 8 { rotate() }
         } else {
             stagger()
+            ctx.onMistake()   // a wrong pick costs a heart
         }
         ensureSolvable()
     }
@@ -900,10 +902,8 @@ struct SequenceRoom: View {
     @State private var highlight: Int?
     @State private var phase: Phase = .watch
     @State private var started = false
-    @State private var alarm = 0     // boss room: two slips trip the Warden's alarm → a heart
 
     private let padCount = 4
-    private let alarmLimit = 2
 
     private var glyphs: [String] { ["circle.hexagongrid.fill", "seal.fill", "sparkle", "hexagon.fill"] }
     private var glyphColors: [Color] {
@@ -917,17 +917,6 @@ struct SequenceRoom: View {
                 .font(.headline.weight(.bold))
                 .foregroundStyle(promptColor)
                 .contentTransition(.opacity)
-
-            if ctx.isBoss {
-                HStack(spacing: 6) {
-                    Image(systemName: "eye.fill").font(.caption2).foregroundStyle(.secondary)
-                    ForEach(0..<alarmLimit, id: \.self) { i in
-                        Circle().fill(i < alarm ? Color.red : Color.white.opacity(0.22))
-                            .frame(width: 7, height: 7)
-                    }
-                    Text("alarm").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
-                }
-            }
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 14), count: 2), spacing: 14) {
                 ForEach(0..<padCount, id: \.self) { i in
@@ -1018,10 +1007,7 @@ struct SequenceRoom: View {
             }
         } else {
             phase = .wrong
-            if ctx.isBoss {
-                alarm += 1
-                if alarm >= alarmLimit { alarm = 0; ctx.onMistake() }
-            }
+            ctx.onMistake()   // any misremembered glyph costs a heart
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
                 inputIndex = 0
                 phase = .watch
@@ -1214,7 +1200,7 @@ struct VentsRoom: View {
     private let bandHi: Double = 0.9
     private var bandSpan: Double { max(0.14, ctx.params.sweetHalfWidth * 2.2) * (ctx.enraged ? 0.62 : 1) }
     private var bandLo: Double { max(0.32, bandHi - bandSpan) }
-    private var riseBase: Double { 1.0 / max(0.7, ctx.params.spawnInterval * 3.2) }
+    private var riseBase: Double { 1.0 / max(0.7, ctx.params.spawnInterval * 4.5) }
     private var hottest: Double { vents.map(\.level).max() ?? 0 }
 
     var body: some View {
@@ -1315,7 +1301,7 @@ struct VentsRoom: View {
         let dt = now.timeIntervalSince(lastTick)
         lastTick = now
         guard ctx.running, !vents.isEmpty, !posed else { return }
-        let scale = ctx.enraged ? 1.5 : 1.0
+        let scale = ctx.enraged ? 1.3 : 1.0
         for i in vents.indices {
             vents[i].level += riseBase * vents[i].rate * scale * dt
             if vents[i].pop > 0 { vents[i].pop = max(0, vents[i].pop - dt * 3) }
@@ -1612,7 +1598,7 @@ struct MashRoom: View {
         }
         haul = min(1, haul + perTap)
         if haul >= 1 {
-            ctx.onProgress(Balance.raidMashHaulDamage)   // a full haul is one heavy heave on the serpent
+            ctx.onProgress(Int.random(in: Balance.raidMashHaulDamageRange))   // a full haul is one heavy, variable heave on the serpent
             haul = 0.12
         }
     }
@@ -1638,29 +1624,17 @@ struct SortRoom: View {
 
     @State private var queue: [Item] = []
     @State private var frontStart = Date()
-    @State private var alarm = 0
     @State private var lastTick = Date()
     @State private var flash: Side?
     @State private var started = false
 
     private let tick = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
-    private let alarmLimit = 2
     private var deadline: Double { max(1.1, ctx.params.targetLifetime * 1.6 * (ctx.enraged ? 0.75 : 1)) }
     private let ripeIcons = ["leaf.fill", "carrot.fill", "tree.fill"]
     private let rotIcons = ["ant.fill", "flame.fill", "smoke.fill"]
 
     var body: some View {
         VStack(spacing: 14) {
-            HStack(spacing: 8) {
-                Image(systemName: "eye.trianglebadge.exclamationmark.fill")
-                    .font(.caption).foregroundStyle(.secondary)
-                ForEach(0..<alarmLimit, id: \.self) { i in
-                    Circle().fill(i < alarm ? Color.red : Color.white.opacity(0.22))
-                        .frame(width: 8, height: 8)
-                }
-                Text("wrath").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
-            }
-
             // Upcoming queue (flows toward the front)
             HStack(spacing: 10) {
                 ForEach(Array(queue.dropFirst().prefix(4))) { item in
@@ -1760,8 +1734,7 @@ struct SortRoom: View {
     }
 
     private func registerWrong() {
-        alarm += 1
-        if alarm >= alarmLimit { alarm = 0; ctx.onMistake() }
+        ctx.onMistake()   // a mis-sorted offering — or a lapsed deadline — costs a heart
     }
 
     private func advance() {
