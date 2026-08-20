@@ -102,7 +102,7 @@ memory/precision verb so each expedition has its own rhythm:
 | **Colosseum** | `duel` | Trade blows | Tap **red** openings to strike the Champion; tap **green** incoming blows to parry before their ring closes. | **final** |
 | **Grand Forge** | `rhythm` | Time the strikes | Strike the sweeping meter's moving sweet-spot; build a heat combo. | warm-up |
 | **Grand Forge** | `charge` | Stoke & release | Hold to drive the heat gauge up, release inside the target band — overheat and the Slag Golem splashes you. | mini-boss |
-| **Grand Forge** | `dial` | Align the press | Rotate the key notch to the top and lock before the Forge Master's press-timer fires. | **final** |
+| **Grand Forge** | `vents` | Bleed the vents | Several furnace vents each build heat at their own rate; tap each while its gauge glows **green** (high, below the red cap) for a clean bleed — let one crest the top and it **blows out**, costing a heart. | **final** |
 | **Vault Heist** | `stealth` | Loot unseen | Grab loot only while the sweeping searchlight is turned away. | warm-up |
 | **Vault Heist** | `pathTrace` | Trace the route | Drag the loot along the safe corridor past the Warhound, hitting each waypoint without straying. | mini-boss |
 | **Vault Heist** | `memory` | Repeat the pattern | Watch, then repeat each lit lock-rune in order; two wrong rounds trip the Warden's alarm. | **final** |
@@ -113,8 +113,8 @@ memory/precision verb so each expedition has its own rhythm:
 ### 4.1 Raid HP vs. tempo
 
 **Raid HP** (hearts, `RaidTierParams.playerHP`) is the *combat* resource for the whole run. Only a
-**failed defence** (`onMistake`) costs a heart: a lapsed parry or dodge, an overheat, a missed
-press, straying off the trace path, or a boss **alarm** filling. At zero hearts the raid ends
+**failed defence** (`onMistake`) costs a heart: a lapsed parry or dodge, an overheat, a vent
+blowout, straying off the trace path, or a boss **alarm** filling. At zero hearts the raid ends
 immediately. Pure-skilling slips in a non-boss room (a mistimed forge strike, a wrong recognition
 pick) cost only **tempo/combo**, never HP — which is what makes a **flawless** run (no hearts lost)
 a meaningful, rewardable feat.
@@ -130,7 +130,7 @@ slots. The mix is deliberately different per raid so no two expeditions feel ali
 | Raid | Room 1 (warm-up) | Room 2 (mini-boss) | Room 3 (final boss) |
 |------|------------------|--------------------|---------------------|
 | **The Colosseum** | The Volley Pit — `laneDodge` | **The Sand Beast** — `swipeDodge` | **The Champion** — `duel` |
-| **The Grand Forge** | The Smeltery — `rhythm` | **The Slag Golem** — `charge` | **The Forge Master** — `dial` |
+| **The Grand Forge** | The Smeltery — `rhythm` | **The Slag Golem** — `charge` | **The Forge Master** — `vents` |
 | **The Vault Heist** | The Long Corridor — `stealth` | **The Warhound** — `pathTrace` | **The Vault Warden** — `memory` |
 | **The Expedition** | The Grove — `recognition` | **The River Serpent** — `mash` | **The Grove Colossus** — `sort` |
 
@@ -161,7 +161,7 @@ serpent) sharing chrome, so the roster looks varied without a bespoke asset each
 - **How bosses threaten — no full-screen overlay.** There is no shared slam / DODGE overlay any
   more. Each boss punishes you from inside its own room: **reaction bosses** cost a **heart** the
   instant a defence lapses (`duel` green-blow expiry, `swipeDodge` timeout, `charge` overheat,
-  `dial` press-timeout, `pathTrace` stray); **skilling bosses** (`memory`, `sort`) fill a visible
+  `vents` blowout, `pathTrace` stray); **skilling bosses** (`memory`, `sort`) fill a visible
   **two-strike alarm** and only then take a heart.
 
 ---
@@ -286,6 +286,6 @@ SIMCTL_CHILD_RAID_ROOM=1 xcrun simctl launch <device> com.callmegreg.xpwaste
 
 ## 14. Future
 
-- Even more per-boss attack variety (e.g. multi-lane duel volleys, drifting `dial` notches).
+- Even more per-boss attack variety (e.g. multi-lane duel volleys, syncopated `vents` surges).
 - Room modifiers / mutators for replayability within a day's tier.
 - A cosmetic "raid log" of best clears and flawless streaks.

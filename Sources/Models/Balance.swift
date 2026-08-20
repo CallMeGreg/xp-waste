@@ -268,7 +268,7 @@ enum Balance {
         case .duel:        return 10   // boss (×mult): red-circle strikes on the Champion
         case .rhythm:      return 10
         case .charge:      return 7    // boss (×mult): each stoke-and-release is a slow, big blow
-        case .dial:        return 8    // boss (×mult): each aligned stamp
+        case .vents:       return 8    // boss (×mult): each clean bleed in the green band
         case .stealth:     return 12
         case .pathTrace:   return 6    // boss (×mult): waypoints traced to the exit
         case .memory:      return 3    // boss (×mult): rounds (each round is `sequenceLength` runes)

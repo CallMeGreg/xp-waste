@@ -1178,140 +1178,220 @@ struct ChargeRoom: View {
     }
 }
 
-// MARK: - Dial — align the Forge Master's key notch to the top before the press-timer runs out
+// MARK: - Vents — bleed the Forge Master's over-pressuring tuyères in the green band before one blows
 
-struct DialRoom: View {
+/// The Grand Forge over-pressures: several vents each build heat at their **own rate**. Tap a vent
+/// while its gauge sits in the **green band** (high, but below the red cap) for a clean bleed that
+/// lands a blow on the boss; tapping early (yellow) just wastes the vent, and letting any gauge fill
+/// to the very top **blows out** and costs a heart. The verb is *juggling several independent timers
+/// at once* — no other room splits attention across a bank of gauges. Difficulty rides existing tier
+/// knobs: more vents, faster rise and a narrower green band at higher tiers (and under enrage).
+struct VentsRoom: View {
     let ctx: RaidRoomContext
 
-    @State private var keyAngle: Double = .pi
-    @State private var dialRotation: Double = 0
-    @State private var lastDragWidth: CGFloat = 0
-    @State private var pressStart = Date()
-    @State private var spark = false
-    @State private var started = false
-    @State private var lastTick = Date()
+    private struct Vent: Identifiable {
+        let id: Int
+        var level: Double
+        var rate: Double
+        var pop: Double
+    }
 
-    private let tick = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
-    private var tolerance: Double { max(0.14, ctx.params.sweetHalfWidth * 2.6) }
-    private var pressWindow: Double { max(1.4, ctx.params.targetLifetime * 2.4 * (ctx.enraged ? 0.75 : 1)) }
-    private let sensitivity: Double = 0.012
-    private var offset: Double { wrap(keyAngle + dialRotation) }
-    private var aligned: Bool { abs(offset) <= tolerance }
+    @State private var vents: [Vent] = []
+    @State private var lastTick = Date()
+    @State private var started = false
+    @State private var flash: FlashKind?
+    /// DEBUG-only: freeze the gauges at fixed yellow/green/red levels for deterministic screenshots.
+    @State private var posed = false
+
+    private enum FlashKind: Equatable { case clean, wasted, blow }
+
+    private let tick = Timer.publish(every: 0.033, on: .main, in: .common).autoconnect()
+
+    /// Amber "filling" colour shown before a gauge reaches the green band.
+    private let filling = Color(red: 1.0, green: 0.82, blue: 0.24)
+
+    private var ventCount: Int { min(5, max(3, ctx.params.sequenceLength)) }
+    private let bandHi: Double = 0.9
+    private var bandSpan: Double { max(0.14, ctx.params.sweetHalfWidth * 2.2) * (ctx.enraged ? 0.62 : 1) }
+    private var bandLo: Double { max(0.32, bandHi - bandSpan) }
+    private var riseBase: Double { 1.0 / max(0.7, ctx.params.spawnInterval * 3.2) }
+    private var hottest: Double { vents.map(\.level).max() ?? 0 }
 
     var body: some View {
         VStack(spacing: 14) {
             Spacer(minLength: 0)
-            Text(aligned ? "Aligned — hold steady!" : "Rotate the key notch to the top")
+            Text(headline)
                 .font(.headline.weight(.bold))
-                .foregroundStyle(aligned ? Color.green : Color.secondary)
+                .foregroundStyle(headlineColor)
                 .contentTransition(.opacity)
 
             GeometryReader { geo in
-                let side = min(geo.size.width, geo.size.height)
-                let radius = side * 0.42
-                ZStack {
-                    // Press timer ring
-                    TimelineView(.periodic(from: .now, by: 1.0 / 30.0)) { tl in
-                        let left = max(0, 1 - tl.date.timeIntervalSince(pressStart) / pressWindow)
-                        Circle()
-                            .trim(from: 0, to: left)
-                            .stroke(left < 0.3 ? Color.red : ctx.tint.opacity(0.8),
-                                    style: StrokeStyle(lineWidth: 6, lineCap: .round))
-                            .rotationEffect(.degrees(-90))
-                            .frame(width: radius * 2 + 30, height: radius * 2 + 30)
+                let n = max(1, vents.count)
+                let gap: CGFloat = 14
+                let rowW = min(geo.size.width, 460)
+                let tubeW = min(58, (rowW - gap * CGFloat(n - 1)) / CGFloat(n))
+                HStack(spacing: gap) {
+                    ForEach(vents) { v in
+                        VStack(spacing: 6) {
+                            VentTube(level: v.level, bandLo: bandLo, bandHi: bandHi,
+                                     tint: ctx.tint, filling: filling, pop: v.pop)
+                                .frame(width: tubeW)
+                                .frame(maxHeight: .infinity)
+                                .contentShape(Rectangle())
+                                .onTapGesture { bleed(v.id) }
+                            Text("\(v.id + 1)")
+                                .font(.caption2.weight(.bold))
+                                .foregroundStyle(.secondary)
+                        }
                     }
-                    // Dial body
-                    Circle().fill(Color.black.opacity(0.35))
-                        .frame(width: radius * 2, height: radius * 2)
-                    Circle().strokeBorder(Color.white.opacity(0.12), lineWidth: 2)
-                        .frame(width: radius * 2, height: radius * 2)
-                    ForEach(0..<12, id: \.self) { t in
-                        Capsule().fill(.white.opacity(0.16)).frame(width: 2, height: 10)
-                            .offset(y: -radius + 8)
-                            .rotationEffect(.degrees(Double(t) / 12 * 360))
-                    }
-                    // Top target wedge
-                    Triangle().fill(aligned ? Color.green : Color.white.opacity(0.55))
-                        .frame(width: 20, height: 14)
-                        .offset(y: -radius - 14)
-                    // Key notch
-                    ZStack {
-                        Capsule().fill(aligned ? Color.green : ctx.tint)
-                            .frame(width: 14, height: 34)
-                        Image(systemName: "key.fill").font(.system(size: 13, weight: .black))
-                            .foregroundStyle(.white).rotationEffect(.degrees(180))
-                    }
-                    .offset(y: -radius)
-                    .rotationEffect(.radians(keyAngle + dialRotation))
-                    .shadow(color: aligned ? .green.opacity(0.8) : .clear, radius: 8)
-                    // Hub
-                    Circle().fill(ctx.tint.opacity(0.85)).frame(width: 34, height: 34)
-                    Image(systemName: "gearshape.fill").font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(.white).opacity(0.9)
                 }
                 .frame(width: geo.size.width, height: geo.size.height)
-                .scaleEffect(spark ? 1.04 : 1)
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { v in
-                            guard ctx.running else { return }
-                            let d = v.translation.width - lastDragWidth
-                            lastDragWidth = v.translation.width
-                            dialRotation += Double(d) * sensitivity
-                            if aligned { lockIn() }
-                        }
-                        .onEnded { _ in lastDragWidth = 0 }
-                )
             }
-            .frame(maxWidth: 360, maxHeight: 360)
+            .frame(maxWidth: 460, maxHeight: 340)
             .frame(maxWidth: .infinity)
+
+            Text(caption)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
             Spacer(minLength: 0)
         }
         .padding(18)
         .raidPanel(ctx.tint)
-        .onAppear { if !started { started = true; newRound() } }
-        .onReceive(tick) { now in
-            guard ctx.running else { return }
-            if now.timeIntervalSince(pressStart) >= pressWindow {
+        .onAppear { if !started { started = true; seed() } }
+        .onReceive(tick) { now in step(now) }
+    }
+
+    // MARK: Labels
+
+    private var headline: String {
+        switch flash {
+        case .clean:  return "Clean bleed!"
+        case .blow:   return "Blowout!"
+        case .wasted: return "Too soon — wasted"
+        case nil:
+            if hottest >= bandHi { return "About to blow!" }
+            if ctx.enraged { return "Enraged — vents screaming" }
+            return "Bleed a vent while it glows green"
+        }
+    }
+    private var headlineColor: Color {
+        switch flash {
+        case .clean:  return .green
+        case .blow:   return .red
+        case .wasted: return filling
+        case nil:     return hottest >= bandHi ? .red : .secondary
+        }
+    }
+    private var caption: String {
+        ctx.enraged ? "Faster rise, narrower green — keep them all honest"
+                    : "Yellow fills · green is the sweet spot · red blows"
+    }
+
+    // MARK: Logic
+
+    private func seed() {
+        lastTick = Date()
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["VENTS_POSE"] != nil {
+            // Fixed yellow / green / red poses so the colour states are captured deterministically.
+            let poses: [Double] = [0.30, 0.72, 0.96, 0.50, 0.84]
+            vents = (0..<ventCount).map { i in
+                Vent(id: i, level: poses[i % poses.count], rate: 0, pop: 0)
+            }
+            posed = true
+            return
+        }
+        #endif
+        vents = (0..<ventCount).map { i in
+            Vent(id: i,
+                 level: Double.random(in: 0.05...0.4),
+                 rate: Double.random(in: 0.8...1.3),
+                 pop: 0)
+        }
+    }
+
+    private func step(_ now: Date) {
+        let dt = now.timeIntervalSince(lastTick)
+        lastTick = now
+        guard ctx.running, !vents.isEmpty, !posed else { return }
+        let scale = ctx.enraged ? 1.5 : 1.0
+        for i in vents.indices {
+            vents[i].level += riseBase * vents[i].rate * scale * dt
+            if vents[i].pop > 0 { vents[i].pop = max(0, vents[i].pop - dt * 3) }
+            if vents[i].level >= 1 {
+                vents[i].level = 0.05
                 ctx.onMistake()
-                sparkMiss()
-                newRound()
+                setFlash(.blow)
             }
         }
     }
 
-    private func lockIn() {
-        ctx.onSuccess()
-        newRound()
-    }
-    private func sparkMiss() {
-        withAnimation(.easeOut(duration: 0.12)) { spark = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
-            withAnimation(.easeIn(duration: 0.12)) { spark = false }
+    private func bleed(_ id: Int) {
+        guard ctx.running, let i = vents.firstIndex(where: { $0.id == id }) else { return }
+        let level = vents[i].level
+        if level >= bandLo && level <= bandHi {
+            vents[i].level = 0.06
+            vents[i].pop = 1
+            ctx.onSuccess()
+            setFlash(.clean)
+        } else {
+            // Too early (yellow) or a last-second save above the band: vented, but no blow lands.
+            vents[i].level = level < bandLo ? max(0.05, level - 0.3) : 0.06
+            vents[i].pop = 0.5
+            setFlash(.wasted)
         }
     }
-    private func newRound() {
-        pressStart = Date()
-        let target = Double.random(in: 0.9...(2 * Double.pi - 0.9))
-        keyAngle = wrap(target - dialRotation)
-    }
-    private func wrap(_ a: Double) -> Double {
-        var x = a.truncatingRemainder(dividingBy: 2 * .pi)
-        if x > .pi { x -= 2 * .pi }
-        if x < -.pi { x += 2 * .pi }
-        return x
+
+    private func setFlash(_ k: FlashKind) {
+        flash = k
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            if flash == k { flash = nil }
+        }
     }
 }
 
-private struct Triangle: Shape {
-    func path(in r: CGRect) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: r.midX, y: r.maxY))
-        p.addLine(to: CGPoint(x: r.minX, y: r.minY))
-        p.addLine(to: CGPoint(x: r.maxX, y: r.minY))
-        p.closeSubpath()
-        return p
+/// One furnace vent: a vertical pressure gauge that fills yellow, glows green in the sweet band, and
+/// turns red as it crests toward a blowout.
+private struct VentTube: View {
+    let level: Double
+    let bandLo: Double
+    let bandHi: Double
+    let tint: Color
+    let filling: Color
+    let pop: Double
+
+    var body: some View {
+        GeometryReader { geo in
+            let h = geo.size.height, w = geo.size.width
+            let fill = CGFloat(min(1, level)) * h
+            let fillCol: Color = level > bandHi ? .red : (level >= bandLo ? .green : filling)
+            ZStack {
+                Capsule().fill(Color.black.opacity(0.35))
+                // Red danger cap (top slice above the band)
+                Rectangle().fill(Color.red.opacity(0.16))
+                    .frame(height: CGFloat(1 - bandHi) * h)
+                    .position(x: w / 2, y: CGFloat(1 - bandHi) * h / 2)
+                // Green sweet band
+                Rectangle().fill(Color.green.opacity(0.20))
+                    .frame(height: CGFloat(bandHi - bandLo) * h)
+                    .position(x: w / 2, y: CGFloat(1 - (bandLo + bandHi) / 2) * h)
+                // Pressure fill (rises from the bottom)
+                fillCol
+                    .frame(height: fill)
+                    .position(x: w / 2, y: h - fill / 2)
+                    .opacity(0.95)
+                // Band edges
+                Rectangle().fill(Color.green.opacity(0.75)).frame(height: 1.5)
+                    .position(x: w / 2, y: CGFloat(1 - bandLo) * h)
+                Rectangle().fill(Color.green.opacity(0.75)).frame(height: 1.5)
+                    .position(x: w / 2, y: CGFloat(1 - bandHi) * h)
+                // Tap flash
+                if pop > 0 { Capsule().fill(Color.white.opacity(pop * 0.5)) }
+            }
+            .clipShape(Capsule())
+            .overlay(Capsule().strokeBorder(tint.opacity(0.35), lineWidth: 2))
+        }
     }
 }
 
