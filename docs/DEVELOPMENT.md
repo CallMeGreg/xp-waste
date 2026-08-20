@@ -130,6 +130,9 @@ Used for deterministic screenshots / UI checks:
   (counters + Reward Tokens) so the Diary isn't empty in demo screenshots.
 - `SEED_CELLS=<n>` — overrides the owned Energy-Cell count of the `SEED_DEMO` seed (e.g. `SEED_CELLS=0`
   surfaces the training screen's out-of-cells **Buy** action, which routes to the Shop).
+- `SEED_RAIDED=1` — marks every group's daily raid as already attempted today (and tops up Tokens), so
+  the Raids tab shows the **"Raided today — buy a refresh"** affordance and the Shop's **Raid Refresh**
+  reads as enabled.
 - `SEED_REWARDS=1` — seeds a **rich Diary**: enough levels to unlock all 5 AFK slots,
   representative lifetime counters, every currently-satisfied Task marked complete, cleared
   Diary tiers, and a healthy Reward Token balance. Ideal for reward-system screenshots.

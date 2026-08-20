@@ -28,7 +28,7 @@ struct SettingsView: View {
                     infoRow("moon.zzz.fill", "Reach level 10 to put a skill in an AFK slot for passive XP.")
                     infoRow("bolt.fill", "Tapping a skill can spark Supercharge Energy — Fishing raises the odds.")
                     infoRow("flame.fill", "Supercharge to spend Energy for bonus XP per tap.")
-                    infoRow("ticket.fill", "Activate a Boost Coupon for a timed XP boost on every skill — one free daily. Grows stronger and longer as you level Magic & Herblore.")
+                    infoRow("ticket.fill", "Activate a Boost Coupon for a timed XP boost on every skill. Grows stronger and longer as you level Magic & Herblore.")
                 }
 
                 statsSection
@@ -45,8 +45,6 @@ struct SettingsView: View {
                         Spacer()
                         Text(version).foregroundStyle(.secondary)
                     }
-                    Text("Inspired by Old School RuneScape. Not affiliated with or endorsed by Jagex.")
-                        .font(.caption).foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("Settings")

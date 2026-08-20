@@ -162,6 +162,12 @@ enum TaskCounter {
     static let stackedBursts = "stackedBursts"
     static let bestComboBips = "bestComboBips"     // max comboMultiplier ×100 ever reached
     static let bestOfflineXP = "bestOfflineXP"     // largest single offline-return XP
+    static let boostTaps = "boostTaps"             // taps landed while an XP Boost was live
+    static let superchargeTaps = "superchargeTaps" // taps landed while that skill was Supercharged
+
+    /// Per-skill lifetime tap tally. Namespaced so each skill keeps its own key and the group
+    /// Tasks can sum across a category's skills.
+    static func skillTaps(_ skill: SkillID) -> String { "taps." + skill.rawValue }
 }
 
 /// A single, checkable achievement. `progress(game)` returns the current value toward `goal`
@@ -244,10 +250,11 @@ enum TaskCatalog {
         SkillID.allCases.filter { game.level(for: $0) >= level }.count
     }
 
-    /// How many skills in a category have hit the 200M XP ceiling — for Grandmaster "Eternal" feats.
+    /// Total taps a player has logged across every skill in a category — the basis for the
+    /// Grandmaster "endless grind" tap Tasks.
     @MainActor
-    private static func maxXPCount(in category: SkillCategory, _ game: GameState) -> Int {
-        SkillID.skills(in: category).filter { game.isMaxXP($0) }.count
+    private static func groupTaps(in category: SkillCategory, _ game: GameState) -> Int {
+        SkillID.skills(in: category).reduce(0) { $0 + game.taskCounter(TaskCounter.skillTaps($1)) }
     }
 
     // MARK: - Diaries
@@ -283,9 +290,9 @@ enum TaskCatalog {
         Task(id: "combat.supercharge25", diary: .combat, tier: .master,
              title: "Warmonger", detail: "Trigger 25 Supercharges on combat skills.",
              goal: 25, triggers: [.supercharge]) { $0.taskCounter(TaskCounter.combatSupercharges) },
-        Task(id: "combat.eternal", diary: .combat, tier: .grandmaster,
-             title: "Combat Eternal", detail: "Reach 200M XP in all six combat skills.",
-             goal: 6, triggers: [.levelUp]) { maxXPCount(in: .combat, $0) }
+        Task(id: "combat.taps10k", diary: .combat, tier: .grandmaster,
+             title: "Endless Onslaught", detail: "Land 10,000 taps across combat skills.",
+             goal: 10_000, triggers: [.tap]) { groupTaps(in: .combat, $0) }
     ]
 
     static let production: [Task] = [
@@ -319,9 +326,9 @@ enum TaskCatalog {
         Task(id: "prod.all99", diary: .production, tier: .master,
              title: "Production Legend", detail: "Reach level 99 in all seven production skills.",
              goal: 7, triggers: [.levelUp]) { maxedCount(in: .production, $0) },
-        Task(id: "prod.eternal", diary: .production, tier: .grandmaster,
-             title: "Production Eternal", detail: "Reach 200M XP in all seven production skills.",
-             goal: 7, triggers: [.levelUp]) { maxXPCount(in: .production, $0) }
+        Task(id: "prod.taps10k", diary: .production, tier: .grandmaster,
+             title: "Endless Production", detail: "Land 10,000 taps across production skills.",
+             goal: 10_000, triggers: [.tap]) { groupTaps(in: .production, $0) }
     ]
 
     static let utility: [Task] = [
@@ -355,9 +362,9 @@ enum TaskCatalog {
         Task(id: "util.all99", diary: .utility, tier: .master,
              title: "Utility Legend", detail: "Reach level 99 in all five utility skills.",
              goal: 5, triggers: [.levelUp]) { maxedCount(in: .utility, $0) },
-        Task(id: "util.eternal", diary: .utility, tier: .grandmaster,
-             title: "Utility Eternal", detail: "Reach 200M XP in all five utility skills.",
-             goal: 5, triggers: [.levelUp]) { maxXPCount(in: .utility, $0) }
+        Task(id: "util.taps10k", diary: .utility, tier: .grandmaster,
+             title: "Endless Hustle", detail: "Land 10,000 taps across utility skills.",
+             goal: 10_000, triggers: [.tap]) { groupTaps(in: .utility, $0) }
     ]
 
     static let gathering: [Task] = [
@@ -393,9 +400,9 @@ enum TaskCatalog {
         Task(id: "gather.all99", diary: .gathering, tier: .master,
              title: "Gathering Legend", detail: "Reach level 99 in all five gathering skills.",
              goal: 5, triggers: [.levelUp]) { maxedCount(in: .gathering, $0) },
-        Task(id: "gather.eternal", diary: .gathering, tier: .grandmaster,
-             title: "Gathering Eternal", detail: "Reach 200M XP in all five gathering skills.",
-             goal: 5, triggers: [.levelUp]) { maxXPCount(in: .gathering, $0) }
+        Task(id: "gather.taps10k", diary: .gathering, tier: .grandmaster,
+             title: "Endless Harvest", detail: "Land 10,000 taps across gathering skills.",
+             goal: 10_000, triggers: [.tap]) { groupTaps(in: .gathering, $0) }
     ]
 
     static let idler: [Task] = [
@@ -439,9 +446,10 @@ enum TaskCatalog {
         Task(id: "idle.returns50", diary: .idler, tier: .master,
              title: "Creature of Habit", detail: "Return from 50 offline sessions.",
              goal: 50, triggers: [.offlineReturn]) { $0.taskCounter(TaskCounter.offlineReturns) },
-        Task(id: "idle.offline5m", diary: .idler, tier: .grandmaster,
-             title: "Eternal Slumber", detail: "Earn 5,000,000 XP in a single offline return.",
-             goal: 5_000_000, triggers: [.offlineReturn]) { $0.taskCounter(TaskCounter.bestOfflineXP) }
+        Task(id: "idle.offline10m", diary: .idler, tier: .grandmaster,
+             title: "Eternal Slumber",
+             detail: "Bank 10,000,000 XP in one offline return, summed across every skill training.",
+             goal: 10_000_000, triggers: [.offlineReturn]) { $0.taskCounter(TaskCounter.bestOfflineXP) }
     ]
 
     static let tycoon: [Task] = [
@@ -457,9 +465,9 @@ enum TaskCatalog {
         Task(id: "tycoon.coupons5", diary: .tycoon, tier: .medium,
              title: "Coupon Hoarder", detail: "Hold five Boost Coupons at once.",
              goal: 5, triggers: [.currency]) { $0.doubleXPCoupons },
-        Task(id: "tycoon.boost10", diary: .tycoon, tier: .hard,
-             title: "Power User", detail: "Activate 10 XP Boosts.",
-             goal: 10, triggers: [.boost]) { $0.taskCounter(TaskCounter.boosts) },
+        Task(id: "tycoon.boosttaps500", diary: .tycoon, tier: .hard,
+             title: "Boost Rider", detail: "Land 500 taps while an XP Boost is active.",
+             goal: 500, triggers: [.tap]) { $0.taskCounter(TaskCounter.boostTaps) },
         Task(id: "tycoon.cells10", diary: .tycoon, tier: .hard,
              title: "Cell Stockpile", detail: "Use 10 Energy Cells.",
              goal: 10, triggers: [.energyCell]) { $0.taskCounter(TaskCounter.energyCells) },
@@ -469,15 +477,15 @@ enum TaskCatalog {
         Task(id: "tycoon.stack25", diary: .tycoon, tier: .elite,
              title: "Perfect Storm", detail: "Tap 25 times with a Boost and Supercharge both active.",
              goal: 25, triggers: [.tap]) { $0.taskCounter(TaskCounter.stackedBursts) },
-        Task(id: "tycoon.boost50", diary: .tycoon, tier: .master,
-             title: "Tycoon", detail: "Activate 50 XP Boosts.",
-             goal: 50, triggers: [.boost]) { $0.taskCounter(TaskCounter.boosts) },
-        Task(id: "tycoon.boost100", diary: .tycoon, tier: .master,
-             title: "Mogul", detail: "Activate 100 XP Boosts.",
-             goal: 100, triggers: [.boost]) { $0.taskCounter(TaskCounter.boosts) },
-        Task(id: "tycoon.boost250", diary: .tycoon, tier: .grandmaster,
-             title: "Empire", detail: "Activate 250 XP Boosts.",
-             goal: 250, triggers: [.boost]) { $0.taskCounter(TaskCounter.boosts) }
+        Task(id: "tycoon.boosttaps2500", diary: .tycoon, tier: .master,
+             title: "Boost Tycoon", detail: "Land 2,500 taps while an XP Boost is active.",
+             goal: 2_500, triggers: [.tap]) { $0.taskCounter(TaskCounter.boostTaps) },
+        Task(id: "tycoon.supertaps1500", diary: .tycoon, tier: .master,
+             title: "Overcharged", detail: "Land 1,500 taps on a Supercharged skill.",
+             goal: 1_500, triggers: [.tap]) { $0.taskCounter(TaskCounter.superchargeTaps) },
+        Task(id: "tycoon.boosttaps6000", diary: .tycoon, tier: .grandmaster,
+             title: "Empire", detail: "Land 6,000 taps while an XP Boost is active.",
+             goal: 6_000, triggers: [.tap]) { $0.taskCounter(TaskCounter.boostTaps) }
     ]
 
     static let completionist: [Task] = [

@@ -289,13 +289,13 @@ struct RaidSessionView: View {
                         .font(.caption2.weight(.black)).foregroundStyle(.secondary).tracking(0.5)
                 }
                 Spacer()
-                // Bosses read as *remaining* HP (drains from max → 0, matching the health bar);
-                // skill rooms count progress up toward the goal.
-                Text(room.isBoss ? "\(max(0, roomGoal - roomProgress))/\(roomGoal)"
-                                 : "\(min(roomProgress, roomGoal))/\(roomGoal)")
+                // Every room now reads as *remaining* (drains from max → 0, like a health bar) —
+                // bosses via their HP, skill rooms via the objective left to clear.
+                Text("\(max(0, roomGoal - roomProgress))/\(roomGoal)")
                     .font(.caption.weight(.bold)).monospacedDigit()
             }
-            let frac = room.isBoss ? bossHPFraction : Double(roomProgress) / Double(max(1, roomGoal))
+            let frac = room.isBoss ? bossHPFraction
+                                   : max(0, 1 - Double(roomProgress) / Double(max(1, roomGoal)))
             XPProgressBar(progress: frac,
                           tint: room.isBoss ? (enraged ? .red : group.raidTint) : group.raidTint, height: 8)
         }
@@ -391,18 +391,8 @@ struct RaidSessionView: View {
 
                 VStack(spacing: 5) {
                     Text(room.title).font(.title.weight(.heavy)).multilineTextAlignment(.center)
-                    if let boss = room.boss {
-                        Label(boss.threat, systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption).foregroundStyle(.red.opacity(0.9))
-                    }
                     Text(room.objective).font(.subheadline).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                }
-
-                HStack(spacing: 14) {
-                    introChip(icon: room.kind.symbol, label: room.kind.verb)
-                    if isFinalRoom { introChip(icon: "crown.fill", label: "Final boss", tint: .yellow) }
-                    else if room.isBoss { introChip(icon: "flame.fill", label: "Mini-boss", tint: .orange) }
                 }
 
                 Button { beginRoom() } label: {
@@ -422,18 +412,6 @@ struct RaidSessionView: View {
             .padding(26)
         }
         .transition(.opacity)
-    }
-
-    private func introChip(icon: String, label: String, tint: Color? = nil) -> some View {
-        let c = tint ?? group.raidTint
-        return HStack(spacing: 6) {
-            Image(systemName: icon).font(.caption.weight(.bold))
-            Text(label).font(.caption.weight(.bold))
-        }
-        .foregroundStyle(c)
-        .padding(.horizontal, 11).padding(.vertical, 7)
-        .background(c.opacity(0.16), in: Capsule())
-        .overlay(Capsule().strokeBorder(c.opacity(0.4)))
     }
 
     // MARK: Result

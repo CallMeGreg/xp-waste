@@ -177,7 +177,6 @@ final class GameState: ObservableObject {
     init() {
         load()
         lastTick = Date()
-        if hasSeenOnboarding { grantDailyCouponIfNeeded() }
         #if DEBUG
         applyDemoSeedIfRequested()
         applyRewardsSeedIfRequested()
@@ -590,6 +589,12 @@ final class GameState: ObservableObject {
         raidDayByGroup[group.rawValue] != Self.dayKey()
     }
 
+    /// True when at least one group has already spent its raid attempt today — i.e. there is
+    /// something for a Shop "Raid Refresh" to actually reset.
+    var hasRaidedTodayAnyGroup: Bool {
+        SkillCategory.allCases.contains { !isRaidAvailableToday($0) }
+    }
+
     /// Lifetime successful clears ("completions") for a group's raid.
     func raidClears(_ group: SkillCategory) -> Int { raidClearsByGroup[group.rawValue] ?? 0 }
 
@@ -627,11 +632,17 @@ final class GameState: ObservableObject {
         // Tasks those events could have advanced.
         var triggers: Set<TaskTrigger> = [.tap]
         bumpCounter(TaskCounter.taps)
+        bumpCounter(TaskCounter.skillTaps(skill))          // per-skill tap tally (group tap Tasks)
         if result.didCrit { bumpCounter(TaskCounter.crits); triggers.insert(.crit) }
         if result.gotCache { bumpCounter(TaskCounter.caches); triggers.insert(.cache) }
         if result.gotEnergy { bumpCounter(TaskCounter.energyProcs); triggers.insert(.energyProc) }
         if isEnergyFull(skill) { triggers.insert(.energyFull) }
-        if isSupercharged(skill), isDoubleXPActive { bumpCounter(TaskCounter.stackedBursts) }
+        // Taps landed *while* a buff is live — the basis for the Tycoon "tap while active" Tasks.
+        let boosted = isDoubleXPActive
+        let charged = isSupercharged(skill)
+        if boosted { bumpCounter(TaskCounter.boostTaps) }
+        if charged { bumpCounter(TaskCounter.superchargeTaps) }
+        if boosted, charged { bumpCounter(TaskCounter.stackedBursts) }
         raiseCounter(TaskCounter.bestComboBips, to: Int((comboMultiplier * 100).rounded()))
         if comboMultiplier > 1 { triggers.insert(.combo) }
         evaluateTasks(triggers)
@@ -811,6 +822,22 @@ final class GameState: ObservableObject {
         return true
     }
 
+    /// Spends Tokens to refresh **every** group's daily raid attempt so they can all be run again
+    /// today. No-op (returns false) if unaffordable or if nothing has been raided yet today.
+    @discardableResult
+    func refreshRaids() -> Bool {
+        let price = Balance.Rewards.refreshRaidsCost
+        guard hasRaidedTodayAnyGroup, tokens >= price else { return false }
+        tokens -= price
+        raidDayByGroup = [:]
+        notice = Notice(icon: "arrow.clockwise.circle.fill", text: "All raids refreshed — \(price) Tokens")
+        save()
+        return true
+    }
+
+    /// Whether the player can afford — and has any reason — to buy a raid refresh right now.
+    func canRefreshRaids() -> Bool { hasRaidedTodayAnyGroup && tokens >= Balance.Rewards.refreshRaidsCost }
+
     /// Resolves a finished raid. On a win, banks a lamp for the group at its current raid tier, plus
     /// `Balance.raidFlawlessBonusLamps` extra lamps when the run was **flawless** (no raid-HP lost);
     /// on a loss, nothing (the daily attempt was already spent in `beginRaid`). Returns every lamp
@@ -872,19 +899,11 @@ final class GameState: ObservableObject {
     func bankDiaryLamp(forTier tier: TaskTier) {
         diaryLamps.append(RaidLampRecord(group: nil, tier: tier.lampTier))
     }
-    @discardableResult
-    func grantDailyCouponIfNeeded() -> Bool {
-        let today = Self.dayKey()
-        guard lastFreeCouponDay != today else { return false }
-        lastFreeCouponDay = today
-        let granted = Balance.dailyFreeCoupons
-        doubleXPCoupons += granted
-        if hasSeenOnboarding {
-            notice = Notice(icon: "gift.fill", text: "Daily reward: +\(granted) Boost Coupon\(granted == 1 ? "" : "s")")
-        }
-        save()
-        evaluateTasks(.currency)
-        return true
+    /// Grants the one-time starter stock (Boost Coupons + Energy Cells) for a brand-new game. Called
+    /// exactly once, when onboarding completes, so returning players aren't re-granted.
+    private func grantStarterItems() {
+        doubleXPCoupons += Balance.starterCoupons
+        energyCells += Balance.starterEnergyCells
     }
 
     private static func dayKey(_ date: Date = Date()) -> String {
@@ -894,7 +913,7 @@ final class GameState: ObservableObject {
 
     func completeOnboarding() {
         hasSeenOnboarding = true
-        grantDailyCouponIfNeeded()
+        grantStarterItems()
         lastActive = Date()
         lastTick = Date()
         save()
@@ -960,7 +979,6 @@ final class GameState: ObservableObject {
         }
         pruneExpiredSupercharges()   // Supercharge expiry is wall-clock, so away time already counts
         expireDoubleXPIfNeeded()
-        grantDailyCouponIfNeeded()
         // Resetting `lastActive` restarts the offline counter, so the next away period is measured
         // from now (and the capped window can't be "banked" across returns).
         lastActive = now
@@ -993,7 +1011,7 @@ final class GameState: ObservableObject {
                 * Balance.passiveActionsPerSecond
                 * offlineRateMultiplier                                     // Hunter (offline rate)
             let gained = ratePerSecond * credited
-                * Balance.offlineXPMultiplier                              // base offline penalty (30%)
+                * Balance.offlineXPMultiplier                              // base offline penalty (20%)
                 * offlineXPEfficiency                                       // Farming (retention)
             guard gained > 0 else { continue }
             let fromLevel = level(for: skill)
@@ -1183,6 +1201,13 @@ final class GameState: ObservableObject {
             TaskCounter.levelUps: 140
         ]
         seedCompleteSatisfiedTasks()
+        // Screenshot hook: mark every group's raid as already spent today, so the Raids tab shows
+        // the "Raided today — buy a refresh" affordance and the Shop's Raid Refresh reads enabled.
+        if ProcessInfo.processInfo.environment["SEED_RAIDED"] != nil {
+            let today = Self.dayKey()
+            for group in SkillCategory.allCases { raidDayByGroup[group.rawValue] = today }
+            tokens = max(tokens, 300)
+        }
         hasSeenOnboarding = true
         lastActive = Date()
         lastTick = Date()

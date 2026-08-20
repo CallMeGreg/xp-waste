@@ -11,50 +11,60 @@ struct BoostsView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(spacing: 16) {
-                        if Layout.isWide(hSize) {
-                            TokenWalletCard()
-                            HStack(alignment: .top, spacing: 16) {
-                                VStack(spacing: 16) {
-                                    sectionHeader("Spend Tokens")
-                                    SpendFamilyCard(spendable: .coupon)
-                                    SpendFamilyCard(spendable: .cell)
-                                }
-                                VStack(spacing: 16) {
-                                    sectionHeader("Buy more Tokens")
-                                    GetTokensCard()
-                                }
-                            }
-                        } else {
-                            TokenWalletCard()
-                            sectionHeader("Spend Tokens")
-                            SpendFamilyCard(spendable: .coupon)
-                            SpendFamilyCard(spendable: .cell)
-                            sectionHeader("Buy more Tokens")
-                            GetTokensCard()
-                        }
-
-                        legalFootnote.id("shopBottom")
-                    }
-                    .padding(16)
+            VStack(spacing: 0) {
+                // Pinned Token balance — stays in view while the rest of the shop scrolls.
+                TokenWalletCard()
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 10)
                     .frame(maxWidth: Layout.maxWidth(hSize, compact: 640, regular: 1040))
                     .frame(maxWidth: .infinity)
-                }
-                .background(GameBackground())
-                .navigationTitle("Shop")
-                .navigationBarTitleDisplayMode(.inline)
-                #if DEBUG
-                .onAppear {
-                    // Deterministic screenshots of the lower "Token Packs" (IAP) section.
-                    guard ProcessInfo.processInfo.environment["SHOP_SCROLL"] == "tokens" else { return }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                        withAnimation { proxy.scrollTo("shopBottom", anchor: .bottom) }
+
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(spacing: 16) {
+                            if Layout.isWide(hSize) {
+                                HStack(alignment: .top, spacing: 16) {
+                                    VStack(spacing: 16) {
+                                        sectionHeader("Spend Tokens")
+                                        SpendFamilyCard(spendable: .coupon)
+                                        SpendFamilyCard(spendable: .cell)
+                                        RefreshRaidsCard()
+                                    }
+                                    VStack(spacing: 16) {
+                                        sectionHeader("Buy more Tokens")
+                                        GetTokensCard()
+                                    }
+                                }
+                            } else {
+                                sectionHeader("Spend Tokens")
+                                SpendFamilyCard(spendable: .coupon)
+                                SpendFamilyCard(spendable: .cell)
+                                RefreshRaidsCard()
+                                sectionHeader("Buy more Tokens")
+                                GetTokensCard()
+                            }
+
+                            legalFootnote.id("shopBottom")
+                        }
+                        .padding(16)
+                        .frame(maxWidth: Layout.maxWidth(hSize, compact: 640, regular: 1040))
+                        .frame(maxWidth: .infinity)
                     }
+                    #if DEBUG
+                    .onAppear {
+                        // Deterministic screenshots of the lower "Token Packs" (IAP) section.
+                        guard ProcessInfo.processInfo.environment["SHOP_SCROLL"] == "tokens" else { return }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                            withAnimation { proxy.scrollTo("shopBottom", anchor: .bottom) }
+                        }
+                    }
+                    #endif
                 }
-                #endif
             }
+            .background(GameBackground())
+            .navigationTitle("Shop")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 
@@ -119,7 +129,7 @@ private enum Spendable {
 
     var blurb: String {
         switch self {
-        case .coupon: return "Spend one to start a timed XP boost on every skill. You get one free each day — stock up with Tokens for back-to-back boosts."
+        case .coupon: return "Spend one to start a timed XP boost on every skill. Stock up with Tokens for back-to-back boosts."
         case .cell:   return "Instantly fills the skill you're training to full Supercharge."
         }
     }
@@ -208,6 +218,64 @@ private struct SpendFamilyCard: View {
 }
 
 // MARK: - Buy Tokens (IAP)
+
+/// A one-shot Token consumable that re-arms **every** group's daily raid so they can all be run
+/// again today. Unlike the coupon/cell families there's no "owned" balance — it acts immediately,
+/// so it gets its own card rather than reusing `SpendFamilyCard`.
+private struct RefreshRaidsCard: View {
+    @EnvironmentObject private var game: GameState
+    @State private var buyHaptic = 0
+
+    var body: some View {
+        let cost = Balance.Rewards.refreshRaidsCost
+        let hasSpent = game.hasRaidedTodayAnyGroup
+        let enabled = hasSpent && game.tokens >= cost
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "arrow.clockwise.circle.fill").font(.title3).foregroundStyle(.teal)
+                Text("Raid Refresh").font(.headline)
+                Spacer()
+            }
+            Text(hasSpent
+                 ? "Re-arm every group's daily raid so you can run them all again right now."
+                 : "All raids are already available — nothing to refresh yet today.")
+                .font(.footnote).foregroundStyle(.secondary)
+
+            Divider().overlay(Color.white.opacity(0.08))
+
+            HStack(spacing: 12) {
+                Text("Refresh all raids").font(.subheadline.weight(.semibold))
+                Spacer()
+                Button { refresh() } label: { tokenPrice(cost, enabled: enabled) }
+                    .buttonStyle(PressableStyle())
+                    .disabled(!enabled)
+            }
+            .padding(.vertical, 4)
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Color.teal.opacity(0.18)))
+        .sensoryFeedback(.success, trigger: buyHaptic)
+    }
+
+    private func tokenPrice(_ cost: Int, enabled: Bool) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: "star.circle.fill").font(.caption.weight(.bold))
+            Text(cost.formatted()).font(.subheadline.weight(.bold)).monospacedDigit()
+        }
+        .foregroundStyle(enabled ? .black : Color.secondary)
+        .frame(minWidth: 64)
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .background(enabled ? Color.rewardToken : Color.white.opacity(0.10), in: Capsule())
+    }
+
+    private func refresh() {
+        if game.refreshRaids() {
+            if game.hapticsEnabled { buyHaptic += 1 }
+            SoundManager.shared.play(.purchase, enabled: game.soundEnabled)
+        }
+    }
+}
 
 /// The single IAP family: real-money Token packs. Reads the catalog from `Store` (live or the
 /// DEBUG mock), so it renders for screenshots without App Store connectivity.
