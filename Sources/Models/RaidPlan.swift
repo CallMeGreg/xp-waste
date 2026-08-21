@@ -126,7 +126,7 @@ extension SkillCategory {
         switch self {
         case .combat:     return "Slip the volley, out-duel two champions of the arena."
         case .production: return "Pour, temper and stamp the war-order under the Forge Master."
-        case .utility:    return "Sneak, slip the hound and crack the vault's every lock."
+        case .utility:    return "Sneak, slip the hound and memorise the vault's every code."
         case .gathering:  return "Read the grove, haul the serpent, feed the Colossus."
         }
     }
@@ -136,7 +136,7 @@ extension SkillCategory {
         switch self {
         case .combat:     return "shield.lefthalf.filled"
         case .production: return "hammer.fill"
-        case .utility:    return "key.fill"
+        case .utility:    return "figure.run"
         case .gathering:  return "leaf.fill"
         }
     }
@@ -205,7 +205,7 @@ extension SkillCategory {
                 RaidRoom(id: 1, title: "The Warhound", kind: .pathTrace, boss: .hound,
                          objectiveNoun: "Boss HP", objective: "Trace the route past the hound — stay on the path"),
                 RaidRoom(id: 2, title: "The Vault Warden", kind: .memory, boss: .warden,
-                         objectiveNoun: "Boss HP", objective: "Watch, then repeat each lock rune in order"),
+                         objectiveNoun: "Boss HP", objective: "Watch the code light up, then key it back in order"),
             ]
 
         case .gathering:

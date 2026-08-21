@@ -249,7 +249,7 @@ struct RaidSessionView: View {
                 HStack(spacing: 6) {
                     ZStack {
                         if r.isBoss {
-                            Image(systemName: r.id == rooms.count - 1 ? "crown.fill" : "flame.fill")
+                            Image(systemName: r.id == rooms.count - 1 ? "crown.fill" : r.kind.symbol)
                                 .font(.system(size: 11, weight: .black))
                                 .foregroundStyle(color)
                         } else {
@@ -490,15 +490,15 @@ extension RaidRoomKind {
     var symbol: String {
         switch self {
         case .laneDodge:   return "arrow.down.to.line"
-        case .swipeDodge:  return "arrow.left.arrow.right"
+        case .swipeDodge:  return "arrow.up.and.down.and.arrow.left.and.right"
         case .duel:        return "shield.lefthalf.filled"
-        case .rhythm:      return "hammer.fill"
-        case .charge:      return "flame.fill"
+        case .rhythm:      return "metronome.fill"
+        case .charge:      return "thermometer.high"
         case .vents:       return "gauge.with.dots.needle.bottom.50percent"
         case .stealth:     return "eye.slash.fill"
         case .pathTrace:   return "scribble.variable"
         case .memory:      return "square.grid.2x2.fill"
-        case .recognition: return "leaf.fill"
+        case .recognition: return "magnifyingglass"
         case .mash:        return "hand.tap.fill"
         case .sort:        return "arrow.triangle.branch"
         }

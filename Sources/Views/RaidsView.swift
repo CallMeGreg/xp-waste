@@ -247,7 +247,7 @@ private struct RaidCard: View {
                 ZStack {
                     Circle().fill(c.opacity(0.16)).frame(width: 26, height: 26)
                     Circle().strokeBorder(c.opacity(0.5), lineWidth: 1).frame(width: 26, height: 26)
-                    Image(systemName: isFinal ? "crown.fill" : (r.isBoss ? "flame.fill" : r.kind.symbol))
+                    Image(systemName: isFinal ? "crown.fill" : r.kind.symbol)
                         .font(.system(size: 11, weight: .bold)).foregroundStyle(c)
                 }
                 if r.id != rooms.count - 1 {

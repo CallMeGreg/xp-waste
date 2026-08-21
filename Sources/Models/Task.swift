@@ -94,7 +94,7 @@ enum TaskDiary: String, Codable, CaseIterable, Identifiable {
         case .production:    return "Forge, craft, and build"
         case .utility:       return "Speed, stealth, and cunning"
         case .gathering:     return "Harvest the world"
-        case .idler:         return "AFK slots & offline gains"
+        case .idler:         return "Idle taps & offline gains"
         case .tycoon:        return "Boosts, cells, and multipliers"
         case .completionist: return "The long road to a maxed account"
         }
@@ -130,7 +130,8 @@ enum TaskDiary: String, Codable, CaseIterable, Identifiable {
 /// only re-checks the handful of Tasks that could actually have changed — no per-frame scans.
 enum TaskTrigger: Hashable {
     case levelUp        // any skill gained a level (also fires on offline level-ups)
-    case tap            // a training tap resolved
+    case tap            // a deliberate training tap resolved
+    case idleTap        // an automatic/idle tap resolved (e.g. the Runecraft idle perk)
     case crit           // a tap landed a critical
     case cache          // a tap yielded a bonus cache
     case energyProc     // a tap banked Supercharge Energy
@@ -149,6 +150,7 @@ enum TaskTrigger: Hashable {
 /// they persist compactly in `taskCounters` and can't drift from the Task catalog.
 enum TaskCounter {
     static let taps = "taps"
+    static let idleTaps = "idleTaps"               // automatic/idle taps (kept out of "tap" Tasks)
     static let crits = "crits"
     static let caches = "caches"
     static let energyProcs = "energyProcs"
@@ -406,50 +408,52 @@ enum TaskCatalog {
     ]
 
     static let idler: [Task] = [
-        Task(id: "idle.slot1", diary: .idler, tier: .easy,
-             title: "First Slot", detail: "Assign a skill to an AFK slot.",
-             goal: 1, triggers: [.slot]) { $0.slots.count },
+        // Easy
         Task(id: "idle.return1", diary: .idler, tier: .easy,
              title: "Well Rested", detail: "Return from an offline session.",
              goal: 1, triggers: [.offlineReturn]) { $0.taskCounter(TaskCounter.offlineReturns) },
-        Task(id: "idle.unlock_slot2", diary: .idler, tier: .easy,
-             title: "Second Slot",
-             detail: "Reach total level \(Balance.slotUnlockTotalLevels[0]) to unlock your 2nd AFK slot.",
-             goal: Balance.slotUnlockTotalLevels[0], triggers: [.levelUp]) { $0.totalLevel },
-        Task(id: "idle.slot2", diary: .idler, tier: .medium,
-             title: "Double Duty", detail: "Fill two AFK slots at once.",
-             goal: 2, triggers: [.slot]) { $0.slots.count },
+        Task(id: "idle.idletaps100", diary: .idler, tier: .easy,
+             title: "Autopilot", detail: "Reach 100 idle taps.",
+             goal: 100, triggers: [.idleTap]) { $0.taskCounter(TaskCounter.idleTaps) },
+        // Medium
         Task(id: "idle.offline100k", diary: .idler, tier: .medium,
              title: "Overnight", detail: "Earn 100k XP in a single offline return.",
              goal: 100_000, triggers: [.offlineReturn]) { $0.taskCounter(TaskCounter.bestOfflineXP) },
-        Task(id: "idle.unlock_slot3", diary: .idler, tier: .medium,
-             title: "Third Slot",
-             detail: "Reach total level \(Balance.slotUnlockTotalLevels[1]) to unlock your 3rd AFK slot.",
-             goal: Balance.slotUnlockTotalLevels[1], triggers: [.levelUp]) { $0.totalLevel },
-        Task(id: "idle.slot5", diary: .idler, tier: .hard,
-             title: "Fully Staffed", detail: "Fill all five AFK slots at once.",
-             goal: 5, triggers: [.slot]) { $0.slots.count },
-        Task(id: "idle.unlock_slot4", diary: .idler, tier: .hard,
-             title: "Fourth Slot",
-             detail: "Reach total level \(Balance.slotUnlockTotalLevels[2]) to unlock your 4th AFK slot.",
-             goal: Balance.slotUnlockTotalLevels[2], triggers: [.levelUp]) { $0.totalLevel },
+        Task(id: "idle.idletaps1000", diary: .idler, tier: .medium,
+             title: "Set and Forget", detail: "Reach 1,000 idle taps.",
+             goal: 1_000, triggers: [.idleTap]) { $0.taskCounter(TaskCounter.idleTaps) },
+        // Hard
+        Task(id: "idle.idletaps5000", diary: .idler, tier: .hard,
+             title: "Hands Off", detail: "Reach 5,000 idle taps.",
+             goal: 5_000, triggers: [.idleTap]) { $0.taskCounter(TaskCounter.idleTaps) },
+        Task(id: "idle.idletaps10000", diary: .idler, tier: .hard,
+             title: "Idle Hands", detail: "Reach 10,000 idle taps.",
+             goal: 10_000, triggers: [.idleTap]) { $0.taskCounter(TaskCounter.idleTaps) },
+        // Elite
         Task(id: "idle.offline500k", diary: .idler, tier: .elite,
              title: "Big Sleeper", detail: "Earn 500k XP in a single offline return.",
              goal: 500_000, triggers: [.offlineReturn]) { $0.taskCounter(TaskCounter.bestOfflineXP) },
         Task(id: "idle.offline1m", diary: .idler, tier: .elite,
              title: "Hibernation", detail: "Earn 1,000,000 XP in a single offline return.",
              goal: 1_000_000, triggers: [.offlineReturn]) { $0.taskCounter(TaskCounter.bestOfflineXP) },
-        Task(id: "idle.total1000", diary: .idler, tier: .master,
-             title: "Idle Empire",
-             detail: "Reach total level \(Balance.slotUnlockTotalLevels[3]) to unlock your 5th AFK slot.",
-             goal: Balance.slotUnlockTotalLevels[3], triggers: [.levelUp]) { $0.totalLevel },
+        Task(id: "idle.idletaps25000", diary: .idler, tier: .elite,
+             title: "Ghost in the Machine", detail: "Reach 25,000 idle taps.",
+             goal: 25_000, triggers: [.idleTap]) { $0.taskCounter(TaskCounter.idleTaps) },
+        // Master
         Task(id: "idle.returns50", diary: .idler, tier: .master,
              title: "Creature of Habit", detail: "Return from 50 offline sessions.",
              goal: 50, triggers: [.offlineReturn]) { $0.taskCounter(TaskCounter.offlineReturns) },
+        Task(id: "idle.idletaps50000", diary: .idler, tier: .master,
+             title: "Automation Station", detail: "Reach 50,000 idle taps.",
+             goal: 50_000, triggers: [.idleTap]) { $0.taskCounter(TaskCounter.idleTaps) },
+        // Grandmaster
         Task(id: "idle.offline10m", diary: .idler, tier: .grandmaster,
              title: "Eternal Slumber",
              detail: "Bank 10,000,000 XP in one offline return, summed across every skill training.",
-             goal: 10_000_000, triggers: [.offlineReturn]) { $0.taskCounter(TaskCounter.bestOfflineXP) }
+             goal: 10_000_000, triggers: [.offlineReturn]) { $0.taskCounter(TaskCounter.bestOfflineXP) },
+        Task(id: "idle.idletaps100000", diary: .idler, tier: .grandmaster,
+             title: "Perpetual Motion", detail: "Reach 100,000 idle taps.",
+             goal: 100_000, triggers: [.idleTap]) { $0.taskCounter(TaskCounter.idleTaps) }
     ]
 
     static let tycoon: [Task] = [
@@ -466,8 +470,8 @@ enum TaskCatalog {
              title: "Coupon Hoarder", detail: "Hold five Boost Coupons at once.",
              goal: 5, triggers: [.currency]) { $0.doubleXPCoupons },
         Task(id: "tycoon.boosttaps500", diary: .tycoon, tier: .hard,
-             title: "Boost Rider", detail: "Land 500 taps while an XP Boost is active.",
-             goal: 500, triggers: [.tap]) { $0.taskCounter(TaskCounter.boostTaps) },
+             title: "Boost Rider", detail: "Land 1,000 taps while an XP Boost is active.",
+             goal: 1_000, triggers: [.tap]) { $0.taskCounter(TaskCounter.boostTaps) },
         Task(id: "tycoon.cells10", diary: .tycoon, tier: .hard,
              title: "Cell Stockpile", detail: "Use 10 Energy Cells.",
              goal: 10, triggers: [.energyCell]) { $0.taskCounter(TaskCounter.energyCells) },
@@ -478,14 +482,14 @@ enum TaskCatalog {
              title: "Perfect Storm", detail: "Tap 25 times with a Boost and Supercharge both active.",
              goal: 25, triggers: [.tap]) { $0.taskCounter(TaskCounter.stackedBursts) },
         Task(id: "tycoon.boosttaps2500", diary: .tycoon, tier: .master,
-             title: "Boost Tycoon", detail: "Land 2,500 taps while an XP Boost is active.",
-             goal: 2_500, triggers: [.tap]) { $0.taskCounter(TaskCounter.boostTaps) },
+             title: "Boost Tycoon", detail: "Land 4,000 taps while an XP Boost is active.",
+             goal: 4_000, triggers: [.tap]) { $0.taskCounter(TaskCounter.boostTaps) },
         Task(id: "tycoon.supertaps1500", diary: .tycoon, tier: .master,
              title: "Overcharged", detail: "Land 1,500 taps on a Supercharged skill.",
              goal: 1_500, triggers: [.tap]) { $0.taskCounter(TaskCounter.superchargeTaps) },
         Task(id: "tycoon.boosttaps6000", diary: .tycoon, tier: .grandmaster,
-             title: "Empire", detail: "Land 6,000 taps while an XP Boost is active.",
-             goal: 6_000, triggers: [.tap]) { $0.taskCounter(TaskCounter.boostTaps) }
+             title: "Empire", detail: "Land 10,000 taps while an XP Boost is active.",
+             goal: 10_000, triggers: [.tap]) { $0.taskCounter(TaskCounter.boostTaps) }
     ]
 
     static let completionist: [Task] = [

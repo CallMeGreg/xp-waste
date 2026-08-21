@@ -673,7 +673,7 @@ struct SkillTrainingView: View {
         var fired = 0
         while autoTapAccumulator >= 1, fired < 5 {
             autoTapAccumulator -= 1
-            spawnPops(for: game.tap(skill))
+            spawnPops(for: game.tap(skill, idle: true))
             fired += 1
         }
     }

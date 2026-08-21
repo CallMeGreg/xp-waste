@@ -350,29 +350,81 @@ private struct DuelOrb: View {
     }
 }
 
-// MARK: - Swipe-dodge — read the beast's lunge, sidestep, counter
+// MARK: - Swipe-dodge — read the beast's lunge, sidestep, then slide back to counter hard
 
 /// The Sand Beast mini-boss. It rears and **telegraphs a lunge** with a bright arrow and a closing
-/// ring; **swipe the shown way** to sidestep and land an automatic counter (damage). Let the ring
-/// close without swiping and it mauls you (a heart). A pure read-and-react gesture duel — no taps.
+/// ring; **swipe the shown way** (now any of the eight compass directions — cardinals *and*
+/// diagonals) to sidestep and land an automatic counter (1 damage). The instant you clear it the
+/// beast is open: a short **slide-back** window prompts you to swipe the *opposite* way for a heavy
+/// follow-up (`Balance.raidSwipeSlideBackDamage`), so a crisp two-beat exchange hits for 3 and the
+/// fight doesn't drag. Let the lunge ring close without swiping and it mauls you (a heart); missing
+/// only the slide-back just forfeits the bonus. A pure read-and-react gesture duel — no taps.
 struct SwipeDodgeRoom: View {
     let ctx: RaidRoomContext
 
-    private enum Dir: CaseIterable { case left, right, up
-        var vector: CGSize { switch self { case .left: return .init(width: -1, height: 0)
-            case .right: return .init(width: 1, height: 0); case .up: return .init(width: 0, height: -1) } }
-        var symbol: String { switch self { case .left: return "arrow.left"; case .right: return "arrow.right"; case .up: return "arrow.up" } }
+    /// The eight compass directions: four cardinals plus four diagonals.
+    private enum Dir: CaseIterable {
+        case up, down, left, right, upLeft, upRight, downLeft, downRight
+
+        /// Unit vector (screen coords: +y is down) used both to place the tell and to match a swipe.
+        var unit: CGSize {
+            let d = 1 / 2.0.squareRoot()
+            switch self {
+            case .up:        return .init(width: 0,  height: -1)
+            case .down:      return .init(width: 0,  height: 1)
+            case .left:      return .init(width: -1, height: 0)
+            case .right:     return .init(width: 1,  height: 0)
+            case .upLeft:    return .init(width: -d, height: -d)
+            case .upRight:   return .init(width: d,  height: -d)
+            case .downLeft:  return .init(width: -d, height: d)
+            case .downRight: return .init(width: d,  height: d)
+            }
+        }
+        var opposite: Dir {
+            switch self {
+            case .up: return .down;         case .down: return .up
+            case .left: return .right;      case .right: return .left
+            case .upLeft: return .downRight; case .downRight: return .upLeft
+            case .upRight: return .downLeft; case .downLeft: return .upRight
+            }
+        }
+        var symbol: String {
+            switch self {
+            case .up: return "arrow.up";               case .down: return "arrow.down"
+            case .left: return "arrow.left";           case .right: return "arrow.right"
+            case .upLeft: return "arrow.up.left";      case .upRight: return "arrow.up.right"
+            case .downLeft: return "arrow.down.left";  case .downRight: return "arrow.down.right"
+            }
+        }
+        var word: String {
+            switch self {
+            case .up: return "up";              case .down: return "down"
+            case .left: return "left";          case .right: return "right"
+            case .upLeft: return "up-left";     case .upRight: return "up-right"
+            case .downLeft: return "down-left"; case .downRight: return "down-right"
+            }
+        }
     }
 
-    @State private var lunge: (dir: Dir, born: Date)?
+    private enum Stage { case waiting, lunge, slideBack }
+
+    @State private var stage: Stage = .waiting
+    @State private var dir: Dir = .right
+    @State private var stageBorn = Date()
     @State private var sinceLunge: Double = 0
     @State private var lastTick = Date()
     @State private var counterFlash = false
+    @State private var bonusFlash = false
     @State private var missFlash = false
 
     private let tick = Timer.publish(every: 0.033, on: .main, in: .common).autoconnect()
     private var window: Double { ctx.params.targetLifetime * 1.15 }
+    /// Short, snappy window to slide back for the bonus — you have to be quick.
+    private var slideBackWindow: Double { max(0.55, window * 0.6) }
     private var cadence: Double { ctx.params.spawnInterval * (ctx.enraged ? 1.1 : 1.7) }
+
+    /// The direction the player must swipe *right now* (the lunge itself, or its opposite to slide back).
+    private var prompt: Dir { stage == .slideBack ? dir.opposite : dir }
 
     var body: some View {
         GeometryReader { geo in
@@ -382,15 +434,18 @@ struct SwipeDodgeRoom: View {
                     RaidBossView(boss: boss, hpFraction: ctx.bossHPFraction, enraged: ctx.enraged,
                                  hitToken: ctx.hitToken, size: side * 0.6)
                         .position(x: geo.size.width / 2, y: geo.size.height * 0.44)
-                        .scaleEffect(lunge != nil ? 1.06 : 1)
-                        .animation(.easeInOut(duration: 0.2), value: lunge != nil)
+                        .scaleEffect(stage != .waiting ? 1.06 : 1)
+                        .animation(.easeInOut(duration: 0.2), value: stage != .waiting)
                 }
 
-                if let l = lunge {
-                    let remaining = max(0, 1 - Date().timeIntervalSince(l.born) / window)
-                    LungeTell(dir: l.dir.symbol, remaining: remaining,
-                              offset: CGSize(width: l.dir.vector.width * side * 0.32,
-                                             height: l.dir.vector.height * side * 0.32))
+                if stage != .waiting {
+                    let born = stageBorn
+                    let span = stage == .slideBack ? slideBackWindow : window
+                    let remaining = max(0, 1 - Date().timeIntervalSince(born) / span)
+                    LungeTell(dir: prompt.symbol, remaining: remaining,
+                              slideBack: stage == .slideBack, tint: ctx.tint,
+                              offset: CGSize(width: prompt.unit.width * side * 0.32,
+                                             height: prompt.unit.height * side * 0.32))
                         .position(x: geo.size.width / 2, y: geo.size.height * 0.44)
                 }
 
@@ -400,15 +455,22 @@ struct SwipeDodgeRoom: View {
                         .position(x: geo.size.width / 2, y: geo.size.height * 0.16)
                         .transition(.scale.combined(with: .opacity))
                 }
+                if bonusFlash {
+                    Text("+\(Balance.raidSwipeSlideBackDamage) COUNTER!")
+                        .font(.system(size: 28, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.yellow).shadow(color: .black.opacity(0.5), radius: 3)
+                        .position(x: geo.size.width / 2, y: geo.size.height * 0.16)
+                        .transition(.scale.combined(with: .opacity))
+                }
                 if missFlash {
                     RoundedRectangle(cornerRadius: 22).stroke(Color.red, lineWidth: 5).transition(.opacity)
                 }
 
                 VStack {
                     Spacer()
-                    Text(lunge == nil ? "Watch for the lunge…" : "Swipe \(swipeWord)!")
+                    Text(promptText)
                         .font(.subheadline.weight(.bold))
-                        .foregroundStyle(lunge == nil ? Color.secondary : Color.white)
+                        .foregroundStyle(stage == .waiting ? Color.secondary : (stage == .slideBack ? .yellow : .white))
                         .padding(.bottom, 12)
                 }
             }
@@ -420,24 +482,42 @@ struct SwipeDodgeRoom: View {
         .onAppear { lastTick = Date() }
     }
 
-    private var swipeWord: String {
-        switch lunge?.dir { case .left: return "left"; case .right: return "right"; case .up: return "up"; case nil: return "" }
+    private var promptText: String {
+        switch stage {
+        case .waiting:   return "Watch for the lunge…"
+        case .lunge:     return "Swipe \(prompt.word)!"
+        case .slideBack: return "Slide back \(prompt.word)!"
+        }
+    }
+
+    /// The eight-way swipe classifier: pick the compass direction the drag points most toward, then
+    /// check it matches what's being asked. A short flick is ignored (`minimumDistance` gates that).
+    private func swiped(_ swipe: CGSize) -> Dir? {
+        let len = hypot(swipe.width, swipe.height)
+        guard len > 0 else { return nil }
+        let sx = swipe.width / len, sy = swipe.height / len
+        return Dir.allCases.max { a, b in
+            (sx * a.unit.width + sy * a.unit.height) < (sx * b.unit.width + sy * b.unit.height)
+        }
     }
 
     private func resolve(swipe: CGSize) {
-        guard ctx.running, let l = lunge else { return }
-        let horizontal = abs(swipe.width) > abs(swipe.height)
-        let matched: Bool
-        switch l.dir {
-        case .left:  matched = horizontal && swipe.width < 0
-        case .right: matched = horizontal && swipe.width > 0
-        case .up:    matched = !horizontal && swipe.height < 0
-        }
-        if matched {
-            lunge = nil; sinceLunge = 0
-            counterFlash = true
-            withAnimation(.easeOut(duration: 0.4)) { counterFlash = false }
+        guard ctx.running, stage != .waiting else { return }
+        guard swiped(swipe) == prompt else { return }   // wrong way: no-op (only a lapsed lunge hurts)
+        if stage == .lunge {
+            // Sidestep landed: base counter, then open the slide-back window.
+            withAnimation(.easeOut(duration: 0.15)) { counterFlash = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { withAnimation { counterFlash = false } }
             ctx.onSuccess()
+            stage = .slideBack
+            stageBorn = Date()
+        } else {
+            // Slid back in time: heavy follow-up, then reset the cadence.
+            withAnimation(.easeOut(duration: 0.15)) { bonusFlash = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { withAnimation { bonusFlash = false } }
+            ctx.onProgress(Balance.raidSwipeSlideBackDamage)
+            stage = .waiting
+            sinceLunge = 0
         }
     }
 
@@ -446,20 +526,28 @@ struct SwipeDodgeRoom: View {
         let dt = min(0.15, now.timeIntervalSince(lastTick))
         lastTick = now
         guard ctx.running else { return }
-        if let l = lunge {
-            if now.timeIntervalSince(l.born) >= window {
-                lunge = nil; sinceLunge = 0
-                missFlash = true
-                withAnimation(.easeOut(duration: 0.35)) { missFlash = false }
+        switch stage {
+        case .lunge:
+            if now.timeIntervalSince(stageBorn) >= window {
+                stage = .waiting; sinceLunge = 0
+                withAnimation(.easeOut(duration: 0.15)) { missFlash = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { withAnimation { missFlash = false } }
                 ctx.onMistake()
             }
-            return
-        }
-        sinceLunge += dt
-        if sinceLunge >= cadence {
-            sinceLunge = 0
-            withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
-                lunge = (Dir.allCases.randomElement()!, now)
+        case .slideBack:
+            // Missing the slide-back only forfeits the bonus — no heart lost.
+            if now.timeIntervalSince(stageBorn) >= slideBackWindow {
+                stage = .waiting; sinceLunge = 0
+            }
+        case .waiting:
+            sinceLunge += dt
+            if sinceLunge >= cadence {
+                sinceLunge = 0
+                withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
+                    dir = Dir.allCases.randomElement()!
+                    stage = .lunge
+                    stageBorn = now
+                }
             }
         }
     }
@@ -468,13 +556,16 @@ struct SwipeDodgeRoom: View {
 private struct LungeTell: View {
     let dir: String
     let remaining: Double
+    var slideBack: Bool = false
+    var tint: Color = .red
     let offset: CGSize
     var body: some View {
+        let ring = slideBack ? Color.yellow : Color.red
         ZStack {
-            Circle().stroke(Color.red.opacity(0.9), lineWidth: 5)
+            Circle().stroke(ring.opacity(0.9), lineWidth: 5)
                 .scaleEffect(0.6 + remaining * 0.8).frame(width: 130, height: 130)
             Image(systemName: dir).font(.system(size: 44, weight: .black))
-                .foregroundStyle(.white).shadow(color: .red, radius: 6)
+                .foregroundStyle(.white).shadow(color: ring, radius: 6)
                 .offset(offset)
         }
     }
@@ -1002,7 +1093,7 @@ struct SequenceRoom: View {
             inputIndex += 1
             if inputIndex >= pattern.count {
                 phase = .right
-                ctx.onSuccess()
+                ctx.onProgress(Int.random(in: Balance.raidMemoryCodeDamageRange))  // a clean recall hits for 1–3
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { if ctx.running { newRound() } }
             }
         } else {
@@ -1386,19 +1477,28 @@ private struct VentTube: View {
 struct PathTraceRoom: View {
     let ctx: RaidRoomContext
 
+    /// The token always starts here (bottom-centre) so a fresh path never inherits a stale cursor
+    /// position from the previous one.
+    private static let startPoint = CGPoint(x: 0.5, y: 0.9)
+
     @State private var waypoints: [CGPoint] = []
     @State private var current = 1
-    @State private var token = CGPoint(x: 0.5, y: 0.9)
+    @State private var token = PathTraceRoom.startPoint
+    @State private var grabbing = false
     @State private var strayUntil = Date.distantPast
     @State private var strayFlash = false
     @State private var started = false
 
     private var corridorHalf: CGFloat { max(0.09, CGFloat(ctx.params.sweetHalfWidth) * 2.0) }
     private let reachR: CGFloat = 0.075
+    /// How close a touch must land to the token to pick it up. Generous, so grabbing is easy.
+    private let grabR: CGFloat = 0.13
 
     var body: some View {
         VStack(spacing: 12) {
-            Text(strayFlash ? "Off the trail!" : "Trace the path — keep inside the corridor")
+            Text(strayFlash ? "Off the trail!"
+                            : (grabbing ? "Trace the path — keep inside the corridor"
+                                        : "Grab the loot, then trace the path"))
                 .font(.headline.weight(.bold))
                 .foregroundStyle(strayFlash ? Color.red : Color.secondary)
                 .contentTransition(.opacity)
@@ -1429,8 +1529,11 @@ struct PathTraceRoom: View {
                             .position(pt(w, sz))
                             .shadow(color: idx == current ? ctx.tint.opacity(0.8) : .clear, radius: 6)
                     }
-                    // Token
+                    // Token — pulses a "grab me" ring until it's picked up.
                     ZStack {
+                        if !grabbing {
+                            Circle().stroke(.white.opacity(0.7), lineWidth: 2).frame(width: 46, height: 46)
+                        }
                         Circle().fill(LinearGradient(colors: [.yellow, .orange], startPoint: .top, endPoint: .bottom))
                             .frame(width: 30, height: 30)
                         Image(systemName: "bag.fill").font(.system(size: 13, weight: .bold)).foregroundStyle(.brown)
@@ -1442,13 +1545,21 @@ struct PathTraceRoom: View {
                 .contentShape(Rectangle())
                 .gesture(
                     DragGesture(minimumDistance: 0)
+                        // The token only ever moves under a deliberate click-and-drag that *grabs* it
+                        // first, so a screen shake or a stray touch can never nudge the cursor off the
+                        // trail and cost a life.
                         .onChanged { v in
                             guard ctx.running else { return }
                             let u = CGPoint(x: min(1, max(0, v.location.x / sz.width)),
                                             y: min(1, max(0, v.location.y / sz.height)))
+                            if !grabbing {
+                                guard hypot(u.x - token.x, u.y - token.y) <= grabR else { return }
+                                grabbing = true
+                            }
                             token = u
                             evaluate(u)
                         }
+                        .onEnded { _ in grabbing = false }
                 )
             }
             .frame(maxWidth: 460)
@@ -1456,7 +1567,7 @@ struct PathTraceRoom: View {
         }
         .padding(16)
         .raidPanel(ctx.tint)
-        .onAppear { if !started { started = true; regenerate(startNear: token) } }
+        .onAppear { if !started { started = true; regenerate() } }
     }
 
     private func pt(_ u: CGPoint, _ sz: CGSize) -> CGPoint {
@@ -1469,7 +1580,7 @@ struct PathTraceRoom: View {
         if hypot(u.x - target.x, u.y - target.y) < reachR {
             ctx.onSuccess()
             current += 1
-            if current >= waypoints.count { regenerate(startNear: target) }
+            if current >= waypoints.count { regenerate() }   // fresh path: cursor resets, must re-grab
             return
         }
         // Stray check against the active segment
@@ -1486,18 +1597,28 @@ struct PathTraceRoom: View {
         }
     }
 
-    private func regenerate(startNear: CGPoint) {
-        let n = max(4, min(7, 3 + ctx.params.sequenceLength))
-        var pts: [CGPoint] = [CGPoint(x: startNear.x, y: 0.9)]
-        let step = 0.78 / CGFloat(n - 1)
+    /// Lay out a fresh, **randomly shaped** corridor from the bottom-centre start upward. Each path
+    /// varies in length and in the horizontal swing of every waypoint, so no two traces are alike —
+    /// while guaranteeing real bends (adjacent waypoints stay far enough apart to form a segment).
+    private func regenerate() {
+        let n = Int.random(in: 4...7)
+        var pts: [CGPoint] = [PathTraceRoom.startPoint]
+        var lastX = PathTraceRoom.startPoint.x
         for i in 1..<n {
-            let y = 0.9 - step * CGFloat(i)
-            let x: CGFloat = i % 2 == 0 ? 0.7 : 0.3
-            pts.append(CGPoint(x: x + CGFloat.random(in: -0.05...0.05), y: y))
+            let baseY = 0.9 - 0.78 * CGFloat(i) / CGFloat(n - 1)
+            let y = min(0.9, max(0.08, baseY + CGFloat.random(in: -0.04...0.04)))
+            var x = CGFloat.random(in: 0.15...0.85)
+            if abs(x - lastX) < 0.28 {   // force a genuine bend
+                x = lastX <= 0.5 ? min(0.85, lastX + CGFloat.random(in: 0.3...0.5))
+                                 : max(0.15, lastX - CGFloat.random(in: 0.3...0.5))
+            }
+            pts.append(CGPoint(x: x, y: y))
+            lastX = x
         }
         waypoints = pts
         current = 1
         token = pts[0]
+        grabbing = false
     }
 
     private func distToSegment(_ p: CGPoint, _ a: CGPoint, _ b: CGPoint) -> CGFloat {
@@ -1627,6 +1748,9 @@ struct SortRoom: View {
     @State private var lastTick = Date()
     @State private var flash: Side?
     @State private var started = false
+    /// The countdown stays frozen until the player makes their first sort, so entering the room
+    /// gives them a beat to read the board instead of instantly bleeding a life.
+    @State private var timing = false
 
     private let tick = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
     private var deadline: Double { max(1.1, ctx.params.targetLifetime * 1.6 * (ctx.enraged ? 0.75 : 1)) }
@@ -1648,7 +1772,7 @@ struct SortRoom: View {
             // Front item with deadline ring
             ZStack {
                 TimelineView(.periodic(from: .now, by: 1.0 / 30.0)) { tl in
-                    let left = max(0, 1 - tl.date.timeIntervalSince(frontStart) / deadline)
+                    let left = timing ? max(0, 1 - tl.date.timeIntervalSince(frontStart) / deadline) : 1
                     Circle()
                         .trim(from: 0, to: left)
                         .stroke(left < 0.3 ? Color.red : ctx.tint,
@@ -1673,7 +1797,7 @@ struct SortRoom: View {
         .raidPanel(ctx.tint)
         .onAppear { if !started { started = true; fill(); frontStart = Date() } }
         .onReceive(tick) { _ in
-            guard ctx.running, !queue.isEmpty else { return }
+            guard ctx.running, timing, !queue.isEmpty else { return }
             if Date().timeIntervalSince(frontStart) >= deadline {
                 registerWrong()
                 advance()
@@ -1722,6 +1846,7 @@ struct SortRoom: View {
 
     private func choose(_ side: Side) {
         guard ctx.running, let front = queue.first else { return }
+        timing = true   // first decision arms the countdown for every item that follows
         let correct = (side == .altar && front.ripe) || (side == .pit && !front.ripe)
         withAnimation(.easeOut(duration: 0.1)) { flash = side }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) { flash = nil }
