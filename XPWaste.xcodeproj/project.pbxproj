@@ -12,6 +12,7 @@
 		08E2D460EFF8306ACE0F5E7D /* BoostsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57DBBD080CB70CC277CDB776 /* BoostsView.swift */; };
 		1123A028DC53614B772BD733 /* sfx_levelup.wav in Resources */ = {isa = PBXBuildFile; fileRef = CC42ECEAB09BB2DFA52348F3 /* sfx_levelup.wav */; };
 		1B016D853D344ACEEF19BEAD /* GameState+Rewards.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC65032C570084FABF084B0A /* GameState+Rewards.swift */; };
+		25DD03CFE7431658A5291465 /* Fireworks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FD27E837244924CB7ECDEB3 /* Fireworks.swift */; };
 		345A5AACD943F47046304F33 /* RaidRooms.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED8CB701D908F7D871C2AA42 /* RaidRooms.swift */; };
 		3EC3B8B37F118C12BFA96869 /* sfx_supercharge.wav in Resources */ = {isa = PBXBuildFile; fileRef = 68F7EDB17BC84F7AA4F6F609 /* sfx_supercharge.wav */; };
 		4CD930F2481D373399C70C87 /* SkillBuff.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA92635CDC1688C41F943B2E /* SkillBuff.swift */; };
@@ -63,6 +64,7 @@
 		6F1E617FFBFCCBCF831CB747 /* RaidPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaidPlan.swift; sourceTree = "<group>"; };
 		7E4257F5FE849B93235C6A28 /* RaidsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaidsView.swift; sourceTree = "<group>"; };
 		7F29F2538DC2225317947196 /* sfx_energycell.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_energycell.wav; sourceTree = "<group>"; };
+		7FD27E837244924CB7ECDEB3 /* Fireworks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fireworks.swift; sourceTree = "<group>"; };
 		852367EAB33B20BA0A578E99 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		9882C06F47069BFA64F36A2C /* sfx_ui.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_ui.wav; sourceTree = "<group>"; };
 		A234E12FEEC3048572025502 /* SkillID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillID.swift; sourceTree = "<group>"; };
@@ -97,6 +99,7 @@
 				57DBBD080CB70CC277CDB776 /* BoostsView.swift */,
 				852367EAB33B20BA0A578E99 /* Components.swift */,
 				FA96A9E450290E6AF30F8D6B /* DiaryView.swift */,
+				7FD27E837244924CB7ECDEB3 /* Fireworks.swift */,
 				2361CABEB8A5D1333D07C294 /* HomeView.swift */,
 				E9B478FD59A22ADAC0A2ABCF /* OnboardingView.swift */,
 				3B8CFFB057F699F0E02891E7 /* RaidBossArt.swift */,
@@ -262,6 +265,7 @@
 				08E2D460EFF8306ACE0F5E7D /* BoostsView.swift in Sources */,
 				9E70423FFD34C8AB1E7D2FBB /* Components.swift in Sources */,
 				FC7C2EE1837B6828266F779C /* DiaryView.swift in Sources */,
+				25DD03CFE7431658A5291465 /* Fireworks.swift in Sources */,
 				1B016D853D344ACEEF19BEAD /* GameState+Rewards.swift in Sources */,
 				E5FBF22C0C1BC0EE4B7A9ABE /* GameState.swift in Sources */,
 				E6AD469C44B797FE347F5FC3 /* HomeView.swift in Sources */,

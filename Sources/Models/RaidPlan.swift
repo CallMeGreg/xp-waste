@@ -22,7 +22,7 @@ enum RaidRoomKind: String {
     // Gathering — The Expedition
     case recognition  // tap the *called* resource among decoys
     case mash         // rapid-tap to overpower the haul — but freeze on the thrash
-    case sort         // route each streaming offering to the correct side
+    case sort         // route each streaming haul to its matching bin: fish, logs or ore
 
     /// The core verb shown on room-intro cards and the raid preview.
     var verb: String {
@@ -38,7 +38,7 @@ enum RaidRoomKind: String {
         case .memory:      return "Repeat the pattern"
         case .recognition: return "Gather the called"
         case .mash:        return "Haul it in"
-        case .sort:        return "Sort the offerings"
+        case .sort:        return "Sort the haul"
         }
     }
 
@@ -215,7 +215,7 @@ extension SkillCategory {
                 RaidRoom(id: 1, title: "The River Serpent", kind: .mash, boss: .serpent,
                          objectiveNoun: "Boss HP", objective: "Hammer the haul — but freeze the instant it thrashes"),
                 RaidRoom(id: 2, title: "The Grove Colossus", kind: .sort, boss: .colossus,
-                         objectiveNoun: "Boss HP", objective: "Send each offering to its side — ripe or rot"),
+                         objectiveNoun: "Boss HP", objective: "Sort the haul to its bin — fish, logs or ore"),
             ]
         }
     }

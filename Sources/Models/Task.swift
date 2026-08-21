@@ -144,6 +144,7 @@ enum TaskTrigger: Hashable {
     case refund         // Thieving refunded a coupon or Energy Cell
     case combo          // the Agility combo multiplier advanced
     case currency       // a consumable balance (coupons) changed
+    case raid           // a raid finished (cleared, or cleared flawlessly)
 }
 
 /// Stable string keys for the lifetime tallies the reward engine keeps. Kept as raw strings so
@@ -520,11 +521,11 @@ enum TaskCatalog {
         Task(id: "comp.maxcape", diary: .completionist, tier: .master,
              title: "Max Cape", detail: "Reach level 99 in all 23 skills.",
              goal: SkillID.allCases.count, triggers: [.levelUp]) { $0.maxedSkillCount },
-        Task(id: "comp.eternal", diary: .completionist, tier: .master,
-             title: "Eternal", detail: "Reach the 200M XP ceiling in any skill.",
-             goal: 1, triggers: [.levelUp]) { $0.maxXPSkillCount },
-        Task(id: "comp.truecomp", diary: .completionist, tier: .grandmaster,
-             title: "True Completionist", detail: "Reach 200M XP in every skill.",
-             goal: SkillID.allCases.count, triggers: [.levelUp]) { $0.maxXPSkillCount }
+        Task(id: "comp.flawlessraid", diary: .completionist, tier: .master,
+             title: "Untouchable", detail: "Complete a raid flawlessly — no hearts lost.",
+             goal: 1, triggers: [.raid]) { $0.flawlessRaidCount },
+        Task(id: "comp.allflawless", diary: .completionist, tier: .grandmaster,
+             title: "Flawless Conqueror", detail: "Complete all four raids flawlessly.",
+             goal: SkillCategory.allCases.count, triggers: [.raid]) { $0.flawlessRaidCount }
     ]
 }

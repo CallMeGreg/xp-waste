@@ -1731,22 +1731,26 @@ struct MashRoom: View {
     }
 }
 
-// MARK: - Sort — route the Grove Colossus's harvest: ripe to the altar, rotten to the pit
+// MARK: - Sort — route the Expedition's haul: fish, logs and ore each to their own bin
 
 struct SortRoom: View {
     let ctx: RaidRoomContext
 
+    /// The three haul families streaming off the Expedition — each sorted to its own colour-coded
+    /// bin. The families, their four tiered species (shrimp → shark, oak → yew, tin → gold) and all
+    /// the item art live in `Artwork.swift`.
+    private typealias Haul = HaulFamily
+
     private struct Item: Identifiable {
         let id = UUID()
-        let ripe: Bool
-        let icon: String
+        let species: HaulSpecies
+        var kind: Haul { species.family }
     }
-    private enum Side { case altar, pit }
 
     @State private var queue: [Item] = []
     @State private var frontStart = Date()
     @State private var lastTick = Date()
-    @State private var flash: Side?
+    @State private var flash: Haul?
     @State private var started = false
     /// The countdown stays frozen until the player makes their first sort, so entering the room
     /// gives them a beat to read the board instead of instantly bleeding a life.
@@ -1754,8 +1758,12 @@ struct SortRoom: View {
 
     private let tick = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
     private var deadline: Double { max(1.1, ctx.params.targetLifetime * 1.6 * (ctx.enraged ? 0.75 : 1)) }
-    private let ripeIcons = ["leaf.fill", "carrot.fill", "tree.fill"]
-    private let rotIcons = ["ant.fill", "flame.fill", "smoke.fill"]
+    #if DEBUG
+    /// `SORT_DEMO=1` self-sorts each haul into its correct bin on a cadence, so the room can be
+    /// recorded playing itself for deterministic capture. Never runs in release.
+    @State private var demoLast = Date()
+    private var demoMode: Bool { ProcessInfo.processInfo.environment["SORT_DEMO"] == "1" }
+    #endif
 
     var body: some View {
         VStack(spacing: 14) {
@@ -1786,17 +1794,23 @@ struct SortRoom: View {
             }
             .frame(height: 150)
 
-            // Bins
-            HStack(spacing: 18) {
-                bin(.altar)
-                bin(.pit)
+            // Bins — one per haul kind
+            HStack(spacing: 12) {
+                ForEach(Haul.allCases, id: \.self) { bin($0) }
             }
-            .frame(maxWidth: 360)
+            .frame(maxWidth: 380)
         }
         .padding(16)
         .raidPanel(ctx.tint)
         .onAppear { if !started { started = true; fill(); frontStart = Date() } }
         .onReceive(tick) { _ in
+            #if DEBUG
+            if demoMode, ctx.running, let front = queue.first, Date().timeIntervalSince(demoLast) > 0.85 {
+                demoLast = Date()
+                choose(front.kind)   // auto-sort correctly for capture
+                return
+            }
+            #endif
             guard ctx.running, timing, !queue.isEmpty else { return }
             if Date().timeIntervalSince(frontStart) >= deadline {
                 registerWrong()
@@ -1806,29 +1820,28 @@ struct SortRoom: View {
     }
 
     private func itemChip(_ item: Item, size: CGFloat, dim: Bool) -> some View {
-        let color: Color = item.ripe ? .green : Color(red: 0.55, green: 0.36, blue: 0.72)
+        let color = item.kind.color
         return ZStack {
             RoundedRectangle(cornerRadius: size * 0.24)
-                .fill(color.opacity(dim ? 0.28 : 0.9))
+                .fill(color.opacity(dim ? 0.14 : 0.24))
             RoundedRectangle(cornerRadius: size * 0.24)
-                .strokeBorder(color.opacity(dim ? 0.4 : 1), lineWidth: 2)
-            Image(systemName: item.icon)
-                .font(.system(size: size * 0.42, weight: .bold))
-                .foregroundStyle(dim ? color : .white)
+                .strokeBorder(color.opacity(dim ? 0.5 : 1), lineWidth: dim ? 1.5 : 3)
+            HaulSpeciesArt(species: item.species, size: size * 0.74)
+                .opacity(dim ? 0.85 : 1)
         }
         .frame(width: size, height: size)
+        .accessibilityLabel(item.species.name)
     }
 
-    private func bin(_ side: Side) -> some View {
-        let isAltar = side == .altar
-        let color: Color = isAltar ? .green : Color(red: 0.55, green: 0.36, blue: 0.72)
+    private func bin(_ kind: Haul) -> some View {
+        let color = kind.color
         return Button {
-            choose(side)
+            choose(kind)
         } label: {
             VStack(spacing: 6) {
-                Image(systemName: isAltar ? "sparkles" : "trash.fill")
-                    .font(.system(size: 30, weight: .bold))
-                Text(isAltar ? "Altar · ripe" : "Pit · rotten")
+                Image(systemName: kind.binIcon)
+                    .font(.system(size: 26, weight: .bold))
+                Text(kind.label)
                     .font(.caption.weight(.bold))
             }
             .foregroundStyle(.white)
@@ -1836,19 +1849,20 @@ struct SortRoom: View {
             .frame(height: 84)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(color.opacity(flash == side ? 0.95 : 0.6))
+                    .fill(color.opacity(flash == kind ? 0.95 : 0.6))
             )
             .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.white.opacity(0.2), lineWidth: 2))
-            .scaleEffect(flash == side ? 1.04 : 1)
+            .scaleEffect(flash == kind ? 1.04 : 1)
         }
         .buttonStyle(PressableStyle(scale: 0.95))
+        .accessibilityLabel("\(kind.label) bin")
     }
 
-    private func choose(_ side: Side) {
+    private func choose(_ kind: Haul) {
         guard ctx.running, let front = queue.first else { return }
         timing = true   // first decision arms the countdown for every item that follows
-        let correct = (side == .altar && front.ripe) || (side == .pit && !front.ripe)
-        withAnimation(.easeOut(duration: 0.1)) { flash = side }
+        let correct = front.kind == kind
+        withAnimation(.easeOut(duration: 0.1)) { flash = kind }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) { flash = nil }
         if correct {
             ctx.onSuccess()
@@ -1859,7 +1873,7 @@ struct SortRoom: View {
     }
 
     private func registerWrong() {
-        ctx.onMistake()   // a mis-sorted offering — or a lapsed deadline — costs a heart
+        ctx.onMistake()   // a mis-sorted haul — or a lapsed deadline — costs a heart
     }
 
     private func advance() {
@@ -1870,8 +1884,7 @@ struct SortRoom: View {
 
     private func fill() {
         while queue.count < 6 {
-            let ripe = Bool.random()
-            queue.append(Item(ripe: ripe, icon: (ripe ? ripeIcons : rotIcons).randomElement()!))
+            queue.append(Item(species: HaulSpecies.allCases.randomElement()!))
         }
     }
 }

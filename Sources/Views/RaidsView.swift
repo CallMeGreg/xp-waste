@@ -136,10 +136,6 @@ private struct RaidCard: View {
         let available = game.isRaidAvailableToday(group)
         let lamps = game.lamps(for: group)
         let rooms = group.raidRooms(tier: tier)
-        // Distinct tiers present, best first, so mixed-tier inventories read clearly.
-        let lampsByTier = Dictionary(grouping: lamps, by: { $0.tier })
-            .map { (tier: $0.key, count: $0.value.count) }
-            .sorted { $0.tier > $1.tier }
 
         return VStack(alignment: .leading, spacing: 12) {
             // Title row
@@ -180,55 +176,63 @@ private struct RaidCard: View {
                 XPProgressBar(progress: game.raidTierProgress(group), tint: group.raidTint, height: 6)
             }
 
-            // Actions
-            Button(action: onRaid) {
-                Label(available ? "Raid" : "Raided today", systemImage: available ? "play.fill" : "checkmark")
-                    .font(.subheadline.weight(.bold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 11)
-                    .background(available ? group.raidTint : Color.white.opacity(0.08),
-                                in: RoundedRectangle(cornerRadius: 12))
-                    .foregroundStyle(available ? .white : .secondary)
-            }
-            .buttonStyle(PressableStyle(scale: 0.97))
-            .disabled(!available)
-
-            // Lamp inventory — one chip per tier, color-coded so multiple tiers are distinguishable —
-            // above a prominent "Use Lamps" button matching the Diary tab's affordance.
-            if !lamps.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        ForEach(lampsByTier, id: \.tier) { entry in
-                            lampChip(tier: entry.tier, count: entry.count)
+            // Actions — raid while available; once raided, the same slot becomes a tappable grey card
+            // routing to the Shop's Raid Refresh (replacing the old dead-end "Raided today" label).
+            if available {
+                Button(action: onRaid) {
+                    Label("Raid", systemImage: "play.fill")
+                        .font(.subheadline.weight(.bold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(group.raidTint, in: RoundedRectangle(cornerRadius: 12))
+                        .foregroundStyle(.white)
+                }
+                .buttonStyle(PressableStyle(scale: 0.97))
+            } else {
+                Button { selectTab(.shop) } label: {
+                    HStack(spacing: 11) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 30, height: 30)
+                            .background(Color.white.opacity(0.08), in: Circle())
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Raided today")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(.primary)
+                            Text("Buy a refresh in the Shop")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 0)
+                        Image(systemName: "chevron.right")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.secondary)
                     }
-                    Button(action: onApply) {
-                        Text("Use Lamps")
-                            .font(.subheadline.weight(.bold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 11)
-                            .background(Color.rewardToken, in: RoundedRectangle(cornerRadius: 12))
-                            .foregroundStyle(Color.rewardTokenText)
-                    }
-                    .buttonStyle(PressableStyle(scale: 0.98))
-                    .accessibilityLabel("Use \(lamps.count) \(group.rawValue) lamps")
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 10)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.white.opacity(0.12)))
+                    .contentShape(RoundedRectangle(cornerRadius: 12))
                 }
+                .buttonStyle(PressableStyle(scale: 0.98))
+                .accessibilityLabel("Raided today. Buy a refresh in the Shop.")
             }
 
-            if !available {
-                // Attempted today — point players at the Shop's Raid Refresh instead of a dead end.
-                Button { selectTab(.shop) } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.clockwise")
-                        Text("Raided today — buy a refresh in the Shop")
-                    }
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(group.raidTint)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
+            // Spend banked lamps. The per-tier preview now lives inside the sheet (where tiers can be
+            // picked); the overview just offers the entry point.
+            if !lamps.isEmpty {
+                Button(action: onApply) {
+                    Text("Use Lamps")
+                        .font(.subheadline.weight(.bold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(Color.rewardToken, in: RoundedRectangle(cornerRadius: 12))
+                        .foregroundStyle(Color.rewardTokenText)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressableStyle(scale: 0.98))
+                .accessibilityLabel("Use \(lamps.count) \(group.rawValue) lamps")
             }
         }
         .padding(14)
@@ -258,19 +262,6 @@ private struct RaidCard: View {
             Spacer(minLength: 0)
         }
         .accessibilityLabel("\(rooms.count) rooms ending in a boss")
-    }
-
-    /// A tier-colored lamp count chip (e.g. a Rune lamp reads runite-colored, an Iron lamp iron-colored).
-    private func lampChip(tier: Int, count: Int) -> some View {
-        let c = SkillCategory.raidTierColor(tier)
-        return HStack(spacing: 4) {
-            ArtworkView(art: .vector(.genieLamp), size: 16, color: c)
-            Text("\(count)").font(.subheadline.weight(.bold)).monospacedDigit().foregroundStyle(c)
-        }
-        .padding(.horizontal, 9).padding(.vertical, 5)
-        .background(c.opacity(0.16), in: Capsule())
-        .overlay(Capsule().strokeBorder(c.opacity(0.45)))
-        .accessibilityLabel("\(count) \(SkillCategory.raidTierName(tier)) lamp\(count == 1 ? "" : "s")")
     }
 
     private func tierBadge(_ tier: Int) -> some View {
