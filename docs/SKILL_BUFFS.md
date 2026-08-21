@@ -30,7 +30,9 @@ buffValue(level) = at1 + (at99 − at1) × buffProgress(level, curve)
 ```
 
 `buffProgress` returns `0` at level 1 and `1` at level 99. Curves: `linear` (steady), `easeIn`
-(back-loaded, most payoff at high levels), `easeOut` (front-loaded). All v1 perks use `linear`.
+(back-loaded, most payoff at high levels), `easeOut` (front-loaded). Most perks use `linear`;
+**Attack's Accuracy uses `easeIn`** so its average-XP% rises gradually instead of spiking in the
+early levels.
 **Re-balancing any perk is a one-line change to its `at1`/`at99`/`curve`** — gameplay and view
 code never change.
 
@@ -42,7 +44,7 @@ Values below are **level 1 → level 99** (the full envelope). "Kind" is the `Bu
 
 | Skill | Perk | Kind | Lever (1 → 99) | Effect |
 |-------|------|------|-----------------|--------|
-| Attack ⚔️ | Accuracy | `accuracy` | bias `0 → 6` | Skews each tap's XP roll toward its **max hit** (fewer low rolls). |
+| Attack ⚔️ | Accuracy | `accuracy` | bias `0 → 6` (`easeIn`) | Skews each tap's XP roll toward its **max hit** (fewer low rolls); avg-XP% climbs gradually, not early. |
 | Strength 💪 | Power | `maxHit` | `×1.0 → ×2.0` | Raises the **ceiling** of the tap XP range (chance for bigger clicks). |
 | Defence 🛡️ | Guard | `minHit` | `×1.0 → ×1.75` | Raises the guaranteed **floor** of the tap XP range (clamped ≤ ceiling). |
 | Hitpoints ❤️ | Vitality | `energyRate` | `×1.0 → ×2.0` | Banks **more Supercharge Energy** each time a tap sparks a charge. |

@@ -143,7 +143,8 @@ enum Balance {
     /// in everything the game plays identically to before — perks are strictly additive as you level.
     static let buffScaling: [SkillID: BuffScaling] = [
         // Combat — shapes the active tap "hit"
-        .attack:       BuffScaling(at1: 0.0,   at99: 6.0),    // accuracy: roll-bias exponent (uniform → near-max)
+        .attack:       BuffScaling(at1: 0.0,   at99: 6.0, curve: .easeIn),  // accuracy: roll-bias exponent (uniform → near-max), back-loaded so the avg-XP% climbs gradually instead of spiking early
+
         .strength:     BuffScaling(at1: 1.0,   at99: 2.0),    // power: max-hit ceiling (× base method XP)
         .defence:      BuffScaling(at1: 1.0,   at99: 1.75),   // guard: min-hit floor (× base, clamped ≤ max)
         .hitpoints:    BuffScaling(at1: 1.0,   at99: 2.0),    // vitality: charge banked per tap-proc ×
