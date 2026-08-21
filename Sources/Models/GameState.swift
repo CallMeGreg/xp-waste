@@ -622,27 +622,38 @@ final class GameState: ObservableObject {
     // MARK: - Player actions
 
     /// Register a tap on a skill's trainable object. Returns the roll so the UI can animate it.
+    ///
+    /// `idle` marks an **automatic** tap (e.g. the Runecraft idle perk) rather than a deliberate one.
+    /// Idle taps still train the skill and can proc crits/caches/Energy, but are deliberately excluded
+    /// from every "tap" tally and the `.tap` trigger, so they can't complete manual-tap Diary Tasks —
+    /// they feed only their own dedicated idle-tap Tasks via the `.idleTap` trigger.
     @discardableResult
-    func tap(_ skill: SkillID) -> TapResult {
+    func tap(_ skill: SkillID, idle: Bool = false) -> TapResult {
         let result = rollTap(for: skill)
         addXP(Double(result.xp), to: skill)
         registerComboTap()
 
         // Diary bookkeeping: tally what this tap produced, then re-check the handful of
         // Tasks those events could have advanced.
-        var triggers: Set<TaskTrigger> = [.tap]
-        bumpCounter(TaskCounter.taps)
-        bumpCounter(TaskCounter.skillTaps(skill))          // per-skill tap tally (group tap Tasks)
+        var triggers: Set<TaskTrigger> = []
+        if idle {
+            bumpCounter(TaskCounter.idleTaps)
+            triggers.insert(.idleTap)
+        } else {
+            triggers.insert(.tap)
+            bumpCounter(TaskCounter.taps)
+            bumpCounter(TaskCounter.skillTaps(skill))      // per-skill tap tally (group tap Tasks)
+            // Taps landed *while* a buff is live — the basis for the Tycoon "tap while active" Tasks.
+            let boosted = isDoubleXPActive
+            let charged = isSupercharged(skill)
+            if boosted { bumpCounter(TaskCounter.boostTaps) }
+            if charged { bumpCounter(TaskCounter.superchargeTaps) }
+            if boosted, charged { bumpCounter(TaskCounter.stackedBursts) }
+        }
         if result.didCrit { bumpCounter(TaskCounter.crits); triggers.insert(.crit) }
         if result.gotCache { bumpCounter(TaskCounter.caches); triggers.insert(.cache) }
         if result.gotEnergy { bumpCounter(TaskCounter.energyProcs); triggers.insert(.energyProc) }
         if isEnergyFull(skill) { triggers.insert(.energyFull) }
-        // Taps landed *while* a buff is live — the basis for the Tycoon "tap while active" Tasks.
-        let boosted = isDoubleXPActive
-        let charged = isSupercharged(skill)
-        if boosted { bumpCounter(TaskCounter.boostTaps) }
-        if charged { bumpCounter(TaskCounter.superchargeTaps) }
-        if boosted, charged { bumpCounter(TaskCounter.stackedBursts) }
         raiseCounter(TaskCounter.bestComboBips, to: Int((comboMultiplier * 100).rounded()))
         if comboMultiplier > 1 { triggers.insert(.combo) }
         evaluateTasks(triggers)
@@ -1198,7 +1209,7 @@ final class GameState: ObservableObject {
             TaskCounter.energyCells: 3, TaskCounter.offlineReturns: 5,
             TaskCounter.refunds: 1, TaskCounter.bestComboBips: 128,
             TaskCounter.bestOfflineXP: 120_000, TaskCounter.stackedBursts: 1,
-            TaskCounter.levelUps: 140
+            TaskCounter.levelUps: 140, TaskCounter.idleTaps: 6_000
         ]
         seedCompleteSatisfiedTasks()
         // Screenshot hook: mark every group's raid as already spent today, so the Raids tab shows
@@ -1231,7 +1242,7 @@ final class GameState: ObservableObject {
             TaskCounter.energyCells: 12, TaskCounter.offlineReturns: 18,
             TaskCounter.refunds: 4, TaskCounter.bestComboBips: 150,
             TaskCounter.bestOfflineXP: 620_000, TaskCounter.stackedBursts: 3,
-            TaskCounter.levelUps: 700
+            TaskCounter.levelUps: 700, TaskCounter.idleTaps: 30_000
         ]
         slots = Array([SkillID.attack, .strength, .woodcutting, .fishing, .cooking].prefix(maxSlots))
         doubleXPCoupons = 6

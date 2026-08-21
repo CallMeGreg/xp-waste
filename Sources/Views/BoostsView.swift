@@ -129,7 +129,7 @@ private enum Spendable {
 
     var blurb: String {
         switch self {
-        case .coupon: return "Spend one to start a timed XP boost on every skill. Stock up with Tokens for back-to-back boosts."
+        case .coupon: return "Spend one to start a timed XP boost on every skill."
         case .cell:   return "Instantly fills the skill you're training to full Supercharge."
         }
     }

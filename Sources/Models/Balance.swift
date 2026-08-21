@@ -303,6 +303,13 @@ enum Balance {
     static let raidChargePerfectDamage: Int = 3   // Forge golem: a dead-centre release lands extra.
     /// A charge released within this fraction of the band's half-width counts as a *perfect* strike.
     static let raidChargePerfectFraction: Double = 0.4
+    /// Sand Beast: the base counter (swiping clear of a lunge) lands 1, but immediately sliding *back*
+    /// the opposite way inside the follow-up window lands this bonus on top — so a crisp two-beat
+    /// exchange hits hard and the room doesn't drag.
+    static let raidSwipeSlideBackDamage: Int = 2
+    /// Vault Warden: keying the memorised code back correctly lands a variable blow (a longer/cleaner
+    /// recall hits harder) instead of a flat 1.
+    static let raidMemoryCodeDamageRange: ClosedRange<Int> = 1...3
 
     /// The Smeltery's rhythm combo pays off precision: once the streak runs *hot* a perfect strike
     /// pours extra bars, so a maintained combo clears the room faster. Below the threshold — and on
