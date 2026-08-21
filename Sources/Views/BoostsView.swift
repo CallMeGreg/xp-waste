@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The Shop, unified around a single currency — **Tokens**. See your Token balance, **spend Tokens**
-/// to stock up on Boost Coupons and Energy Cells, and **buy Tokens** with real money. Tokens are also
+/// to stock up on Boost Coupons, Energy Cells, and Raid Refreshes, and **buy Tokens** with real money. Tokens are also
 /// earned by completing Tasks in the Diary, so the whole economy is one pouch of coins. XP Boosts are
 /// activated from the Skills tab, not here. See `docs/ACHIEVEMENTS.md`.
 struct BoostsView: View {
@@ -289,7 +289,7 @@ private struct GetTokensCard: View {
                 Text("Token Packs").font(.headline)
                 Spacer()
             }
-            Text("Top up your pouch to spend on Boost Coupons and Energy Cells.")
+            Text("Top up your pouch to spend on Boost Coupons, Energy Cells, and Raid Refreshes.")
                 .font(.footnote).foregroundStyle(.secondary)
 
             Divider().overlay(Color.white.opacity(0.08))
