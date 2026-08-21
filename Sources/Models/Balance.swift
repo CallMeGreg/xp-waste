@@ -278,7 +278,7 @@ enum Balance {
         case .memory:      return 3    // boss (×mult): rounds (each round is `sequenceLength` runes)
         case .recognition: return 14
         case .mash:        return 8    // boss (×mult): haul bars filled
-        case .sort:        return 12   // boss (×mult): offerings sent to the right side
+        case .sort:        return 12   // boss (×mult): hauls sorted into the right bin
         }
     }
 

@@ -628,3 +628,211 @@ enum Palette {
     static let emerald  = rgb(0.28, 0.72, 0.46)
     static let diamond  = rgb(0.86, 0.90, 0.96)
 }
+
+// MARK: - Grove Colossus haul art
+
+/// The three material families that stream off the Expedition's final boss. Each maps to one
+/// colour-coded sort bin and owns four tiered species, drawn as self-coloured mini-illustrations
+/// by `HaulSpeciesArt` so the sort stream shows real variety instead of one repeated glyph.
+enum HaulFamily: CaseIterable, Hashable {
+    case fish, logs, ore
+
+    /// The bin/border tint — the player sorts by matching this colour.
+    var color: Color {
+        switch self {
+        case .fish: return Color(red: 0.28, green: 0.66, blue: 0.88)   // water blue
+        case .logs: return Color(red: 0.66, green: 0.45, blue: 0.24)   // timber brown
+        case .ore:  return Color(red: 0.62, green: 0.65, blue: 0.72)   // ore steel
+        }
+    }
+    var label: String {
+        switch self {
+        case .fish: return "Fish"
+        case .logs: return "Logs"
+        case .ore:  return "Ore"
+        }
+    }
+    /// The bin's own glyph (a fish for the catch, a tree for the logs, a cube for the ore).
+    var binIcon: String {
+        switch self {
+        case .fish: return "fish.fill"
+        case .logs: return "tree.fill"
+        case .ore:  return "cube.fill"
+        }
+    }
+    /// The four tiered members, ordered basic → end-game (OSRS-faithful).
+    var species: [HaulSpecies] {
+        switch self {
+        case .fish: return [.shrimp, .sardine, .trout, .shark]
+        case .logs: return [.oak, .willow, .maple, .yew]
+        case .ore:  return [.tin, .coal, .silver, .gold]
+        }
+    }
+}
+
+/// One tiered haul item. Four per family, each a distinct illustration and tint so the boss's
+/// stream reads as shrimp → shark, oak → yew, tin → gold rather than a single repeated icon.
+enum HaulSpecies: CaseIterable, Hashable {
+    case shrimp, sardine, trout, shark
+    case oak, willow, maple, yew
+    case tin, coal, silver, gold
+
+    var family: HaulFamily {
+        switch self {
+        case .shrimp, .sardine, .trout, .shark: return .fish
+        case .oak, .willow, .maple, .yew:       return .logs
+        case .tin, .coal, .silver, .gold:       return .ore
+        }
+    }
+
+    /// Human-readable name (also the accessibility label for the item chip).
+    var name: String {
+        switch self {
+        case .shrimp: return "Shrimp";  case .sardine: return "Sardine"
+        case .trout:  return "Trout";   case .shark:   return "Shark"
+        case .oak:    return "Oak";     case .willow:  return "Willow"
+        case .maple:  return "Maple";   case .yew:     return "Yew"
+        case .tin:    return "Tin";     case .coal:    return "Coal"
+        case .silver: return "Silver";  case .gold:    return "Gold"
+        }
+    }
+
+    /// A gentle size ramp so higher tiers read as bigger hauls within their chip.
+    var scale: CGFloat {
+        switch self {
+        case .shrimp: return 0.80; case .sardine: return 0.84; case .trout: return 0.96; case .shark: return 1.08
+        case .oak:    return 1.00; case .willow:  return 1.00; case .maple: return 1.00; case .yew:   return 1.02
+        case .tin:    return 0.82; case .coal:    return 0.92; case .silver: return 0.96; case .gold: return 1.02
+        }
+    }
+}
+
+/// Draws a single `HaulSpecies` as a self-coloured, resolution-independent illustration in a
+/// normalized 0…1 design space. Uses `Canvas` so each part keeps its own colour (fish stripes,
+/// autumn canopies, gold vs silver ore veins) regardless of the chip tint behind it.
+struct HaulSpeciesArt: View {
+    let species: HaulSpecies
+    var size: CGFloat
+
+    var body: some View {
+        Canvas { ctx, sz in
+            let s = min(sz.width, sz.height)
+            let k = species.scale
+            // Map a normalized point, scaled about the centre so `scale` sizes the whole drawing.
+            func P(_ x: Double, _ y: Double) -> CGPoint {
+                CGPoint(x: (0.5 + (x - 0.5) * Double(k)) * s,
+                        y: (0.5 + (y - 0.5) * Double(k)) * s)
+            }
+            func poly(_ pts: [(Double, Double)]) -> Path {
+                var p = Path()
+                guard let f = pts.first else { return p }
+                p.move(to: P(f.0, f.1))
+                for pt in pts.dropFirst() { p.addLine(to: P(pt.0, pt.1)) }
+                p.closeSubpath()
+                return p
+            }
+            func ell(_ cx: Double, _ cy: Double, _ rx: Double, _ ry: Double) -> Path {
+                let a = P(cx - rx, cy - ry), b = P(cx + rx, cy + ry)
+                return Path(ellipseIn: CGRect(x: a.x, y: a.y, width: b.x - a.x, height: b.y - a.y))
+            }
+            func line(_ x0: Double, _ y0: Double, _ x1: Double, _ y1: Double) -> Path {
+                var p = Path(); p.move(to: P(x0, y0)); p.addLine(to: P(x1, y1)); return p
+            }
+            func fill(_ path: Path, _ col: Color) { ctx.fill(path, with: .color(col)) }
+            func stroke(_ path: Path, _ col: Color, _ w: Double) {
+                ctx.stroke(path, with: .color(col), style: StrokeStyle(lineWidth: w * Double(k) * s, lineCap: .round, lineJoin: .round))
+            }
+            func rgb(_ r: Double, _ g: Double, _ b: Double) -> Color { Color(red: r, green: g, blue: b) }
+            let ink = rgb(0.10, 0.12, 0.16)   // eyes / dark detail
+
+            switch species {
+
+            // MARK: Fish
+            case .sardine:
+                let body = rgb(0.72, 0.78, 0.84), dark = rgb(0.52, 0.60, 0.70)
+                fill(poly([(0.14, 0.50), (0.36, 0.40), (0.36, 0.60)]), dark)   // tail
+                fill(ell(0.56, 0.50, 0.30, 0.13), body)                         // slim body
+                fill(ell(0.56, 0.50, 0.30, 0.13).strokedPath(StrokeStyle(lineWidth: 0.012 * s)), dark) // outline
+                fill(ell(0.74, 0.47, 0.028, 0.028), ink)                        // eye
+            case .shrimp:
+                let coral = rgb(0.96, 0.55, 0.42), shell = rgb(0.88, 0.40, 0.34)
+                stroke(Path { p in p.addArc(center: P(0.50, 0.54), radius: 0.24 * Double(k) * s,
+                                            startAngle: .degrees(-25), endAngle: .degrees(205), clockwise: false) },
+                       coral, 0.17)                                             // curled body
+                fill(poly([(0.34, 0.30), (0.20, 0.16), (0.30, 0.34)]), shell)   // tail fan
+                fill(poly([(0.34, 0.30), (0.30, 0.14), (0.40, 0.30)]), shell)
+                for lx in [0.40, 0.50, 0.60] { stroke(line(lx, 0.70, lx - 0.02, 0.84), shell, 0.03) } // legs
+                stroke(line(0.70, 0.60, 0.90, 0.44), shell, 0.022)              // antenna
+                fill(ell(0.70, 0.62, 0.03, 0.03), ink)                          // eye
+            case .trout:
+                let body = rgb(0.46, 0.62, 0.50), dark = rgb(0.34, 0.48, 0.40), stripe = rgb(0.86, 0.46, 0.46)
+                fill(poly([(0.10, 0.52), (0.34, 0.36), (0.34, 0.68)]), dark)    // tail
+                fill(poly([(0.44, 0.34), (0.62, 0.34), (0.52, 0.20)]), dark)    // dorsal fin
+                fill(ell(0.54, 0.52, 0.33, 0.19), body)                          // body
+                fill(ell(0.52, 0.52, 0.22, 0.028), stripe)                       // lateral stripe
+                for sp in [(0.44, 0.46), (0.56, 0.58), (0.64, 0.48)] { fill(ell(sp.0, sp.1, 0.022, 0.022), stripe) } // spots
+                fill(ell(0.74, 0.48, 0.03, 0.03), ink)                           // eye
+            case .shark:
+                let body = rgb(0.56, 0.63, 0.71), belly = rgb(0.82, 0.85, 0.89), dark = rgb(0.42, 0.49, 0.58)
+                fill(poly([(0.22, 0.52), (0.08, 0.34), (0.20, 0.52), (0.08, 0.70)]), dark) // crescent tail
+                fill(poly([(0.42, 0.36), (0.64, 0.36), (0.48, 0.14)]), body)     // dorsal fin
+                fill(poly([(0.56, 0.62), (0.72, 0.62), (0.60, 0.78)]), dark)     // pectoral fin
+                fill(ell(0.54, 0.52, 0.37, 0.16), body)                          // torpedo body
+                fill(ell(0.56, 0.58, 0.30, 0.07), belly)                         // pale belly
+                fill(poly([(0.86, 0.45), (0.99, 0.53), (0.86, 0.60)]), body)     // pointed snout
+                for gx in [0.66, 0.70, 0.74] { stroke(line(gx, 0.48, gx - 0.02, 0.58), dark, 0.016) } // gills
+                fill(ell(0.80, 0.50, 0.028, 0.028), ink)                         // eye
+
+            // MARK: Logs / trees
+            case .oak:
+                let leaf = rgb(0.34, 0.60, 0.32), leafDk = rgb(0.26, 0.50, 0.26), bark = rgb(0.50, 0.36, 0.22)
+                fill(poly([(0.45, 0.56), (0.55, 0.56), (0.56, 0.88), (0.44, 0.88)]), bark) // trunk
+                fill(ell(0.34, 0.48, 0.18, 0.16), leafDk)
+                fill(ell(0.66, 0.48, 0.18, 0.16), leafDk)
+                fill(ell(0.50, 0.38, 0.26, 0.24), leaf)                          // broad canopy
+            case .willow:
+                let leaf = rgb(0.64, 0.75, 0.42), leafDk = rgb(0.52, 0.64, 0.34), bark = rgb(0.50, 0.36, 0.22)
+                fill(poly([(0.46, 0.52), (0.54, 0.52), (0.55, 0.88), (0.45, 0.88)]), bark) // trunk
+                fill(ell(0.50, 0.40, 0.30, 0.18), leaf)                          // dome
+                for dx in stride(from: 0.24, through: 0.76, by: 0.086) {         // weeping strands
+                    stroke(line(dx, 0.44, dx, 0.44 + 0.30 - abs(dx - 0.50) * 0.5), leafDk, 0.03)
+                }
+            case .maple:
+                let leaf = rgb(0.87, 0.45, 0.26), leafDk = rgb(0.76, 0.34, 0.20), bark = rgb(0.48, 0.33, 0.20)
+                fill(poly([(0.45, 0.56), (0.55, 0.56), (0.56, 0.88), (0.44, 0.88)]), bark) // trunk
+                fill(ell(0.36, 0.46, 0.17, 0.15), leafDk)
+                fill(ell(0.64, 0.46, 0.17, 0.15), leafDk)
+                fill(poly([(0.50, 0.14), (0.24, 0.50), (0.76, 0.50)]), leaf)     // pointed autumn crown
+                fill(ell(0.50, 0.44, 0.24, 0.18), leaf)
+            case .yew:
+                let leaf = rgb(0.20, 0.44, 0.30), leafDk = rgb(0.15, 0.36, 0.24), bark = rgb(0.44, 0.29, 0.20)
+                fill(poly([(0.46, 0.72), (0.54, 0.72), (0.55, 0.90), (0.45, 0.90)]), bark) // short trunk
+                fill(poly([(0.50, 0.44), (0.24, 0.74), (0.76, 0.74)]), leafDk)   // conifer tiers
+                fill(poly([(0.50, 0.26), (0.28, 0.58), (0.72, 0.58)]), leaf)
+                fill(poly([(0.50, 0.10), (0.32, 0.42), (0.68, 0.42)]), leaf)
+
+            // MARK: Ore / rocks
+            case .tin, .coal, .silver, .gold:
+                let rockLight: Color, rockDark: Color, vein: Color, big: Bool
+                switch species {
+                case .coal:   rockLight = rgb(0.34, 0.35, 0.39); rockDark = rgb(0.20, 0.21, 0.24); vein = rgb(0.10, 0.10, 0.12); big = true
+                case .silver: rockLight = rgb(0.56, 0.59, 0.64); rockDark = rgb(0.40, 0.43, 0.48); vein = rgb(0.90, 0.93, 0.97); big = false
+                case .gold:   rockLight = rgb(0.54, 0.55, 0.58); rockDark = rgb(0.38, 0.39, 0.43); vein = rgb(0.99, 0.80, 0.28); big = true
+                default:      rockLight = rgb(0.58, 0.61, 0.66); rockDark = rgb(0.42, 0.45, 0.50); vein = rgb(0.82, 0.86, 0.90); big = false // tin
+                }
+                let rock = poly([(0.16, 0.66), (0.28, 0.40), (0.50, 0.30), (0.72, 0.40), (0.86, 0.62), (0.72, 0.84), (0.30, 0.84)])
+                fill(rock, rockLight)
+                fill(poly([(0.16, 0.66), (0.30, 0.84), (0.72, 0.84), (0.86, 0.62), (0.50, 0.62)]), rockDark) // shaded lower face
+                let r = big ? 0.075 : 0.05
+                for f in [(0.40, 0.52), (0.58, 0.48), (0.50, 0.66), (0.66, 0.66)] {
+                    fill(ell(f.0, f.1, r, r), vein)                              // ore flecks
+                }
+                if species == .silver {                                          // extra bright veins
+                    stroke(line(0.34, 0.58, 0.52, 0.50), vein, 0.03)
+                    stroke(line(0.56, 0.72, 0.70, 0.58), vein, 0.03)
+                }
+            }
+        }
+        .frame(width: size, height: size)
+    }
+}

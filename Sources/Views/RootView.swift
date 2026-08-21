@@ -107,6 +107,22 @@ struct RootView: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: game.levelUpEvent)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: game.notice)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: game.taskEvent)
+        .overlay {
+            if let event = game.milestoneEvent {
+                MilestoneCelebrationView(event: event)
+                    .id(event.id)
+                    .transition(.opacity)
+                    .task(id: event.id) {
+                        SoundManager.shared.play(.supercharge, enabled: game.soundEnabled)
+                        let seconds = FireworksConfig.of(event.kind, accent: event.skill?.tint, skillName: event.skill?.displayName).displayDuration
+                        try? await _Concurrency.Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                        if game.milestoneEvent?.id == event.id {
+                            withAnimation(.easeOut(duration: 0.5)) { game.milestoneEvent = nil }
+                        }
+                    }
+            }
+        }
+        .animation(.easeInOut(duration: 0.4), value: game.milestoneEvent)
         .sheet(item: $game.offlineProgress) { progress in
             WelcomeBackView(progress: progress)
         }

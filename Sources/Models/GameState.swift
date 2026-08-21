@@ -7,6 +7,25 @@ struct LevelUpEvent: Identifiable, Equatable {
     let newLevel: Int
 }
 
+/// A once-in-a-run milestone worth a full-screen fireworks show. Ordered by magnitude so the
+/// biggest news wins when several land on a single action (`level99` → fireworks, `maxAccount` →
+/// mega fireworks, `maxXP` → ultra-mega fireworks).
+enum MilestoneKind: Int, Comparable {
+    case level99      // a skill reached level 99
+    case maxAccount   // level 99 in every skill (a maxed account)
+    case maxXP        // the 200M XP ceiling in a single skill
+
+    static func < (lhs: MilestoneKind, rhs: MilestoneKind) -> Bool { lhs.rawValue < rhs.rawValue }
+}
+
+/// Fired when the player crosses a celebration milestone, so the UI can throw fireworks.
+struct MilestoneEvent: Identifiable, Equatable {
+    let id = UUID()
+    let kind: MilestoneKind
+    /// The skill involved (nil for a whole-account max, which spans every skill).
+    let skill: SkillID?
+}
+
 /// A transient, user-facing toast message (daily reward, purchase, raid result, …). Carries an SF
 /// Symbol rendered beside the text so the app never embeds emoji in copy.
 struct Notice: Equatable, Hashable {
@@ -76,6 +95,8 @@ private struct SaveData: Codable {
     var diaryLamps: [RaidLampRecord]?
     // Added later — per-group successful raid clears ("completions"). Optional so older saves decode.
     var raidClearsByGroup: [String: Int]?
+    // Added later — skill groups cleared flawlessly (no raid-HP lost). Optional so older saves decode.
+    var flawlessRaidGroups: [String]?
 
     // The `task*` properties are persisted under their original v1.5 JSON keys ("featCounters",
     // "completedFeats"), so saves written before the Feats→Tasks rename keep decoding. The on-disk
@@ -91,6 +112,7 @@ private struct SaveData: Codable {
         case claimedDiaryTiers
         case diaryLamps
         case raidClearsByGroup
+        case flawlessRaidGroups
     }
 }
 
@@ -136,6 +158,9 @@ final class GameState: ObservableObject {
     @Published private(set) var raidDayByGroup: [String: String] = [:]
     /// Lifetime successful raid clears per skill group — the raid "completions" surfaced in Settings.
     @Published private(set) var raidClearsByGroup: [String: Int] = [:]
+    /// Skill groups the player has ever cleared **flawlessly** (no raid-HP lost). Backs the
+    /// Completionist "flawless raid" Tasks; a set so each group counts once.
+    @Published private(set) var flawlessRaidGroups: Set<String> = []
 
     // MARK: Rewards (Diary)
 
@@ -154,6 +179,10 @@ final class GameState: ObservableObject {
 
     /// Most recent level-up, consumed by the UI for a celebratory toast.
     @Published var levelUpEvent: LevelUpEvent?
+
+    /// Most recent celebration milestone (99, maxed account, 200M XP), consumed by the UI to throw
+    /// a full-screen fireworks show.
+    @Published var milestoneEvent: MilestoneEvent?
 
     /// The most recent offline-earnings summary, presented as a "welcome back" sheet on return.
     @Published var offlineProgress: OfflineProgress?
@@ -182,6 +211,7 @@ final class GameState: ObservableObject {
         applyRewardsSeedIfRequested()
         applyOfflineDemoIfRequested()
         applyLampSeedIfRequested()
+        applyCelebrationDemoIfRequested()
         #endif
     }
 
@@ -420,7 +450,9 @@ final class GameState: ObservableObject {
         if isSupercharged(skill) { total *= activeSuperchargeMultiplier(for: skill) } // locked at activation
         if isDoubleXPActive { total *= doubleXPPotency }                 // Magic-boosted Daily Boost
         var gotEnergy = false
-        let chargeChance = Balance.baseEnergyTapChance * energyChargeMultiplier  // base × Fishing "Big Catch"
+        // A skill can't bank Supercharge Energy while it's *already* bursting — you can't stockpile
+        // the next charge mid-Supercharge; Energy only builds once the burst has ended.
+        let chargeChance = isSupercharged(skill) ? 0 : Balance.baseEnergyTapChance * energyChargeMultiplier  // base × Fishing "Big Catch"
         if chargeChance > 0, Double.random(in: 0..<1) < chargeChance {
             bankEnergySeconds(Balance.energyTapProcSeconds * energyRateMultiplier, to: skill)  // Hitpoints "Vitality"
             gotEnergy = true
@@ -597,6 +629,11 @@ final class GameState: ObservableObject {
 
     /// Lifetime successful clears ("completions") for a group's raid.
     func raidClears(_ group: SkillCategory) -> Int { raidClearsByGroup[group.rawValue] ?? 0 }
+
+    /// Whether the player has ever cleared a group's raid flawlessly (no raid-HP lost).
+    func hasFlawlessRaid(_ group: SkillCategory) -> Bool { flawlessRaidGroups.contains(group.rawValue) }
+    /// How many distinct raids have been cleared flawlessly — backs the Completionist flawless Tasks.
+    var flawlessRaidCount: Int { flawlessRaidGroups.count }
 
     /// Unspent lamps for a group (newest first).
     func lamps(for group: SkillCategory) -> [RaidLampRecord] {
@@ -869,10 +906,12 @@ final class GameState: ObservableObject {
         }
         raidLamps.append(contentsOf: earned)
         raidClearsByGroup[group.rawValue, default: 0] += 1
+        if flawless { flawlessRaidGroups.insert(group.rawValue) }
         let plural = earned.count > 1 ? "s" : ""
         let bonus = flawless && Balance.raidFlawlessBonusLamps > 0 ? " (flawless bonus!)" : ""
         notice = Notice(icon: "trophy.fill", text: "\(group.raidName) cleared — \(earned.count) \(group.rawValue) lamp\(plural)\(bonus)!")
         save()
+        evaluateTasks(.raid)
         return earned
     }
 
@@ -937,11 +976,13 @@ final class GameState: ObservableObject {
         superchargeMultiplierBySkill = [:]
         slots = []
         levelUpEvent = nil
+        milestoneEvent = nil
         doubleXPExpiry = nil
         raidLamps = []
         diaryLamps = []
         raidDayByGroup = [:]
         raidClearsByGroup = [:]
+        flawlessRaidGroups = []
         tokens = 0
         taskCounters = [:]
         completedTasks = []
@@ -1075,6 +1116,24 @@ final class GameState: ObservableObject {
             if announceLevelUp { levelUpEvent = LevelUpEvent(skill: skill, newLevel: newLevel) }
             if evaluateTasksOnLevel { evaluateTasks(.levelUp) }
         }
+        // Fireworks milestones — only for *live* gains (offline returns get the welcome-back sheet
+        // instead, so we don't stack a fireworks show on top of it). The biggest milestone wins.
+        if announceLevelUp { celebrateMilestones(skill, oldLevel: oldLevel, newLevel: newLevel,
+                                                 crossedCap: updated >= cap && current < cap) }
+    }
+
+    /// Raises `milestoneEvent` when this XP gain crossed a celebration threshold. Reaching 200M in a
+    /// skill (ultra-mega) outranks maxing the account (mega), which outranks a single 99 (fireworks).
+    private func celebrateMilestones(_ skill: SkillID, oldLevel: Int, newLevel: Int, crossedCap: Bool) {
+        var milestone: MilestoneKind?
+        if crossedCap { milestone = .maxXP }
+        if newLevel >= XPTable.maxLevel, oldLevel < XPTable.maxLevel {
+            // This skill just hit 99 — mega news if it completed the whole account.
+            let hit99: MilestoneKind = isFullyMaxed ? .maxAccount : .level99
+            milestone = max(milestone ?? hit99, hit99)
+        }
+        guard let milestone else { return }
+        milestoneEvent = MilestoneEvent(kind: milestone, skill: milestone == .maxAccount ? nil : skill)
     }
 
     /// Banks `seconds` of Supercharge Energy directly (used by the per-tap charge proc).
@@ -1140,6 +1199,7 @@ final class GameState: ObservableObject {
         diaryLamps = saved.diaryLamps ?? []
         raidDayByGroup = saved.raidDayByGroup ?? [:]
         raidClearsByGroup = saved.raidClearsByGroup ?? [:]
+        flawlessRaidGroups = Set(saved.flawlessRaidGroups ?? [])
         tokens = saved.tokens ?? 0
         taskCounters = saved.taskCounters ?? [:]
         completedTasks = Set(saved.completedTasks ?? [])
@@ -1329,6 +1389,39 @@ final class GameState: ObservableObject {
         lastTick = Date()
         save()
     }
+
+    /// Fires a milestone fireworks show on launch (and re-fires it on a loop) when `CELEBRATE` is set,
+    /// so each celebration tier can be captured deterministically. `CELEBRATE=level99|max|maxxp`.
+    /// Never runs in release.
+    private func applyCelebrationDemoIfRequested() {
+        guard let raw = ProcessInfo.processInfo.environment["CELEBRATE"]?.lowercased() else { return }
+        hasSeenOnboarding = true
+        // Keep the fireworks unobstructed: stamp the offline window to now and clear any pending
+        // welcome-back sheet so it can't overlay the celebration during capture.
+        lastActive = Date()
+        offlineProgress = nil
+        let kind: MilestoneKind
+        let skill: SkillID?
+        switch raw {
+        case "max", "maxaccount":
+            kind = .maxAccount; skill = nil
+        case "maxxp", "200m":
+            kind = .maxXP; skill = .woodcutting
+        default:
+            kind = .level99; skill = .attack
+        }
+        // Fire once shortly after launch (so the root view is on screen), then loop for easy capture.
+        let event = MilestoneEvent(kind: kind, skill: skill)
+        let period = FireworksConfig.of(kind, accent: skill?.tint, skillName: skill?.displayName).displayDuration + 1.2
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            self?.milestoneEvent = event
+        }
+        Timer.scheduledTimer(withTimeInterval: period, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.milestoneEvent = MilestoneEvent(kind: kind, skill: skill)
+            }
+        }
+    }
     #endif
 
     /// Serializes the full game state to `UserDefaults`. Internal (not private) so the reward engine
@@ -1366,7 +1459,8 @@ final class GameState: ObservableObject {
             completedTasks: Array(completedTasks),
             claimedDiaryTiers: Array(claimedDiaryTiers),
             diaryLamps: diaryLamps,
-            raidClearsByGroup: raidClearsByGroup
+            raidClearsByGroup: raidClearsByGroup,
+            flawlessRaidGroups: Array(flawlessRaidGroups)
         )
         if let data = try? JSONEncoder().encode(snapshot) {
             UserDefaults.standard.set(data, forKey: Self.saveKey)
