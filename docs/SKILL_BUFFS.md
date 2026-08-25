@@ -6,11 +6,13 @@ different way. A perk's magnitude scales with that skill's level — neutral at 
 realized at level 99 — so training is always paying into a permanent buff on top of raw XP.
 
 - **Data & theming:** `Sources/Models/SkillBuff.swift` (`BuffKind`, per-skill `SkillID.buff`
-  name/icon/blurb).
+  name/icon/blurb + a terse `effect` phrase).
 - **All tunable numbers:** `Sources/Models/Balance.swift` (`buffScaling` + secondary constants).
 - **Application:** `Sources/Models/GameState.swift` (aggregate getters + the tap pipeline).
 - **Surfacing:** the training screen's **perk banner**, tap-outcome pops (crit / extra hit /
-  cache), and the Skills hub's per-skill perk descriptors.
+  cache), and the Skills hub's per-skill perk descriptors. On the hub a **level-1** skill (or any
+  level whose magnitude still rounds to zero) reads as its `effect` phrase — *what the perk does* —
+  via `GameState.buffDescriptor`, then swaps to the exact value once it's meaningful.
 
 ## Non-regression guarantee
 

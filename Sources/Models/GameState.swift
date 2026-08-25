@@ -486,6 +486,17 @@ final class GameState: ObservableObject {
         return (current, next)
     }
 
+    /// The Skills-hub perk descriptor for a row. A fresh, level-1 skill (and any level whose perk
+    /// magnitude is still too small to render a real value) reads as *what the perk does* — the
+    /// buff's terse `effect` phrase — instead of a bare "+0" placeholder. Once the magnitude is
+    /// meaningful, it shows the exact formatted value, matching the training screen.
+    func buffDescriptor(for skill: SkillID) -> String {
+        let lvl = level(for: skill)
+        let value = formattedBuff(skill, atLevel: lvl)
+        if lvl <= 1 || value == Self.buffPendingDescriptor { return skill.buff.effect }
+        return value
+    }
+
     /// The next level at which this skill's *formatted* perk value actually changes, and that new
     /// value. Some perks (e.g. Mining's whole-second Energy cap) read the same across several
     /// levels, so the naive "next level" preview looks static — this scans ahead to the first level
@@ -511,6 +522,11 @@ final class GameState: ObservableObject {
             * xpMultiplier
     }
 
+    /// Placeholder shown while a perk's magnitude still rounds to zero at its display precision —
+    /// the training screen surfaces it beneath the perk's blurb; the Skills hub swaps in the
+    /// buff's `effect` phrase instead (see `buffDescriptor`).
+    static let buffPendingDescriptor = "Grows as you level"
+
     private func formattedBuff(_ skill: SkillID, atLevel lvl: Int) -> String {
         guard let scaling = Balance.buffScaling[skill] else { return "—" }
         let v = Balance.buffValue(level: lvl, scaling: scaling)
@@ -518,7 +534,7 @@ final class GameState: ObservableObject {
         // and tell the player it will grow — perks are strictly additive as you level.
         func z(_ magnitude: Double, places: Int, _ body: () -> String) -> String {
             let f = pow(10.0, Double(places))
-            return (magnitude * f).rounded() == 0 ? "Grows as you level" : body()
+            return (magnitude * f).rounded() == 0 ? Self.buffPendingDescriptor : body()
         }
         switch skill.buff.kind {
         case .accuracy:            return String(format: "~%.0f%% of full tap XP on average", (1 + v) / (2 + v) * 100)

@@ -236,7 +236,7 @@ private struct SkillStatRow: View {
         let method = game.currentMethod(for: skill)
         let slotted = game.isSlotted(skill)
         let energyFull = game.isEnergyFull(skill)
-        let buff = game.buffValues(for: skill).current
+        let buff = game.buffDescriptor(for: skill)
         return HStack(spacing: 12) {
             ZStack {
                 Circle().fill(skill.tint.opacity(0.22)).frame(width: 34, height: 34)
