@@ -153,7 +153,7 @@ enum Balance {
         .magic:        BuffScaling(at1: doubleXPMultiplier, at99: 3.0),    // enchantment: Daily Boost multiplier value
         // Gathering — feeds the idle engine
         .woodcutting:  BuffScaling(at1: 0.0,   at99: 0.12),   // bird's nests: bonus-XP cache chance
-        .fishing:      BuffScaling(at1: 0.0,   at99: 10.0),   // big catch: ×base Supercharge charge chance (0×→10×)
+        .fishing:      BuffScaling(at1: 1.0,   at99: 10.0),   // big catch: ×base Supercharge charge chance (1×→10×)
         .mining:       BuffScaling(at1: maxEnergySeconds, at99: 60.0), // deep reserves: Energy cap (seconds)
         .farming:      BuffScaling(at1: 1.0,   at99: 2.0),    // patient growth: offline XP efficiency ×
         .hunter:       BuffScaling(at1: 1.0,   at99: 3.0),    // trapper: OFFLINE passive XP rate × (app closed)
@@ -176,8 +176,8 @@ enum Balance {
     static let woodcuttingCacheMultiple: Double = 15.0
 
     /// Base chance, per tap on any skill, to bank a burst of Supercharge Energy. This is the *unit*
-    /// rate that Fishing's "Big Catch" perk multiplies (0× at Lv 1 → 10× at Lv 99), so the effective
-    /// per-tap charge chance runs 0% while Fishing is untrained up to 1% at Fishing 99.
+    /// rate that Fishing's "Big Catch" perk multiplies (1× at Lv 1 → 10× at Lv 99), so the effective
+    /// per-tap charge chance runs 0.1% at Fishing level 1 up to 1% at Fishing 99.
     static let baseEnergyTapChance: Double = 0.001
 
     /// Seconds of Energy granted when a tap's charge proc lands (scaled by Hitpoints "Vitality").

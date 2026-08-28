@@ -86,7 +86,7 @@ and, at a reduced rate, while it's closed.
 Every skill can bank **Energy** toward a Supercharge, earned through active tapping — not idle time.
 
 - Each tap has a small **base chance** (`Balance.baseEnergyTapChance`, `0.1%`) to bank a burst of
-  Energy. **Fishing's *Big Catch* perk multiplies that chance** (×0 untrained → ×10 at Lv 99, so up
+  Energy. **Fishing's *Big Catch* perk multiplies that chance** (×1 at Lv 1 → ×10 at Lv 99, so up
   to ~1% per tap) and **Hitpoints' *Vitality* perk raises the amount** banked per proc. Energy is
   capped at **30 seconds** (Mining's *Deep Reserves* raises the cap).
 - Tap **Supercharge** to spend all banked Energy. For that many seconds, taps on that skill earn a
