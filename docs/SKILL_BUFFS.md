@@ -81,7 +81,7 @@ Values below are **level 1 → level 99** (the full envelope). "Kind" is the `Bu
 |-------|------|------|-----------------|--------|
 | Woodcutting 🪓 | Bird's Nests | `cache` | `0 → 12%` | Chance per tap for a **bonus-XP windfall** (`15×` base method XP). |
 | Farming 🌱 | Patient Growth | `offline` | `×1.0 → ×2.0` | Keeps **more offline XP** while the app is closed. |
-| Fishing 🎣 | Big Catch | `energyProc` | `×0 → ×10` | **Multiplies** the `0.1%` base per-tap chance to bank Supercharge Energy — `0%` untrained up to `1%` at Lv 99. |
+| Fishing 🎣 | Big Catch | `energyProc` | `×1 → ×10` | **Multiplies** the `0.1%` base per-tap chance to bank Supercharge Energy — `0.1%` at Lv 1 up to `1%` at Lv 99. |
 | Mining ⛏️ | Deep Reserves | `energyCap` | `30s → 60s` | Raises the **maximum bankable Energy** for longer Supercharges. |
 | Herblore 🧪 | Alchemist | `doubleXPDuration` | `+0 → +300s` | **Daily Boosts last longer.** |
 
@@ -133,7 +133,7 @@ Beyond the `buffScaling` envelope, a few perks reference fixed constants in `Bal
 | Constant | Value | Used by |
 |----------|-------|---------|
 | `woodcuttingCacheMultiple` | `15×` base | Woodcutting cache windfall size |
-| `baseEnergyTapChance` | `0.1%` | Unit per-tap chance to bank Supercharge Energy (Fishing multiplies it ×0→×10) |
+| `baseEnergyTapChance` | `0.1%` | Unit per-tap chance to bank Supercharge Energy (Fishing multiplies it ×1→×10) |
 | `energyTapProcSeconds` | `1s` | Energy banked per tap-proc (scaled by Hitpoints) |
 | `agilityComboWindow` | `1.2s` | Max gap between taps to keep a combo chaining |
 | `agilityComboTapsToMax` | `20` | Taps to ramp a combo to its ceiling |
