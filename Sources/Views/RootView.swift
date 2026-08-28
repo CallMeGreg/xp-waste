@@ -152,6 +152,11 @@ struct RootView: View {
 
             AppTabBar(selection: $tab)
         }
+        .onChange(of: tab) { _, newValue in
+            // Safety net: opening the Diary resolves any Task already at its goal, so a missed
+            // trigger elsewhere can't permanently strand a completed Task or its rewards.
+            if newValue == .diary { game.resolveCompletedTasks() }
+        }
         .onAppear {
             #if DEBUG
             if let initial = Self.debugInitialTab() { tab = initial }
