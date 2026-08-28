@@ -823,6 +823,7 @@ final class GameState: ObservableObject {
         doubleXPCoupons += qty
         notice = Notice(icon: "ticket.fill", text: "+\(qty) Boost Coupon\(qty == 1 ? "" : "s") — \(price) Tokens")
         save()
+        evaluateTasks(.currency)
         return true
     }
 

@@ -54,6 +54,27 @@ extension GameState {
                 if task.progress(self) >= task.goal { newlyCompleted.append(task) }
             }
         }
+        commitCompletedTasks(newlyCompleted)
+    }
+
+    /// Safety net: re-check **every** Task and resolve any that already meets its goal — paying its
+    /// Tokens, banking a tier-matched XP lamp for any Diary tier that just cleared, and surfacing the
+    /// standard celebratory toast. Unlike `evaluateTasks(_:)` this doesn't depend on a trigger, so a
+    /// Task stranded by a missed hook still completes the next time this runs. Called whenever the
+    /// Diary is opened. Cheap and idempotent — already-completed Tasks are skipped, and nothing is
+    /// persisted or surfaced when there's nothing to resolve.
+    func resolveCompletedTasks() {
+        var newlyCompleted: [Task] = []
+        for task in TaskCatalog.all where !completedTasks.contains(task.id) {
+            if task.progress(self) >= task.goal { newlyCompleted.append(task) }
+        }
+        commitCompletedTasks(newlyCompleted)
+    }
+
+    /// Shared tail of the reward engine: mark `newlyCompleted` done, pay their Tokens, bank a
+    /// tier-matched XP lamp for any Diary tier that just became fully cleared, surface one batched
+    /// toast, and persist — but only when something actually changed.
+    private func commitCompletedTasks(_ newlyCompleted: [Task]) {
         guard !newlyCompleted.isEmpty else { return }
 
         var awarded = 0

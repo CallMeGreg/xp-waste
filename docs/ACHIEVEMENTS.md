@@ -333,6 +333,12 @@ diaryLamps: [RaidLampRecord]?       // unspent any-skill XP lamps from tier clea
 `evaluateTasks(trigger:)` from each and only test the handful of tasks registered for that trigger.
 No per-frame scanning; the 1 Hz tick already handles time-based checks.
 
+**Safety net.** Opening the Diary tab calls `resolveCompletedTasks()` — a full sweep that re-checks
+**every** Task and completes any already at its goal (paying Tokens, banking Diary-tier lamps, and
+surfacing the standard toast). It shares its completion tail with `evaluateTasks(_:)` via
+`commitCompletedTasks(_:)`, and is cheap/idempotent (completed Tasks are skipped). This guarantees a
+Task can never stay permanently stranded if some mutation point forgets to fire its trigger.
+
 **Debug hooks** (extend the existing `#if DEBUG` set for deterministic screenshots, per
 `DEVELOPMENT.md`): `SEED_REWARDS` to seed levels/counters + satisfied tasks (which pay out Tokens),
 `OPEN_SHEET=diary` to deep-link the Diary, and `SHOP_SCROLL=tokens` to auto-scroll the Shop
