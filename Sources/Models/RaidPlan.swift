@@ -246,3 +246,17 @@ struct RaidLampRecord: Codable, Identifiable, Equatable {
     /// True for a Diary-tier lamp that can be poured into any skill (no group binding).
     var isUniversal: Bool { group == nil }
 }
+
+/// The full payout of a finished raid, returned by `GameState.finishRaid` for the result screen to
+/// present. A win always banks exactly one group `lamp`; a **flawless** win (no raid HP lost) adds a
+/// tier-scaled **Reward Token** bonus (`flawlessTokens`, 0 otherwise). A loss carries no lamp and no
+/// Tokens.
+struct RaidReward: Equatable {
+    /// The group-bound Skill Lamp banked on a win; `nil` on a loss.
+    let lamp: RaidLampRecord?
+    /// Reward Tokens granted for a flawless clear (0 for a normal clear or a loss).
+    let flawlessTokens: Int
+
+    /// A loss: nothing earned.
+    static let none = RaidReward(lamp: nil, flawlessTokens: 0)
+}

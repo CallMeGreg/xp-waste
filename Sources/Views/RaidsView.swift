@@ -108,7 +108,7 @@ private struct RaidsOverviewCard: View {
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text("Raids").font(.subheadline.weight(.bold))
-                Text("Clear every room to bank an XP lamp; finish flawlessly for a bonus lamp. Difficulty, rooms & reward scale with a skill group's average level.")
+                Text("Clear every room to bank an XP lamp; finish flawlessly for bonus Tokens. Difficulty, rooms & reward scale with a skill group's average level.")
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

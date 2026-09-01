@@ -35,7 +35,7 @@ adventure rather than a repeated tap-test.
   fight whether or not you're swinging a sword.
 - **Rewards that scale with mastery.** Difficulty tracks the group's average level; the payoff (an
   XP lamp) scales with the skill you spend it on, so it stays relevant from level 1 to 99. A
-  **flawless** clear (no raid HP lost) banks a bonus lamp.
+  **flawless** clear (no raid HP lost) banks a tier-scaled **Reward Token** bonus on top of that lamp.
 - **Zero magic numbers in gameplay/view code.** Every raid constant lives in `Balance.swift`.
 
 ---
@@ -178,8 +178,8 @@ progress, and renders:
 - **room-intro cards** (room *x* of *N*, boss art or mechanic glyph, threat, objective, mechanic +
   mini-boss/final-boss chips, and an **Enter / Advance / Face the Boss** button — the timer is
   paused while reading);
-- a **result overlay** — win/fail, flawless callout, and the earned **lamp(s)** with the flawless
-  bonus.
+- a **result overlay** — win/fail, flawless callout, and the earned **lamp** plus, on a flawless
+  clear, the tier-scaled **Reward Token** bonus.
 
 Clearing the final room wins; running out of hearts or time loses. Both outcomes spend the daily
 attempt (spent up-front in `beginRaid`, so quitting can't farm retries).
@@ -194,11 +194,12 @@ attempt (win *or* loss) has already spent the day.
 
 ---
 
-## 9. Reward — Skill Lamps
+## 9. Reward — Skill Lamps (+ flawless Tokens)
 
 Clearing a raid banks a **Skill Lamp** bound to the group (`RaidLampRecord`); a **flawless** clear
-banks `Balance.raidFlawlessBonusLamps` extra (default **1**). `GameState.finishRaid(_:passed:
-flawless:)` returns every lamp earned.
+(no raid HP lost) adds a tier-scaled **Reward Token** bonus on top of that one lamp.
+`GameState.finishRaid(_:passed:flawless:)` returns a `RaidReward` (the lamp earned plus any flawless
+Tokens) for the result screen to present.
 
 ### 9.1 Application rules
 - A raid lamp is spent from the **Raids** tab (`LampApplySheet`) on **any one skill in its group**.
@@ -223,6 +224,25 @@ grows steeply, and multiplying by the skill's **current level** means no two lev
 
 Re-tuning lamps is a one-line `Balance.swift` edit — never gameplay or view code.
 
+### 9.4 Flawless Token bonus
+
+A **flawless** clear (no heart lost across the whole expedition) still banks the guaranteed lamp
+above **and** pays a bonus of **Reward Tokens** — the single spendable Shop currency — scaled by the
+raid's tier. Easier raids pay fewer Tokens; a flawless **Rune** raid caps the bonus at **50**. The
+result overlay shows a gold Token row beneath the lamp, and the Tokens land straight in the pouch you
+spend in the Shop.
+
+```
+flawlessTokens(tier) = Balance.raidFlawlessTokensByTier[tier]
+```
+
+| Tier | Bronze | Iron | Steel | Mithril | Adamant | Rune |
+|------|:------:|:----:|:-----:|:-------:|:-------:|:----:|
+| **Flawless Tokens** | 10 | 15 | 20 | 30 | 40 | 50 |
+
+A non-flawless clear earns just the lamp; a loss earns nothing (the daily attempt was already spent
+at `beginRaid`). Re-tuning the flawless payout is a one-line `Balance.swift` edit.
+
 ---
 
 ## 10. Balance constants (all in `Balance.swift`)
@@ -234,7 +254,8 @@ Re-tuning lamps is a one-line `Balance.swift` edit — never gameplay or view co
   `goalScale`.
 - `raidRoomBaseGoal(_:)`, `raidBossGoalMultiplier`, `raidBossPhaseGoalBonus`,
   `raidRoomGoal(kind:isBoss:tier:)` — objective sizes.
-- `raidFlawlessBonusLamps` — bonus lamps for a no-hit clear.
+- `raidFlawlessTokensByTier`, `raidFlawlessTokens(forTier:)` — tier-scaled Reward Token bonus for a
+  flawless (no-hit) clear, capped at 50 for Rune.
 - `raidsPerGroupPerDay` — daily gate.
 - `lampTierCoefficients`, `lampCoefficient(forTier:)` — lamp value.
 
@@ -244,9 +265,9 @@ Re-tuning lamps is a one-line `Balance.swift` edit — never gameplay or view co
 
 - **`RaidPlan.swift`** — `RaidRoomKind`, `RaidBoss`, `RaidRoom`, the `SkillCategory` raid identity
   (`raidName`, `raidTagline`, `raidSymbol`, `raidTint`, `raidTintDeep`, `raidRooms(tier:)`,
-  `raidTierName`, `raidTierColor`), and `RaidLampRecord`.
+  `raidTierName`, `raidTierColor`), `RaidLampRecord`, and the `RaidReward` payout value.
 - **`GameState`** — `raidTier`, `raidAverageLevel`, `isRaidAvailableToday`, `raidClears`,
-  `lamps(for:)`, `projectedLampXP`, `beginRaid`, `finishRaid(_:passed:flawless:) -> [RaidLampRecord]`,
+  `lamps(for:)`, `projectedLampXP`, `beginRaid`, `finishRaid(_:passed:flawless:) -> RaidReward`,
   `applyLamp`. Persisted `SaveData` fields (`raidDayByGroup`, `raidClearsByGroup`, `raidLamps`) are
   optional for backward-compatible decoding.
 
