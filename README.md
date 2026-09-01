@@ -64,8 +64,10 @@ volleys, out-duel a champion by striking the **red** openings and parrying the *
 the forge, crack the vault, trace a path past the hound, haul a thrashing serpent and more. Meanwhile,
 work through the **Diary's** tasks as you hit milestones across the game. Clear a Raid, or complete a
 whole Diary tier, and you'll bank an **XP Lamp**: a one-time reward you spend on a skill of your
-choice for an instant burst of experience, worth more the higher that skill's level. Lamps sit
-outside the Supercharge and Daily Boost economy — pure bonus progress toward 99.
+choice for an instant burst of experience, worth more the higher that skill's level. Finish a Raid
+**flawlessly** — without losing a single heart — and you'll also pocket a handful of **Tokens** to
+spend in the Shop. Lamps sit outside the Supercharge and Daily Boost economy — pure bonus progress
+toward 99.
 
 ## Your goal 🏆
 

@@ -204,9 +204,18 @@ enum Balance {
     /// attempt (win *or* loss) spends the day for that group.
     static let raidsPerGroupPerDay: Int = 1
 
-    /// A **flawless** clear (finished without losing a single raid-HP heart) banks this many *extra*
-    /// lamps on top of the guaranteed one — the reason to sweat every dodge on a daily run.
-    static let raidFlawlessBonusLamps: Int = 1
+    /// A **flawless** clear (finished without losing a single raid-HP heart) still banks the
+    /// guaranteed group lamp *and* pays a bonus of **Reward Tokens** on top — the reason to sweat
+    /// every dodge on a daily run. The payout scales with the raid's tier (index = tier 0…5,
+    /// Bronze → Rune): easier raids pay fewer Tokens, and a flawless **Rune** raid caps the bonus at
+    /// **50**. Read via `raidFlawlessTokens(forTier:)`; re-tuning is a one-line change here — never
+    /// gameplay or view code.
+    static let raidFlawlessTokensByTier: [Int] = [10, 15, 20, 30, 40, 50]
+
+    /// The flawless-clear Token bonus for a raid at `tier`, clamped to the table's bounds.
+    static func raidFlawlessTokens(forTier tier: Int) -> Int {
+        raidFlawlessTokensByTier[min(max(tier, 0), raidFlawlessTokensByTier.count - 1)]
+    }
 
     /// Per-raid-tier lamp value coefficient (index = raid tier 0…5, Bronze → Rune). A lamp applied
     /// to a skill grants `skillLevel × coefficient` XP, so a lamp's worth scales with the skill's

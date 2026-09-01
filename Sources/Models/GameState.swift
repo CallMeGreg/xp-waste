@@ -903,33 +903,35 @@ final class GameState: ObservableObject {
     /// Whether the player can afford — and has any reason — to buy a raid refresh right now.
     func canRefreshRaids() -> Bool { hasRaidedTodayAnyGroup && tokens >= Balance.Rewards.refreshRaidsCost }
 
-    /// Resolves a finished raid. On a win, banks a lamp for the group at its current raid tier, plus
-    /// `Balance.raidFlawlessBonusLamps` extra lamps when the run was **flawless** (no raid-HP lost);
-    /// on a loss, nothing (the daily attempt was already spent in `beginRaid`). Returns every lamp
-    /// earned (empty on a loss) so the result screen can present them.
+    /// Resolves a finished raid. On a win, banks a lamp for the group at its current raid tier, and —
+    /// when the run was **flawless** (no raid-HP lost) — grants a tier-scaled **Reward Token** bonus
+    /// (`Balance.raidFlawlessTokens(forTier:)`) on top of that lamp; on a loss, nothing (the daily
+    /// attempt was already spent in `beginRaid`). Returns a `RaidReward` describing the payout so the
+    /// result screen can present the lamp and any Token bonus.
     @discardableResult
-    func finishRaid(_ group: SkillCategory, passed: Bool, flawless: Bool = false) -> [RaidLampRecord] {
+    func finishRaid(_ group: SkillCategory, passed: Bool, flawless: Bool = false) -> RaidReward {
         guard passed else {
             notice = Notice(icon: "xmark.octagon.fill", text: "\(group.raidName) failed — come back tomorrow.")
             save()
-            return []
+            return .none
         }
         let tier = raidTier(group)
-        var earned = [RaidLampRecord(group: group, tier: tier)]
-        if flawless {
-            for _ in 0..<max(0, Balance.raidFlawlessBonusLamps) {
-                earned.append(RaidLampRecord(group: group, tier: tier))
-            }
-        }
-        raidLamps.append(contentsOf: earned)
+        let lamp = RaidLampRecord(group: group, tier: tier)
+        raidLamps.append(lamp)
         raidClearsByGroup[group.rawValue, default: 0] += 1
-        if flawless { flawlessRaidGroups.insert(group.rawValue) }
-        let plural = earned.count > 1 ? "s" : ""
-        let bonus = flawless && Balance.raidFlawlessBonusLamps > 0 ? " (flawless bonus!)" : ""
-        notice = Notice(icon: "trophy.fill", text: "\(group.raidName) cleared — \(earned.count) \(group.rawValue) lamp\(plural)\(bonus)!")
+
+        var tokensAwarded = 0
+        if flawless {
+            flawlessRaidGroups.insert(group.rawValue)
+            tokensAwarded = Balance.raidFlawlessTokens(forTier: tier)
+            addTokens(tokensAwarded)
+        }
+
+        let bonus = tokensAwarded > 0 ? " + \(tokensAwarded) Tokens (flawless bonus!)" : ""
+        notice = Notice(icon: "trophy.fill", text: "\(group.raidName) cleared — \(group.rawValue) lamp\(bonus)!")
         save()
         evaluateTasks(.raid)
-        return earned
+        return RaidReward(lamp: lamp, flawlessTokens: tokensAwarded)
     }
 
     /// Spends a lamp on a single skill within its group, granting the projected XP through the

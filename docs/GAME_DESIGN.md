@@ -162,7 +162,8 @@ re-balancing a perk is a one-line change that never touches gameplay or view cod
    resource recognition, net-hauling, offering-sorting); bosses threaten from *inside* their room
    and gain **phases** and **enrage** at higher tiers. Clearing every room awards a tier-colored
    **Lamp** you use on any skill in that group (XP scales with the chosen skill's level); a
-   **flawless** run (no raid HP lost) banks a bonus lamp. Played once per day per group. See
+   **flawless** run (no raid HP lost) banks a tier-scaled Reward Token bonus on top. Played once per
+   day per group. See
    [RAID_SYSTEM.md](RAID_SYSTEM.md).
 6. **Shop** — spend **Tokens** on Boost Coupons and Energy Cells, or buy Tokens with real money via
    StoreKit Token Packs.

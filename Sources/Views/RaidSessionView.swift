@@ -7,7 +7,8 @@ import SwiftUI
 /// cards; each boss threatens the player natively from inside its own mechanic.
 ///
 /// Clear every room before the timer to win and bank an XP lamp (a **flawless** run — no HP lost —
-/// banks a bonus). All numbers come from `Balance`; room identities from `RaidPlan`.
+/// also pays a tier-scaled **Reward Token** bonus). All numbers come from `Balance`; room identities
+/// from `RaidPlan`.
 struct RaidSessionView: View {
     @EnvironmentObject private var game: GameState
     @Environment(\.dismiss) private var dismiss
@@ -30,8 +31,8 @@ struct RaidSessionView: View {
     @State private var totalTime: Double = 180
 
     @State private var phase: Phase = .introRoom
-    @State private var earnedLamps: [RaidLampRecord] = []
-    @State private var bonusLamp = false
+    @State private var earnedLamp: RaidLampRecord?
+    @State private var flawlessTokens = 0
 
     // Boss reaction feedback (flinch on each boss-room hit) + hurt shake.
     @State private var hitToken = 0
@@ -109,13 +110,8 @@ struct RaidSessionView: View {
             let won = result == "win"
             flawless = env["RAID_FLAWLESS"] == "1"
             if won {
-                earnedLamps = [RaidLampRecord(group: group, tier: tier)]
-                if flawless {
-                    for _ in 0..<max(0, Balance.raidFlawlessBonusLamps) {
-                        earnedLamps.append(RaidLampRecord(group: group, tier: tier))
-                    }
-                    bonusLamp = Balance.raidFlawlessBonusLamps > 0
-                }
+                earnedLamp = RaidLampRecord(group: group, tier: tier)
+                flawlessTokens = flawless ? Balance.raidFlawlessTokens(forTier: tier) : 0
             }
             phase = won ? .won : .lost
             return
@@ -194,8 +190,9 @@ struct RaidSessionView: View {
         resolved = true
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { phase = passed ? .won : .lost }
         let flawlessWin = passed && flawless
-        earnedLamps = game.finishRaid(group, passed: passed, flawless: flawlessWin)
-        bonusLamp = earnedLamps.count > 1
+        let reward = game.finishRaid(group, passed: passed, flawless: flawlessWin)
+        earnedLamp = reward.lamp
+        flawlessTokens = reward.flawlessTokens
         endHaptic &+= 1
         SoundManager.shared.play(passed ? .supercharge : .ui, enabled: game.soundEnabled)
     }
@@ -437,11 +434,8 @@ struct RaidSessionView: View {
                         Label("Flawless — not a single hit taken", systemImage: "sparkles")
                             .font(.caption.weight(.bold)).foregroundStyle(.yellow)
                     }
-                    ForEach(earnedLamps) { lamp in lampReward(lamp) }
-                    if bonusLamp {
-                        Text("Flawless bonus: an extra lamp!").font(.caption2.weight(.semibold))
-                            .foregroundStyle(.yellow)
-                    }
+                    if let lamp = earnedLamp { lampReward(lamp) }
+                    if flawlessTokens > 0 { tokenReward(flawlessTokens) }
                 } else {
                     Text("One attempt per day — come back tomorrow.")
                         .font(.caption).foregroundStyle(.secondary)
@@ -482,6 +476,26 @@ struct RaidSessionView: View {
         .frame(maxWidth: .infinity)
         .background(c.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(c.opacity(0.35)))
+    }
+
+    /// The flawless-clear Token bonus row, styled to sit alongside `lampReward` but in Token gold.
+    private func tokenReward(_ count: Int) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "star.circle.fill")
+                .font(.system(size: 26, weight: .bold))
+                .foregroundStyle(Color.rewardToken)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("+\(count) Tokens")
+                    .font(.subheadline.weight(.bold)).foregroundStyle(Color.rewardToken)
+                Text("Flawless bonus — spend them in the Shop.")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(11)
+        .frame(maxWidth: .infinity)
+        .background(Color.rewardToken.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.rewardToken.opacity(0.35)))
     }
 }
 

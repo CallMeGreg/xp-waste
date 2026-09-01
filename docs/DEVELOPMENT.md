@@ -149,7 +149,7 @@ Used for deterministic screenshots / UI checks:
   mechanic (for capturing a mechanic mid-play).
 - `RAID_RESULT=<win|lose>` — show the raid **result overlay** without playing (visual-only; does
   not spend the daily attempt). Pair with `RAID_FLAWLESS=1` to render the flawless-bonus win with
-  its extra lamp.
+  its lamp **and** tier-scaled Token bonus.
 - `OPEN_SHEET=doublexp` — selects the **Shop** tab (Spend Tokens on Coupons/Cells, Token packs).
 - `SHOP_SCROLL=tokens` — after landing on the Shop, auto-scrolls to the bottom (Energy Cells + IAP
   **Token Packs**) so the below-the-fold section can be screenshotted from the CLI (which can't
